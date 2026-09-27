@@ -53,6 +53,9 @@ class ConsoleHomeView(AdminRequiredMixin, TemplateView):
             'teachers': User.objects.filter(role=UserRole.TEACHER).count(),
             'admins': User.objects.filter(role=UserRole.ADMIN).count(),
             'deactivated': User.objects.filter(is_active=False).count(),
+            'pending_teachers': User.objects.filter(
+                role=UserRole.TEACHER, is_active=False
+            ).count(),
             'courses': Course.objects.count(),
             'published_courses': Course.objects.filter(is_published=True).count(),
             'paid_courses': Course.objects.exclude(price=0).count(),

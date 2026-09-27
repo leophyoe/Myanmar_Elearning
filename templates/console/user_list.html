@@ -24,7 +24,7 @@
         <select name="status" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
             <option value="all" {% if status == 'all' %}selected{% endif %}>Any status</option>
             <option value="active" {% if status == 'active' %}selected{% endif %}>Active ({{ counts.active }})</option>
-            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Deactivated ({{ counts.inactive }})</option>
+            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive / awaiting approval ({{ counts.inactive }})</option>
         </select>
         <button type="submit" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition">Filter</button>
         <a href="{% url 'console-user-list' %}" class="px-3 py-2 text-xs text-slate-400 hover:text-slate-200">Reset</a>
@@ -63,6 +63,8 @@
                     <td class="px-5 py-3">
                         {% if u.is_active %}
                         <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 uppercase font-bold">Active</span>
+                        {% elif u.role == 'teacher' %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 uppercase font-bold" title="Registered through /register/ — activate to let them sign in">Awaiting approval</span>
                         {% else %}
                         <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-800 uppercase font-bold">Deactivated</span>
                         {% endif %}

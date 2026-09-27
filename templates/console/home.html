@@ -11,6 +11,17 @@
 
     {% include 'console/_tabs.html' with active='home' %}
 
+    {% if pending_teachers %}
+    <a href="{% url 'console-user-list' %}?role=teacher&amp;status=inactive"
+       class="flex items-center justify-between gap-4 mt-6 p-4 rounded-xl bg-amber-950/50 border border-amber-800 hover:bg-amber-950 transition block">
+        <span class="text-xs text-amber-200">
+            <span class="font-bold uppercase tracking-wider text-amber-400 mr-2">Teacher applications</span>
+            {{ pending_teachers }} applicant{{ pending_teachers|pluralize }} registered through /register/ and cannot sign in yet.
+        </span>
+        <span class="text-xs text-amber-400 shrink-0">Review &rarr;</span>
+    </a>
+    {% endif %}
+
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
         <a href="{% url 'console-user-list' %}?role=student" class="p-5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-600 transition block">
             <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Students</div>

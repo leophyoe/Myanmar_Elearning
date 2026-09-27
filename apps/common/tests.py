@@ -2340,3 +2340,136 @@ class PortfolioAndCredentialTests(TestCase):
         mine = self.client.get(url)
         self.assertContains(mine, 'Finish your portfolio')
         self.assertContains(mine, 'List your top skills')
+
+
+class RegistrationAndRoleTests(TestCase):
+    """Public /register/ now handles students and teacher applicants."""
+
+    def setUp(self):
+        self.client = Client()
+        self.url = reverse('register')
+        self.admin = User.objects.create_user(
+            username='r8admin', email='r8a@mel.edu.mm',
+            password='Passw0rd!23', role='admin',
+        )
+        self.base = {
+            'username': 'newcomer', 'email': 'new@mel.edu.mm',
+            'first_name': 'New', 'last_name': 'Comer',
+            'password1': 'Passw0rd!23', 'password2': 'Passw0rd!23',
+        }
+
+    def payload(self, **overrides):
+        data = dict(self.base, role='student')
+        data.update(overrides)
+        return data
+
+    def test_127_student_registration_activates_and_signs_in(self):
+        response = self.client.post(self.url, self.payload(), follow=True)
+        self.assertEqual(response.status_code, 200)
+        user = User.objects.get(username='newcomer')
+        self.assertEqual(user.role, 'student')
+        self.assertTrue(user.is_active)
+        self.assertTrue(hasattr(user, 'student_profile'))
+        self.assertEqual(self.client.session['_auth_user_id'], str(user.pk))
+        self.assertIn(reverse('dashboard'), response.request['PATH_INFO'])
+
+    def test_128_teacher_application_is_created_inactive(self):
+        response = self.client.post(
+            self.url,
+            self.payload(username='applicant', email='a@mel.edu.mm', role='teacher',
+                         department='Computing', title='Senior Lecturer'),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        user = User.objects.get(username='applicant')
+        self.assertEqual(user.role, 'teacher')
+        self.assertFalse(user.is_active)
+        self.assertTrue(user.has_usable_password())
+        self.assertTrue(hasattr(user, 'teacher_profile'))
+        self.assertEqual(user.teacher_profile.department, 'Computing')
+        self.assertEqual(user.teacher_profile.title, 'Senior Lecturer')
+        # Not signed in, and parked on the holding page.
+        self.assertNotIn('_auth_user_id', self.client.session)
+        self.assertContains(response, 'Application received')
+        self.assertContains(response, 'teacher')
+
+    def test_129_pending_teacher_cannot_sign_in(self):
+        self.client.post(self.url, self.payload(
+            username='blocked', email='b@mel.edu.mm', role='teacher'))
+        self.assertFalse(
+            self.client.login(username='blocked', password='Passw0rd!23')
+        )
+
+    def test_130_console_activation_lets_the_teacher_sign_in(self):
+        self.client.post(self.url, self.payload(
+            username='approved', email='ap@mel.edu.mm', role='teacher'))
+        user = User.objects.get(username='approved')
+
+        self.client.logout()
+        self.assertTrue(self.client.login(
+            username='r8admin', password='Passw0rd!23'))
+        response = self.client.post(
+            reverse('console-user-toggle', kwargs={'user_id': user.pk})
+        )
+        self.assertEqual(response.status_code, 302)
+        user.refresh_from_db()
+        self.assertTrue(user.is_active)
+
+        self.client.logout()
+        self.assertTrue(self.client.login(
+            username='approved', password='Passw0rd!23'))
+        self.assertTrue(self.client.get(reverse('teacher-dashboard')).status_code, 200)
+
+    def test_131_duplicate_email_is_rejected(self):
+        User.objects.create_user(
+            username='taken', email='dup@mel.edu.mm',
+            password='Passw0rd!23', role='student',
+        )
+        response = self.client.post(
+            self.url, self.payload(username='other', email='DUP@mel.edu.mm')
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'already exists')
+        self.assertFalse(User.objects.filter(username='other').exists())
+
+    def test_132_register_page_offers_both_account_types(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="student"')
+        self.assertContains(response, 'value="teacher"')
+        self.assertContains(response, 'name="department"')
+        self.assertContains(response, 'name="title"')
+        self.assertContains(response, 'Submit Teacher Application')
+        self.assertContains(response, 'id="teacher-fields"')
+
+    def test_133_pending_page_renders_without_a_session(self):
+        response = self.client.get(reverse('register-pending'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Application received')
+
+    def test_134_student_registration_ignores_teacher_details(self):
+        self.client.post(self.url, self.payload(
+            username='plain', email='p@mel.edu.mm',
+            department='Should be ignored', title='Also ignored'))
+        user = User.objects.get(username='plain')
+        self.assertEqual(user.role, 'student')
+        self.assertTrue(user.is_active)
+        self.assertFalse(hasattr(user, 'teacher_profile'))
+        self.assertTrue(hasattr(user, 'student_profile'))
+
+    def test_135_console_flags_pending_teacher_applications(self):
+        self.client.post(self.url, self.payload(
+            username='waiting', email='w@mel.edu.mm', role='teacher'))
+        self.client.logout()
+        self.assertTrue(self.client.login(
+            username='r8admin', password='Passw0rd!23'))
+
+        home = self.client.get(reverse('console-home'))
+        self.assertEqual(home.status_code, 200)
+        self.assertContains(home, 'Teacher applications')
+
+        listing = self.client.get(
+            reverse('console-user-list'), {'role': 'teacher', 'status': 'inactive'}
+        )
+        self.assertContains(listing, 'Awaiting approval')
+        self.assertContains(listing, 'waiting')

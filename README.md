@@ -117,14 +117,33 @@ profile (`StudentProfile` / `TeacherProfile` / `AdminProfile`) via a `post_save`
 python manage.py createsuperuser
 # then set role = admin in the Django admin (/admin/)
 
-# Teacher
+# Teacher (scripted)
 python manage.py shell -c "
 from apps.users.models import User, UserRole
 User.objects.create_user('u_kyaw', 'kyaw@mel.edu.mm', 'ChangeMe2026!', role=UserRole.TEACHER)
 "
 
-# Students self-register at /auth/register/ (always role = student)
+# Or let them apply themselves at /auth/register/ (see below)
 ```
+
+### Public registration `/auth/register/`
+
+The registration page lets the visitor choose an account type:
+
+| Type | Result |
+| :--- | :--- |
+| **Student** | Account created active, signed in immediately, redirected to `/auth/dashboard/` |
+| **Teacher** | Account created with `is_active = False` plus a `TeacherProfile`, applicant is sent to `/auth/register/pending/` and **cannot sign in** until an administrator activates it in the Console |
+
+Teacher applications are surfaced on the Console home as a "Teacher applications"
+banner and in the user list as an **Awaiting approval** status
+(`?role=teacher&status=inactive`). Activate the account from
+`/console/users/<uuid>/toggle/` (or the edit form) and the applicant can then
+sign in and reach the teacher dashboard.
+
+Self-declared teachers never receive the Content Studio on their own — approval
+is always an administrator action. Teachers can still be provisioned directly
+with `createsuperuser`, the shell snippet above, or `/console/users/new/`.
 
 Legacy role values (`super_admin`, `lab_admin`, `instructor`) are remapped automatically
 by migration `users.0003`.

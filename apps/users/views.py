@@ -3,10 +3,10 @@ from django.contrib.auth import login
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import CreateView, TemplateView, UpdateView
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.contrib import messages
-from .models import User, StudentProfile
-from .forms import StudentRegistrationForm, UserLoginForm, StudentProfileUpdateForm
+from .models import User, UserRole, StudentProfile
+from .forms import RegistrationForm, UserLoginForm, StudentProfileUpdateForm
 
 
 def role_dashboard_url(user):
@@ -18,18 +18,40 @@ def role_dashboard_url(user):
     return 'dashboard'
 
 
-class StudentRegisterView(CreateView):
-    """Public self-registration is student-only; teachers and admins are provisioned by an administrator."""
+class RegisterView(CreateView):
+    """
+    Public self-registration.
+
+    Students activate immediately. Teacher applicants are created inactive and
+    sent to a holding page — an administrator activates them in the console.
+    """
     model = User
-    form_class = StudentRegistrationForm
+    form_class = RegistrationForm
     template_name = 'users/register.html'
     success_url = reverse_lazy('dashboard')
 
+    def get_success_url(self):
+        if self.object and self.object.role == UserRole.TEACHER:
+            return reverse('register-pending')
+        return super().get_success_url()
+
     def form_valid(self, form):
         response = super().form_valid(form)
+        if self.object.role == UserRole.TEACHER:
+            messages.info(
+                self.request,
+                f'Teacher application received for “{self.object.username}”. '
+                'An administrator must activate it before you can sign in.',
+            )
+            return response
         login(self.request, self.object)
         messages.success(self.request, f"Welcome to Myanmar E-Learning, {self.object.username}! Your student environment is ready.")
         return response
+
+
+class RegisterPendingView(TemplateView):
+    """Landing page shown after a teacher application is submitted."""
+    template_name = 'users/register_pending.html'
 
 
 class UserLoginView(LoginView):

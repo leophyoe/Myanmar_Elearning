@@ -171,6 +171,14 @@ LAB_DEFAULT_DURATION_MINUTES = int(os.environ.get('LAB_DEFAULT_DURATION_MINUTES'
 LAB_MAX_EXTENSIONS = int(os.environ.get('LAB_MAX_EXTENSIONS', 2))
 LAB_EXTENSION_MINUTES = int(os.environ.get('LAB_EXTENSION_MINUTES', 30))
 LAB_MAX_CONCURRENT_PER_USER = int(os.environ.get('LAB_MAX_CONCURRENT_PER_USER', 1))
+
+# One folder holds the whole cyber range: lab bundles and challenge bundles
+# side by side, ready for Docker image builds later on.
+CYBER_CONTENT_DIR = Path(os.environ.get('CYBER_CONTENT_DIR', str(BASE_DIR / 'cyber')))
+CYBER_LAB_DIR = CYBER_CONTENT_DIR / 'labs'
+CYBER_CHALLENGE_DIR = CYBER_CONTENT_DIR / 'challenges'
+CYBER_BUNDLE_MAX_MB = int(os.environ.get('CYBER_BUNDLE_MAX_MB', 25))
+
 FLAG_SALT = os.environ.get('FLAG_SALT', 'ftcr_dynamic_salt_2026_secure')
 FLAG_PREFIX = os.environ.get('FLAG_PREFIX', 'FTCR{')
 FLAG_SUFFIX = os.environ.get('FLAG_SUFFIX', '}')

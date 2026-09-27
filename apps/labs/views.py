@@ -1,9 +1,21 @@
-from django.views.generic import ListView, DetailView, View
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import get_object_or_404, redirect
-from django.http import JsonResponse
+from pathlib import Path
+
+from django.conf import settings
 from django.contrib import messages
-from .models import Lab, LabInstance, LabCategory, LabDifficulty
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse, reverse_lazy
+from django.views.generic import (
+    CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView, View,
+)
+
+from apps.common.permissions import TeacherRequiredMixin
+from apps.ctf.models import Challenge
+
+from .bundles import BundleError
+from .forms import LabBundleUploadForm, LabForm, LabTemplateForm
+from .models import Lab, LabCategory, LabDifficulty, LabInstance, LabTemplate
 from .orchestrator import orchestrator
 
 class LabListView(ListView):
@@ -107,4 +119,180 @@ class LabStatusApiView(LoginRequiredMixin, View):
             'remaining_seconds': instance.remaining_seconds(),
             'is_expired': instance.is_expired(),
         })
+
+
+
+# ----------------------------------------------------------------------
+# Cyber Range studio — teacher/admin authoring for labs and challenges
+# (one section: /cyber/, one content folder: cyber/)
+# ----------------------------------------------------------------------
+def bundle_folders(base_dir) -> set:
+    """Relative paths of every bundle folder under ``base_dir``."""
+    base = Path(base_dir)
+    if not base.exists():
+        return set()
+    return {
+        str(p.relative_to(base))
+        for p in base.rglob('*')
+        if p.is_dir() and any(c.is_file() for c in p.iterdir())
+    }
+
+
+class CyberHomeView(TeacherRequiredMixin, TemplateView):
+    """Single dashboard for labs, lab templates and CTF challenges."""
+    template_name = 'cyber/manage_home.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['lab_count'] = Lab.objects.filter(is_active=True).count()
+        context['template_count'] = LabTemplate.objects.count()
+        context['challenge_count'] = Challenge.objects.count()
+        context['lab_folders'] = bundle_folders(settings.CYBER_LAB_DIR)
+        context['challenge_folders'] = bundle_folders(settings.CYBER_CHALLENGE_DIR)
+        context['lab_content_dir'] = 'cyber/labs'
+        context['challenge_content_dir'] = 'cyber/challenges'
+        context['recent_labs'] = Lab.objects.select_related('template').order_by('-created_at')[:5]
+        context['recent_challenges'] = Challenge.objects.order_by('-created_at')[:5]
+        return context
+
+
+class LabManageListView(TeacherRequiredMixin, ListView):
+    model = Lab
+    template_name = 'cyber/lab_list.html'
+    context_object_name = 'labs'
+
+    def get_queryset(self):
+        return Lab.objects.select_related('template').order_by('title')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['folders'] = bundle_folders(settings.CYBER_LAB_DIR)
+        return context
+
+
+class LabTemplateListView(TeacherRequiredMixin, ListView):
+    model = LabTemplate
+    template_name = 'cyber/template_list.html'
+    context_object_name = 'templates'
+
+    def get_queryset(self):
+        return LabTemplate.objects.order_by('category', 'name')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['folders'] = bundle_folders(settings.CYBER_LAB_DIR)
+        return context
+
+
+class LabCreateView(TeacherRequiredMixin, CreateView):
+    model = Lab
+    form_class = LabForm
+    template_name = 'cyber/lab_form.html'
+
+    def get_initial(self):
+        initial = super().get_initial()
+        template_id = self.request.GET.get('template')
+        if template_id:
+            initial['template'] = template_id
+        return initial
+
+    def get_success_url(self):
+        return reverse('cyber-lab-edit', kwargs={'lab_id': self.object.pk})
+
+    def form_valid(self, form):
+        try:
+            self.object = form.save()
+        except BundleError as exc:
+            form.add_error('bundle', str(exc))
+            return self.form_invalid(form)
+        messages.success(
+            self.request,
+            f"Lab “{self.object.title}” saved"
+            + (f" — bundle unpacked to cyber/labs/{self.object.template.docker_compose_path}/"
+               if form.cleaned_data.get('bundle') else '.'),
+        )
+        return redirect(self.get_success_url())
+
+
+class LabUpdateView(TeacherRequiredMixin, UpdateView):
+    model = Lab
+    form_class = LabForm
+    template_name = 'cyber/lab_form.html'
+    pk_url_kwarg = 'lab_id'
+
+    def get_success_url(self):
+        return reverse('cyber-lab-edit', kwargs={'lab_id': self.object.pk})
+
+    def form_valid(self, form):
+        try:
+            self.object = form.save()
+        except BundleError as exc:
+            form.add_error('bundle', str(exc))
+            return self.form_invalid(form)
+        messages.success(self.request, f"Lab “{self.object.title}” updated.")
+        return redirect(self.get_success_url())
+
+
+class LabDeleteView(TeacherRequiredMixin, DeleteView):
+    model = Lab
+    template_name = 'cyber/lab_confirm_delete.html'
+    pk_url_kwarg = 'lab_id'
+    success_url = reverse_lazy('cyber-lab-list')
+
+    def form_valid(self, form):
+        messages.info(
+            self.request,
+            "Lab removed. Its bundle files stay in cyber/labs/ for rebuilding.",
+        )
+        return super().form_valid(form)
+
+
+class LabTemplateUpdateView(TeacherRequiredMixin, UpdateView):
+    model = LabTemplate
+    form_class = LabTemplateForm
+    template_name = 'cyber/template_form.html'
+    pk_url_kwarg = 'template_id'
+
+    def get_success_url(self):
+        return reverse('cyber-template-edit', kwargs={'template_id': self.object.pk})
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Template “{self.object.name}” updated.")
+        return redirect(self.get_success_url())
+
+
+class LabBundleUploadView(TeacherRequiredMixin, CreateView):
+    """Upload a zip bundle → files land in cyber/labs/ + a LabTemplate row."""
+    model = LabTemplate
+    form_class = LabBundleUploadForm
+    template_name = 'cyber/lab_upload.html'
+
+    def form_valid(self, form):
+        try:
+            self.object = form.save()
+        except BundleError as exc:
+            form.add_error('bundle', str(exc))
+            return self.form_invalid(form)
+        messages.success(
+            self.request,
+            f"Bundle unpacked to cyber/labs/{self.object.docker_compose_path}/. "
+            "Now attach it to a lab exercise.",
+        )
+        return redirect(reverse('cyber-lab-create') + f'?template={self.object.pk}')
+
+
+class LabTemplateBuildView(TeacherRequiredMixin, View):
+    """Trigger Docker image build for a template bundle."""
+
+    def post(self, request, template_id):
+        template = get_object_or_404(LabTemplate, pk=template_id)
+        from .builder import build_template_image
+        ok, msg = build_template_image(template)
+        if ok:
+            messages.success(request, f"Image build: {msg}")
+        else:
+            messages.error(request, f"Image build failed: {msg}")
+
+        next_url = request.POST.get('next') or reverse('cyber-template-list')
+        return redirect(next_url)
 

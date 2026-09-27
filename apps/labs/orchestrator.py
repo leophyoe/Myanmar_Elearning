@@ -86,6 +86,9 @@ class DockerOrchestrator:
             container.start()
             container.reload()
 
+            # 4. Inject dynamic flag into container filesystem (/root/flag.txt, /home/student/flag.txt)
+            self._inject_flag_files(container, flag)
+
             # Extract internal IP address
             networks_data = container.attrs.get('NetworkSettings', {}).get('Networks', {})
             assigned_ip = networks_data.get(net_name, {}).get('IPAddress', '172.30.1.100')
@@ -102,6 +105,26 @@ class DockerOrchestrator:
             instance.error_log = str(e)
             instance.save()
             return False
+
+    def _inject_flag_files(self, container, flag: str):
+        """
+        Injects the dynamic flag into filesystem targets (/root/flag.txt, /home/student/flag.txt, /tmp/flag.txt)
+        so students can retrieve it during Linux, Web, or Privilege Escalation labs.
+        """
+        try:
+            safe_flag = flag.replace('"', '\\"').replace('$', '\\$').replace('`', '\\`')
+            inject_cmd = (
+                f"sh -c 'mkdir -p /root /home/student 2>/dev/null; "
+                f"echo \"{safe_flag}\" > /root/flag.txt 2>/dev/null; "
+                f"echo \"{safe_flag}\" > /home/student/flag.txt 2>/dev/null; "
+                f"echo \"{safe_flag}\" > /tmp/flag.txt 2>/dev/null; "
+                f"chmod 644 /home/student/flag.txt /tmp/flag.txt 2>/dev/null; "
+                f"chmod 600 /root/flag.txt 2>/dev/null || true'"
+            )
+            container.exec_run(inject_cmd, user="root")
+            logger.info(f"Dynamic flag injected successfully into container {container.id[:12]}")
+        except Exception as e:
+            logger.debug(f"Flag file injection non-fatal note for container: {e}")
 
     def stop_instance(self, instance):
         """Stops and cleans up the container and associated isolated bridge network."""

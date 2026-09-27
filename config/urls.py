@@ -17,6 +17,7 @@ urlpatterns = [
     path('auth/', include('apps.users.urls')),
     path('courses/', include('apps.courses.urls')),
     path('labs/', include('apps.labs.urls')),
+    path('cyber/', include('apps.labs.manage_urls')),
     path('terminal/', include('apps.terminal.urls')),
     path('ctf/', include('apps.ctf.urls')),
     path('leaderboard/', include('apps.scoring.urls')),

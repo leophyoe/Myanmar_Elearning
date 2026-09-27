@@ -2551,3 +2551,324 @@ class ThemeToggleTests(TestCase):
             student_name='Theme Student', program_title='Theme course',
             grade='Pass',
         )
+
+
+class CyberStudioTests(TestCase):
+    """Cyber Range studio: one section, one content folder, teacher uploads."""
+
+    def setUp(self):
+        import io
+        import shutil
+        import tempfile
+        import zipfile
+        from pathlib import Path
+        from django.test import override_settings
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self._io, self._zipfile = io, zipfile
+        self._uploaded = SimpleUploadedFile
+        self._path = Path
+
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        ctx = override_settings(
+            CYBER_LAB_DIR=tmp / 'cyber' / 'labs',
+            CYBER_CHALLENGE_DIR=tmp / 'cyber' / 'challenges',
+            CYBER_BUNDLE_MAX_MB=5,
+        )
+        ctx.enable()
+        self.addCleanup(ctx.disable)
+        self.lab_dir = tmp / 'cyber' / 'labs'
+        self.challenge_dir = tmp / 'cyber' / 'challenges'
+
+        self.client = Client()
+        self.teacher = User.objects.create_user(
+            username='cyb_teacher', email='cybt@mel.edu.mm',
+            password='Passw0rd!23', role='teacher',
+        )
+        self.other_teacher = User.objects.create_user(
+            username='cyb_teacher2', email='cybt2@mel.edu.mm',
+            password='Passw0rd!23', role='teacher',
+        )
+        self.student = User.objects.create_user(
+            username='cyb_student', email='cybs@mel.edu.mm',
+            password='Passw0rd!23', role='student',
+        )
+
+    # -- helpers --------------------------------------------------------
+    def zip_bytes(self, files):
+        buf = self._io.BytesIO()
+        with self._zipfile.ZipFile(buf, 'w') as zf:
+            for name, content in files.items():
+                zf.writestr(name, content)
+        return buf.getvalue()
+
+    def lab_zip(self, files=None):
+        files = files or {
+            'Dockerfile': 'FROM python:3.12-slim\n',
+            'README.md': '# SQL injection basics\n',
+            'app.py': 'print("hello")\n',
+        }
+        return self._uploaded('bundle.zip', self.zip_bytes(files),
+                              content_type='application/zip')
+
+    def challenge_zip(self, files=None):
+        files = files or {
+            'README.md': '# Task\nFind the flag.\n',
+            'data.txt': 'alpha\n',
+        }
+        return self._uploaded('bundle.zip', self.zip_bytes(files),
+                              content_type='application/zip')
+
+    def lab_payload(self, **overrides):
+        data = {
+            'title': 'SQL Injection Basics',
+            'description': 'Learn to detect and exploit a classic SQLi.',
+            'difficulty': 'easy',
+            'lab_type': 'guided',
+            'points': 100,
+            'estimated_minutes': 45,
+            'learning_objectives': 'Spot a vulnerable parameter\nWrite a UNION payload',
+            'tasks': '[{"title": "Find the parameter", "points": 20}]',
+            'prerequisites': '',
+            'instructor_notes': '',
+        }
+        data.update(overrides)
+        return data
+
+    def challenge_payload(self, **overrides):
+        data = {
+            'title': 'Hidden in Plain Sight',
+            'category': 'osint',
+            'difficulty': 'easy',
+            'description': 'Recover the flag from the given artifact.',
+            'points': 250,
+            'max_attempts': 5,
+        }
+        data.update(overrides)
+        return data
+
+    # -- access ---------------------------------------------------------
+    def test_141_teacher_opens_the_cyber_range_studio(self):
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse('cyber-home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Cyber Range Studio')
+        self.assertContains(response, reverse('cyber-lab-upload'))
+        self.assertContains(response, reverse('cyber-challenge-create'))
+
+    def test_142_students_and_anonymous_are_kept_out(self):
+        self.client.force_login(self.student)
+        self.assertEqual(self.client.get(reverse('cyber-home')).status_code, 403)
+        self.client.logout()
+        self.assertEqual(
+            self.client.get(reverse('cyber-home')).status_code, 302
+        )
+
+    def test_143_content_studio_links_to_the_cyber_section(self):
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse('manage-home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('cyber-home'))
+
+    # -- challenges -----------------------------------------------------
+    def test_144_teacher_creates_a_challenge_with_a_hashed_static_flag(self):
+        self.client.force_login(self.teacher)
+        payload = self.challenge_payload(static_flag='FTCR{never_store_me}')
+        response = self.client.post(reverse('cyber-challenge-create'), payload)
+        self.assertEqual(response.status_code, 302)
+
+        challenge = Challenge.objects.get(slug='hidden-in-plain-sight')
+        expected = hashlib.sha256(b'FTCR{never_store_me}').hexdigest()
+        self.assertEqual(challenge.flag_hash, expected)
+        self.assertFalse(challenge.is_dynamic)
+        self.assertNotIn(b'never_store_me', repr(Challenge.objects.all()).encode())
+
+    def test_145_static_flag_needs_the_platform_prefix(self):
+        self.client.force_login(self.teacher)
+        payload = self.challenge_payload(static_flag='nope')
+        response = self.client.post(reverse('cyber-challenge-create'), payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'platform prefix')
+        self.assertFalse(Challenge.objects.filter(title='Hidden in Plain Sight').exists())
+
+    def test_146_challenge_bundle_lands_in_the_shared_folder(self):
+        self.client.force_login(self.teacher)
+        payload = self.challenge_payload(bundle=self.challenge_zip())
+        response = self.client.post(reverse('cyber-challenge-create'), payload)
+        self.assertEqual(response.status_code, 302)
+
+        target = self.challenge_dir / 'osint' / 'hidden-in-plain-sight'
+        self.assertTrue((target / 'README.md').is_file())
+        self.assertTrue((target / 'data.txt').is_file())
+        self.assertEqual(
+            response.url, reverse('cyber-challenge-edit', kwargs={'challenge_id': Challenge.objects.get().pk})
+        )
+
+    # -- labs -----------------------------------------------------------
+    def test_147_lab_bundle_creates_exercise_and_template(self):
+        self.client.force_login(self.teacher)
+        payload = self.lab_payload(bundle=self.lab_zip())
+        response = self.client.post(reverse('cyber-lab-create'), payload)
+        self.assertEqual(response.status_code, 302)
+
+        lab = Lab.objects.get(slug='sql-injection-basics')
+        self.assertIsNotNone(lab.template)
+        self.assertEqual(lab.template.docker_compose_path, 'web/sql-injection-basics')
+        target = self.lab_dir / 'web' / 'sql-injection-basics'
+        self.assertTrue((target / 'Dockerfile').is_file())
+        self.assertTrue((target / 'app.py').is_file())
+        self.assertEqual(len(lab.learning_objectives), 2)
+        self.assertEqual(lab.tasks[0]['title'], 'Find the parameter')
+
+    def test_148_lab_without_template_or_bundle_is_rejected(self):
+        self.client.force_login(self.teacher)
+        response = self.client.post(reverse('cyber-lab-create'), self.lab_payload())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'Pick an existing lab template or upload a bundle to create one.',
+        )
+        self.assertFalse(Lab.objects.exists())
+
+    def test_149_another_teacher_can_upload_a_lab_bundle(self):
+        self.client.force_login(self.other_teacher)
+        payload = self.lab_payload(title='Permission Hunt', bundle=self.lab_zip())
+        response = self.client.post(reverse('cyber-lab-create'), payload)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Lab.objects.filter(slug='permission-hunt').exists())
+        self.assertTrue(
+            (self.lab_dir / 'web' / 'permission-hunt' / 'Dockerfile').is_file()
+        )
+
+    # -- bundle safety --------------------------------------------------
+    def test_150_bundle_path_traversal_is_rejected(self):
+        self.client.force_login(self.teacher)
+        payload = self.lab_payload(
+            title='Traversal Lab',
+            bundle=self.lab_zip({'ok/Dockerfile': 'FROM x\n', '../../evil.py': 'boom'}),
+        )
+        response = self.client.post(reverse('cyber-lab-create'), payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'unsafe or unsupported file')
+        self.assertFalse(Lab.objects.filter(slug='traversal-lab').exists())
+        self.assertFalse(self.lab_dir.exists())
+
+    def test_151_bundle_rejects_binaries_and_non_archives(self):
+        self.client.force_login(self.teacher)
+        payload = self.lab_payload(
+            title='Binary Lab', bundle=self.lab_zip({'payload.exe': 'MZ'}),
+        )
+        response = self.client.post(reverse('cyber-lab-create'), payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'unsafe or unsupported file')
+
+        payload = self.lab_payload(
+            title='Not A Zip', bundle=self._uploaded('bundle.zip', b'not a zip'),
+        )
+        response = self.client.post(reverse('cyber-lab-create'), payload)
+        self.assertContains(response, 'must be a .zip archive')
+        self.assertFalse(Lab.objects.filter(slug='not-a-zip').exists())
+
+    # -- one folder -----------------------------------------------------
+    def test_152_labs_and_challenges_share_one_cyber_folder(self):
+        from django.conf import settings
+        self.assertEqual(settings.CYBER_LAB_DIR.name, 'labs')
+        self.assertEqual(settings.CYBER_CHALLENGE_DIR.name, 'challenges')
+        self.assertEqual(settings.CYBER_LAB_DIR.parent,
+                         settings.CYBER_CHALLENGE_DIR.parent)
+        # The legacy lab_templates/ location is gone.
+        self.assertFalse((settings.BASE_DIR / 'lab_templates').exists())
+        self.assertTrue((settings.BASE_DIR / 'cyber' / 'labs').is_dir())
+        self.assertTrue((settings.BASE_DIR / 'cyber' / 'README.md').is_file())
+
+    # -- docker image build pipeline & commands --------------------------
+    def test_153_teacher_can_trigger_template_image_build(self):
+        from apps.labs.models import LabTemplate
+        self.client.force_login(self.teacher)
+        payload = self.lab_payload(title='Build Target Lab', bundle=self.lab_zip())
+        self.client.post(reverse('cyber-lab-create'), payload)
+        template = LabTemplate.objects.get(slug='build-target-lab')
+
+        response = self.client.post(
+            reverse('cyber-template-build', kwargs={'template_id': template.pk}),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Image build')
+
+    def test_154_management_command_build_lab(self):
+        from django.core.management import call_command
+        from io import StringIO
+        from apps.labs.models import LabTemplate
+
+        self.client.force_login(self.teacher)
+        payload = self.lab_payload(title='Cmd Target Lab', bundle=self.lab_zip())
+        self.client.post(reverse('cyber-lab-create'), payload)
+
+        out = StringIO()
+        call_command('build_lab', 'cmd-target-lab', stdout=out)
+        self.assertIn('Success', out.getvalue())
+
+    def test_155_cleanup_expired_labs_command(self):
+        from django.core.management import call_command
+        from io import StringIO
+
+        out = StringIO()
+        call_command('cleanup_expired_labs', stdout=out)
+        self.assertIn('Reaper completed', out.getvalue())
+
+    def test_156_flag_injection_and_dynamic_prefix(self):
+        from unittest import mock
+        from apps.labs.models import Lab, LabInstance, LabTemplate
+        from apps.labs.orchestrator import orchestrator
+
+        template = LabTemplate.objects.create(name='Flag Lab Tmpl', slug='flag-lab-tmpl')
+        lab = Lab.objects.create(template=template, title='Flag Test Lab', slug='flag-test-lab')
+        instance = LabInstance.objects.create(lab=lab, user=self.student)
+        flag = instance.generate_dynamic_flag()
+        self.assertTrue(flag.startswith('FTCR{flag-test-lab_'))
+
+        # Test _inject_flag_files
+        fake_container = mock.MagicMock()
+        orchestrator._inject_flag_files(fake_container, flag)
+        fake_container.exec_run.assert_called_once()
+        cmd_arg = fake_container.exec_run.call_args[0][0]
+        self.assertIn(flag, cmd_arg)
+        self.assertIn('/root/flag.txt', cmd_arg)
+        self.assertIn('/home/student/flag.txt', cmd_arg)
+
+    async def test_157_terminal_view_and_consumer_workflow(self):
+        from apps.labs.models import Lab, LabInstance, LabTemplate
+        from apps.terminal.consumers import TerminalConsumer
+        from channels.testing import WebsocketCommunicator
+        from asgiref.sync import sync_to_async
+
+        template = await sync_to_async(LabTemplate.objects.create)(name='Term Tmpl', slug='term-tmpl')
+        lab = await sync_to_async(Lab.objects.create)(template=template, title='Term Lab', slug='term-lab')
+        instance = await sync_to_async(LabInstance.objects.create)(
+            lab=lab, user=self.student, status='running', container_id='sim-term'
+        )
+
+        # Test websocket communicator
+        communicator = WebsocketCommunicator(
+            TerminalConsumer.as_asgi(),
+            f"/ws/terminal/{instance.id}/"
+        )
+        communicator.scope['user'] = self.student
+        communicator.scope['url_route'] = {'kwargs': {'instance_id': str(instance.id)}}
+        connected, _ = await communicator.connect()
+        self.assertTrue(connected)
+
+        msg = await communicator.receive_from()
+        self.assertIn('MYANMAR E-LEARNING', msg)
+
+        # Test sending command
+        await communicator.send_to(text_data="whoami\r")
+        # May receive echo or output
+        rec = await communicator.receive_from()
+        self.assertTrue(len(rec) > 0)
+
+        await communicator.disconnect()
+
+

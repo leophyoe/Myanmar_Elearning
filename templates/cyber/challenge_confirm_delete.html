@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Challenge - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <a href="{% url 'cyber-challenge-list' %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to challenges</a>
+
+    <div class="p-8 rounded-2xl bg-slate-900 border border-red-900/60 shadow-xl mt-4">
+        <h1 class="text-xl font-bold text-white mb-3">Delete this challenge?</h1>
+        <p class="text-sm text-slate-400 mb-2">
+            <span class="text-white font-semibold">{{ object.title }}</span>
+            <span class="text-slate-600">— {{ object.points }} pts</span>
+        </p>
+        <p class="text-xs text-red-400 mb-6">
+            Removes the challenge and all submissions. Bundle files on disk stay in
+            <span class="font-mono">cyber/challenges/</span>.
+        </p>
+
+        <form method="POST" class="flex gap-3">
+            {% csrf_token %}
+            <button type="submit" class="px-6 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition">
+                Yes, delete it
+            </button>
+            <a href="{% url 'cyber-challenge-edit' challenge_id=object.id %}" class="px-6 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

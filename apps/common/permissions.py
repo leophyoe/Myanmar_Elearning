@@ -21,6 +21,11 @@ class RoleRequiredMixin(AccessMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
+class TeacherRequiredMixin(RoleRequiredMixin):
+    """Restricts a view to TEACHER and ADMIN accounts."""
+    allowed_roles = ['teacher']
+
+
 def role_required(allowed_roles):
     """Decorator for function-based views to enforce role-based access control."""
     def decorator(view_func):

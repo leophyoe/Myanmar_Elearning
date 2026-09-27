@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.urls import reverse_lazy, reverse
 
-from apps.common.permissions import RoleRequiredMixin
+from apps.common.permissions import RoleRequiredMixin, TeacherRequiredMixin
 from apps.billing.models import active_payment_for, Payment
 from .models import (
     Subject, Course, Module, Lesson, LessonType, Quiz, Question, Choice,
@@ -319,11 +319,6 @@ class QuizSubmitView(LoginRequiredMixin, View):
 # ----------------------------------------------------------------------
 # Teacher / Administrator authoring (Phase 2)
 # ----------------------------------------------------------------------
-class TeacherRequiredMixin(RoleRequiredMixin):
-    """Restricts a view to TEACHER and ADMIN accounts."""
-    allowed_roles = ['teacher']
-
-
 class ManageHomeView(TeacherRequiredMixin, TemplateView):
     """Authoring cockpit: subjects, courses, modules and lessons at a glance."""
     template_name = 'courses/manage/manage_home.html'

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Lab Template - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <a href="{% url 'cyber-template-list' %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to lab templates</a>
+
+    <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mt-4">
+        <div class="flex items-center justify-between pb-5 mb-6 border-b border-slate-800">
+            <h1 class="text-xl font-bold text-white">Edit Lab Template</h1>
+            {% if object %}<span class="text-[11px] font-mono text-slate-500">{{ object.slug }}</span>{% endif %}
+        </div>
+
+        <form method="POST" class="space-y-5 text-sm" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {% for field in form %}
+                <div class="{% if field.name == 'description' %}md:col-span-2{% endif %}">
+                    <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">
+                        {{ field.label }}{% if field.field.required %} <span class="text-red-400">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="text-[10px] text-slate-500 mt-1">{{ field.help_text }}</p>{% endif %}
+                    {% for error in field.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+                <button type="submit" class="px-6 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition">
+                    Save template
+                </button>
+                {% if object and object.pk %}
+                <button type="submit" form="build-image-form" class="px-5 py-2.5 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white text-sm font-semibold transition">
+                    🔨 Build Docker Image
+                </button>
+                {% endif %}
+                <a href="{% url 'cyber-template-list' %}" class="px-6 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition">Cancel</a>
+            </div>
+        </form>
+
+        {% if object and object.pk %}
+        <form id="build-image-form" method="POST" action="{% url 'cyber-template-build' template_id=object.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

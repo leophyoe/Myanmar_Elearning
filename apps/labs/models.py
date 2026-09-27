@@ -53,7 +53,7 @@ class LabTemplate(BaseModel):
     docker_compose_path = models.CharField(
         max_length=255,
         blank=True,
-        help_text="Path to template directory inside lab_templates/"
+        help_text="Path to the bundle folder inside cyber/labs/"
     )
     image_name = models.CharField(
         max_length=255,
@@ -139,7 +139,9 @@ class LabInstance(BaseModel):
     def generate_dynamic_flag(self):
         """Generates a cryptographically strong, non-reusable flag per student instance."""
         token = secrets.token_hex(16)
-        flag = f"FTCR{{{self.lab.slug}_{token}}}"
+        prefix = getattr(settings, 'FLAG_PREFIX', 'FTCR{')
+        suffix = getattr(settings, 'FLAG_SUFFIX', '}')
+        flag = f"{prefix}{self.lab.slug}_{token}{suffix}"
         self.dynamic_flag = flag
         self.flag_hash = hashlib.sha256(flag.encode()).hexdigest()
         return flag

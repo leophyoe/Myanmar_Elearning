@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Lab Bundle - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <a href="{% url 'cyber-lab-list' %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to lab exercises</a>
+
+    <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mt-4">
+        <div class="pb-5 mb-6 border-b border-slate-800">
+            <h1 class="text-xl font-bold text-white">Upload a Lab Bundle</h1>
+            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                Zip up the lab's <span class="font-mono text-cyan-400">Dockerfile</span>, target source and
+                README, then upload it here. Files are unpacked into
+                <span class="font-mono text-cyan-400">cyber/labs/&lt;category&gt;/&lt;slug&gt;/</span> and a lab
+                template is created so you can attach an exercise to it.
+                Docker images are built from that folder later.
+            </p>
+        </div>
+
+        <form method="POST" class="space-y-5 text-sm" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {% for field in form %}
+                <div class="{% if field.name == 'bundle' or field.name == 'description' %}md:col-span-2{% endif %}">
+                    <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">
+                        {{ field.label }}{% if field.field.required %} <span class="text-red-400">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="text-[10px] text-slate-500 mt-1">{{ field.help_text }}</p>{% endif %}
+                    {% for error in field.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="p-4 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-400 font-mono leading-relaxed">
+                cyber/labs/&lt;category&gt;/&lt;slug&gt;/<br>
+                ├── Dockerfile<br>
+                ├── README.md<br>
+                └── app source...
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button type="submit" class="px-6 py-2.5 rounded-lg bg-purple-700 hover:bg-purple-600 text-white text-sm font-semibold transition">
+                    Unpack bundle
+                </button>
+                <a href="{% url 'cyber-lab-list' %}" class="px-6 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

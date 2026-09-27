@@ -1,8 +1,18 @@
-from django.views.generic import ListView, View
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import get_object_or_404
-from django.http import JsonResponse
 import json
+
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse, reverse_lazy
+from django.views.generic import (
+    CreateView, DeleteView, ListView, UpdateView, View,
+)
+
+from apps.common.permissions import TeacherRequiredMixin
+from apps.labs.bundles import BundleError
+
+from .forms import ChallengeForm
 from .models import Challenge, ChallengeCategory, SolvedChallenge
 from .services import FlagVerificationService
 
@@ -61,3 +71,78 @@ class FlagSubmitView(LoginRequiredMixin, View):
         )
         return JsonResponse(result)
 
+
+
+# ----------------------------------------------------------------------
+# Cyber Range studio — challenge authoring (/cyber/challenges/)
+# ----------------------------------------------------------------------
+class ChallengeManageListView(TeacherRequiredMixin, ListView):
+    model = Challenge
+    template_name = 'cyber/challenge_list.html'
+    context_object_name = 'challenges'
+
+    def get_queryset(self):
+        return Challenge.objects.select_related('lab', 'module').order_by('category', 'points')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from apps.labs.views import bundle_folders
+        from django.conf import settings
+        context['folders'] = bundle_folders(settings.CYBER_CHALLENGE_DIR)
+        return context
+
+
+class ChallengeCreateView(TeacherRequiredMixin, CreateView):
+    model = Challenge
+    form_class = ChallengeForm
+    template_name = 'cyber/challenge_form.html'
+
+    def get_success_url(self):
+        return reverse('cyber-challenge-edit', kwargs={'challenge_id': self.object.pk})
+
+    def form_valid(self, form):
+        try:
+            self.object = form.save()
+        except BundleError as exc:
+            form.add_error('bundle', str(exc))
+            return self.form_invalid(form)
+        messages.success(
+            self.request,
+            f"Challenge “{self.object.title}” created"
+            + (f" — bundle unpacked to cyber/challenges/{self.object.category}/{self.object.slug}/"
+               if form.cleaned_data.get('bundle') else '.'),
+        )
+        return redirect(self.get_success_url())
+
+
+class ChallengeUpdateView(TeacherRequiredMixin, UpdateView):
+    model = Challenge
+    form_class = ChallengeForm
+    template_name = 'cyber/challenge_form.html'
+    pk_url_kwarg = 'challenge_id'
+
+    def get_success_url(self):
+        return reverse('cyber-challenge-edit', kwargs={'challenge_id': self.object.pk})
+
+    def form_valid(self, form):
+        try:
+            self.object = form.save()
+        except BundleError as exc:
+            form.add_error('bundle', str(exc))
+            return self.form_invalid(form)
+        messages.success(self.request, f"Challenge “{self.object.title}” updated.")
+        return redirect(self.get_success_url())
+
+
+class ChallengeDeleteView(TeacherRequiredMixin, DeleteView):
+    model = Challenge
+    template_name = 'cyber/challenge_confirm_delete.html'
+    pk_url_kwarg = 'challenge_id'
+    success_url = reverse_lazy('cyber-challenge-list')
+
+    def form_valid(self, form):
+        messages.info(
+            self.request,
+            "Challenge removed. Its bundle files stay in cyber/challenges/.",
+        )
+        return super().form_valid(form)

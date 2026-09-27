@@ -39,6 +39,11 @@ class Course(BaseModel):
     """
     Top-level academic program (e.g. Diploma in Cyber Security).
     """
+
+    class BillingPeriod(models.TextChoices):
+        ONE_TIME = 'one_time', 'One-time payment'
+        MONTHLY = 'monthly', 'Monthly subscription'
+
     title = models.CharField(max_length=255, default="Diploma in Cyber Security")
     slug = models.SlugField(unique=True, db_index=True)
     subject = models.ForeignKey(
@@ -53,11 +58,36 @@ class Course(BaseModel):
     is_published = models.BooleanField(default=True, db_index=True)
     thumbnail = models.ImageField(upload_to='courses/', null=True, blank=True)
 
+    # Commercial settings — teachers price their own courses; the platform keeps
+    # settings.PAYMENT_PLATFORM_COMMISSION_RATE of every approved payment.
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='owned_courses',
+        help_text="Teacher who publishes this course and receives the revenue share.",
+    )
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text="Price per billing period. Set 0 to publish the course for free.",
+    )
+    currency = models.CharField(max_length=8, default='MMK', editable=False)
+    billing_period = models.CharField(
+        max_length=16,
+        choices=BillingPeriod.choices,
+        default=BillingPeriod.ONE_TIME,
+    )
+
     class Meta:
         ordering = ['title']
 
     def __str__(self):
         return self.title
+
+    @property
+    def is_free(self):
+        return self.price is None or self.price <= 0
 
 
 class Module(BaseModel):
@@ -282,3 +312,38 @@ class Enrollment(BaseModel):
     def __str__(self):
         return f"{self.student.username} -> {self.course.title} ({self.get_status_display()})"
 
+
+
+class LiveSession(BaseModel):
+    """
+    A scheduled real-time class for a course (Zoom, Google Meet, Teams, ...).
+    Only students with access to the course can see the joining link.
+    """
+
+    class Provider(models.TextChoices):
+        ZOOM = 'zoom', 'Zoom'
+        GOOGLE_MEET = 'google_meet', 'Google Meet'
+        TEAMS = 'teams', 'Microsoft Teams'
+        OTHER = 'other', 'Other / custom link'
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='live_sessions')
+    title = models.CharField(max_length=255)
+    provider = models.CharField(
+        max_length=16, choices=Provider.choices, default=Provider.ZOOM
+    )
+    join_url = models.URLField(help_text="Direct joining URL for the session.")
+    starts_at = models.DateTimeField(db_index=True)
+    duration_minutes = models.PositiveIntegerField(default=60)
+    notes = models.TextField(blank=True)
+    is_published = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        ordering = ['starts_at']
+
+    def __str__(self):
+        return f"{self.title} ({self.get_provider_display()})"
+
+    @property
+    def is_upcoming(self):
+        from django.utils import timezone
+        return self.starts_at >= timezone.now()

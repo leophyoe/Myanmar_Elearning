@@ -216,6 +216,46 @@ certificates are hidden everywhere.
 
 ---
 
+## Payments, Pricing & Revenue Share (Phase 5a)
+
+Teachers price their own courses. The platform keeps a fixed commission of
+every approved payment and pays the rest to the course owner.
+
+| Setting (`config/settings/base.py`) | Default | Meaning |
+| :--- | :--- | :--- |
+| `PLATFORM_CURRENCY` | `MMK` | Currency shown everywhere |
+| `PAYMENT_PLATFORM_COMMISSION_RATE` | `0.25` | Platform share of every approved payment |
+| `PAYMENT_RECEIPT_MAX_MB` | `10` | Receipt upload limit |
+
+| Route | Access | Purpose |
+| :--- | :--- | :--- |
+| `/courses/<slug>/checkout/` | student | Submit KBZ Pay / Wave Pay / bank transfer proof |
+| `/billing/my-payments/` | student | Own payment history (pending / approved / rejected) |
+| `/billing/review/?status=…` | admin | Review queue with per-status tabs |
+| `/billing/review/<uuid>/` | admin | Approve (auto-enrols) or reject with a reason |
+| `/analytics/reports/earnings/` | teacher, admin | Gross / 25 % platform / 75 % teacher split per course |
+
+**Pricing model**
+
+* `Course.price = 0` → free, enrolment works exactly as in Phase 2.
+* `Course.billing_period` → `one_time` (permanent access) or `monthly`
+  (approvals get a `period_end` one month later and stop unlocking lessons).
+* `Course.owner` → the teacher who receives the 75 % share; set automatically
+  on creation. Teachers can only edit courses they own, admins can edit all.
+
+**Checkout flow**
+
+1. Paid courses replace the *Enrol* button with **Buy for 5,000 MMK**.
+   `EnrollView` redirects to checkout until a current payment exists.
+2. `PaymentSubmitForm` requires a transaction reference, a receipt, or both.
+   The platform/teacher split (`Payment.split`) is frozen at submission time.
+3. Approving in the review queue sets `status=approved`, stamps
+   `period_start` / `period_end` and creates the `Enrollment`.
+   Rejecting requires a reason and never enrols anybody.
+4. `can_access_course()` now demands **both** an active `Enrollment` **and**
+   an approved, unexpired payment for paid courses, so lessons, quizzes and
+   assignments stay locked until an admin approves the payment.
+
 ## Local Development (Without Docker)
 
 You can also run Myanmar E-Learning locally with SQLite:

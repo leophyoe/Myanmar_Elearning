@@ -23,6 +23,7 @@ urlpatterns = [
     path('certificates/', include('apps.certificates.urls')),
     path('projects/', include('apps.projects.urls')),
     path('analytics/', include('apps.analytics.urls')),
+    path('billing/', include('apps.billing.urls')),
 ]
 
 if settings.DEBUG:

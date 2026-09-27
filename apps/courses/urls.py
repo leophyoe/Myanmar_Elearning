@@ -13,6 +13,7 @@ from .views import (
     AssignmentDetailView, AssignmentSubmitView,
     SubmissionListView, SubmissionGradeView,
 )
+from apps.billing.views import CheckoutView
 
 urlpatterns = [
     path('', CourseListView.as_view(), name='course-list'),
@@ -20,6 +21,7 @@ urlpatterns = [
 
     # Enrolment
     path('<slug:slug>/enroll/', EnrollView.as_view(), name='enroll'),
+    path('<slug:slug>/checkout/', CheckoutView.as_view(), name='checkout'),
 
     # Content
     path('modules/<uuid:module_id>/', ModuleDetailView.as_view(), name='module-detail'),

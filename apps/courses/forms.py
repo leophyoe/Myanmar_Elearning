@@ -24,7 +24,10 @@ class SubjectForm(forms.ModelForm):
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
-        fields = ('title', 'slug', 'subject', 'description', 'duration_months', 'is_published', 'thumbnail')
+        fields = (
+            'title', 'slug', 'subject', 'description', 'duration_months',
+            'is_published', 'thumbnail', 'price', 'billing_period',
+        )
         widgets = {
             'title': forms.TextInput(attrs={'class': INPUT}),
             'slug': forms.TextInput(attrs={'class': INPUT}),
@@ -33,7 +36,27 @@ class CourseForm(forms.ModelForm):
             'duration_months': forms.NumberInput(attrs={'class': INPUT}),
             'is_published': forms.CheckboxInput(attrs={'class': 'accent-cyan-500'}),
             'thumbnail': forms.ClearableFileInput(attrs={'class': INPUT}),
+            'price': forms.NumberInput(
+                attrs={'class': INPUT, 'min': '0', 'step': '100',
+                       'placeholder': '0 = free course'}
+            ),
+            'billing_period': forms.Select(attrs={'class': INPUT}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # A blank price simply means "free" rather than a validation error.
+        self.fields['price'].required = False
+
+    def clean_price(self):
+        price = self.cleaned_data.get('price')
+        if price is None:
+            return 0
+        if price < 0:
+            raise forms.ValidationError("Price cannot be negative — use 0 for a free course.")
+        if price > 1_000_000_000:
+            raise forms.ValidationError("That price looks too large for a single course.")
+        return price
 
 
 class ModuleForm(forms.ModelForm):

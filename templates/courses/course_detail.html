@@ -21,6 +21,15 @@
                     <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 uppercase font-bold">
                         {{ total_lessons }} Lessons
                     </span>
+                    {% if course.is_free %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 uppercase font-bold">
+                        Free
+                    </span>
+                    {% else %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 uppercase font-bold">
+                        {{ course.price }} {{ course.currency }}{% if course.billing_period == 'monthly' %} / month{% endif %}
+                    </span>
+                    {% endif %}
                 </div>
                 <h1 class="text-3xl font-bold text-white mb-2">{{ course.title }}</h1>
                 <p class="text-sm text-slate-400 max-w-4xl leading-relaxed">{{ course.description }}</p>
@@ -42,7 +51,7 @@
                        class="block w-full text-center text-xs px-4 py-2.5 rounded-lg mt-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold transition">
                         + Add module
                     </a>
-                {% elif is_enrolled %}
+                {% elif has_access %}
                     <div class="flex items-center justify-between text-[11px] mb-1.5">
                         <span class="text-slate-400">Your progress</span>
                         <span class="text-cyan-400 font-mono font-bold">{{ progress_pct }}%</span>
@@ -55,6 +64,33 @@
                        class="block w-full text-center text-xs px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition">
                         ✓ Enrolled — go to My Courses
                     </a>
+                {% elif not course.is_free %}
+                    <div class="text-center mb-3">
+                        <div class="text-2xl font-bold text-amber-300">{{ course.price }} {{ course.currency }}</div>
+                        <div class="text-[11px] text-slate-500">
+                            {{ course.get_billing_period_display }}
+                        </div>
+                    </div>
+
+                    {% if pending_payment %}
+                    <div class="p-3 rounded-lg bg-amber-950/70 border border-amber-800 text-[11px] text-amber-200 leading-relaxed mb-3">
+                        Your payment is <strong>awaiting review</strong>. You will get access as
+                        soon as an administrator approves it.
+                    </div>
+                    <a href="{% url 'payment-history' %}"
+                       class="block w-full text-center text-xs px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold transition">
+                        View my payments
+                    </a>
+                    {% else %}
+                    <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">
+                        This is a paid course. Pay with KBZ&nbsp;Pay, Wave&nbsp;Pay or bank transfer,
+                        then an administrator unlocks your enrolment.
+                    </p>
+                    <a href="{% url 'checkout' slug=course.slug %}"
+                       class="block w-full text-center text-sm px-4 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition">
+                        Buy for {{ course.price }} {{ course.currency }}
+                    </a>
+                    {% endif %}
                 {% else %}
                     <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">
                         Enrol to open the lessons, track progress and earn a certificate.

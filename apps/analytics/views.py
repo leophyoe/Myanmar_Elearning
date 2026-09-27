@@ -1,5 +1,8 @@
+from django.conf import settings
+from django.db.models import Count, Sum
 from django.views.generic import TemplateView
 from apps.common.permissions import RoleRequiredMixin
+from apps.billing.models import Payment
 from apps.users.models import User, StudentProfile
 from apps.labs.models import LabInstance
 from apps.courses.models import UserProgress, AssignmentSubmission
@@ -198,4 +201,51 @@ class StudentReportView(RoleRequiredMixin, TemplateView):
             'completed': sum(r['completed'] for r in rows),
             'pending': sum(r['pending'] for r in rows),
         }
+        return context
+
+
+class EarningsReportView(RoleRequiredMixin, TemplateView):
+    """Revenue split report: platform share vs teacher share of approved payments."""
+    template_name = 'dashboards/report_earnings.html'
+    allowed_roles = ['teacher']
+
+    def get_queryset(self):
+        qs = Payment.objects.filter(status=Payment.Status.APPROVED)
+        if not self.request.user.is_admin:
+            qs = qs.filter(course__owner=self.request.user)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        is_admin = self.request.user.is_admin
+
+        rows = list(
+            self.get_queryset()
+            .values('course_id', 'course__title', 'course__slug', 'course__owner__username')
+            .annotate(
+                sales=Count('id'),
+                gross=Sum('amount'),
+                fee=Sum('platform_fee'),
+                earned=Sum('teacher_amount'),
+            )
+            .order_by('-earned')
+        )
+        context['rows'] = rows
+        context['is_admin'] = is_admin
+        context['totals'] = {
+            'sales': sum(r['sales'] for r in rows),
+            'gross': sum((r['gross'] or 0) for r in rows),
+            'fee': sum((r['fee'] or 0) for r in rows),
+            'earned': sum((r['earned'] or 0) for r in rows),
+            'pending': (
+                Payment.objects.filter(status=Payment.Status.PENDING)
+                if is_admin else
+                Payment.objects.filter(
+                    status=Payment.Status.PENDING, course__owner=self.request.user
+                )
+            ).aggregate(total=Sum('amount'))['total'] or 0,
+        }
+        context['commission_rate'] = round(
+            getattr(settings, 'PAYMENT_PLATFORM_COMMISSION_RATE', 0.25) * 100
+        )
         return context

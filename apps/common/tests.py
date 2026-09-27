@@ -12,6 +12,9 @@ from apps.ctf.models import Challenge, ChallengeCategory, FlagSubmission, Solved
 from apps.ctf.services import FlagVerificationService
 from apps.scoring.models import Badge
 from apps.certificates.models import Certificate
+from apps.billing.models import Payment, active_payment_for
+from apps.courses.views import can_access_course
+from decimal import Decimal
 import hashlib
 
 User = get_user_model()
@@ -1054,3 +1057,313 @@ class ProgressAndCertificateTests(TestCase):
         self.assertFalse(
             self.client.get(reverse('certificate-list')).context['certificates'].exists()
         )
+
+
+class PaymentAndCheckoutTests(TestCase):
+    """Phase 5: paid courses, manual checkout, admin review and revenue share."""
+
+    def setUp(self):
+        self.client = Client()
+        self.teacher = User.objects.create_user(
+            username='p5teacher', password='pw', email='p5t@mel.edu.mm',
+            role=UserRole.TEACHER,
+        )
+        self.other_teacher = User.objects.create_user(
+            username='p5other', password='pw', email='p5o@mel.edu.mm',
+            role=UserRole.TEACHER,
+        )
+        self.student = User.objects.create_user(
+            username='p5student', password='pw', email='p5s@mel.edu.mm',
+            role=UserRole.STUDENT,
+        )
+        self.admin = User.objects.create_user(
+            username='p5admin', password='pw', email='p5a@mel.edu.mm',
+            role=UserRole.ADMIN,
+        )
+
+        self.free_course = Course.objects.create(
+            title='Free Course', slug='free-course', description='free',
+            owner=self.teacher, price=0,
+        )
+        self.paid_course = Course.objects.create(
+            title='Paid Course', slug='paid-course', description='paid',
+            owner=self.teacher, price=Decimal('5000.00'),
+        )
+        self.monthly_course = Course.objects.create(
+            title='Monthly Course', slug='monthly-course', description='sub',
+            owner=self.teacher, price=Decimal('2000.00'),
+            billing_period=Course.BillingPeriod.MONTHLY,
+        )
+        self.module = Module.objects.create(
+            course=self.paid_course, order=1, code='MOD-01',
+            title='M1', summary='s',
+        )
+        self.lesson = Lesson.objects.create(
+            module=self.module, order=1, title='L1', content_markdown='body',
+            lesson_type=LessonType.TEXT, estimated_minutes=10,
+        )
+
+    def enroll(self, user, course):
+        return Enrollment.objects.create(course=course, student=user)
+
+    def submit_payment(self, course, reference='TXN-001'):
+        return self.client.post(
+            reverse('checkout', kwargs={'slug': course.slug}),
+            {'method': 'kbz_pay', 'reference': reference, 'note': ''},
+        )
+
+    # -- discovery ---------------------------------------------------------
+    def test_52_paid_course_detail_shows_price_and_buy_button(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course-detail', kwargs={'slug': self.paid_course.slug}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '5000.0')
+        self.assertContains(response, reverse('checkout', kwargs={'slug': self.paid_course.slug}))
+
+    def test_53_free_course_detail_shows_free_badge_and_no_checkout(self):
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('course-detail', kwargs={'slug': self.free_course.slug}))
+        self.assertContains(response, 'Free')
+        self.assertNotContains(response, reverse('checkout', kwargs={'slug': self.free_course.slug}))
+
+    # -- enrolment gate ----------------------------------------------------
+    def test_54_enroll_on_paid_course_redirects_to_checkout(self):
+        self.client.force_login(self.student)
+        response = self.client.post(reverse('enroll', kwargs={'slug': self.paid_course.slug}))
+        self.assertRedirects(
+            response, reverse('checkout', kwargs={'slug': self.paid_course.slug}),
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(Enrollment.objects.filter(course=self.paid_course).exists())
+
+    def test_55_enroll_on_free_course_still_works(self):
+        self.client.force_login(self.student)
+        response = self.client.post(reverse('enroll', kwargs={'slug': self.free_course.slug}))
+        self.assertRedirects(
+            response, reverse('course-detail', kwargs={'slug': self.free_course.slug}),
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(Enrollment.objects.filter(course=self.free_course).exists())
+
+    def test_56_lesson_is_locked_until_the_payment_is_approved(self):
+        self.client.force_login(self.student)
+        self.enroll(self.student, self.paid_course)
+
+        response = self.client.get(reverse('lesson-detail', kwargs={'lesson_id': self.lesson.id}))
+        self.assertRedirects(
+            response, reverse('course-detail', kwargs={'slug': self.paid_course.slug}),
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(can_access_course(self.student, self.paid_course))
+
+    # -- checkout ----------------------------------------------------------
+    def test_57_checkout_creates_a_pending_payment_with_the_split(self):
+        self.client.force_login(self.student)
+        response = self.submit_payment(self.paid_course)
+        self.assertRedirects(
+            response, reverse('course-detail', kwargs={'slug': self.paid_course.slug}),
+            fetch_redirect_response=False,
+        )
+
+        payment = Payment.objects.get(course=self.paid_course)
+        self.assertEqual(payment.status, Payment.Status.PENDING)
+        self.assertEqual(payment.amount, Decimal('5000.00'))
+        self.assertEqual(payment.platform_fee, Decimal('1250.00'))
+        self.assertEqual(payment.teacher_amount, Decimal('3750.00'))
+        self.assertEqual(payment.reference, 'TXN-001')
+        self.assertIsNone(active_payment_for(self.student, self.paid_course))
+        self.assertFalse(Enrollment.objects.filter(course=self.paid_course).exists())
+
+    def test_58_checkout_rejects_an_empty_submission(self):
+        self.client.force_login(self.student)
+        self.client.post(
+            reverse('checkout', kwargs={'slug': self.paid_course.slug}),
+            {'method': 'wave_pay', 'reference': '', 'note': ''},
+        )
+        self.assertFalse(Payment.objects.exists())
+
+    def test_59_checkout_is_closed_while_a_payment_is_pending(self):
+        self.client.force_login(self.student)
+        self.submit_payment(self.paid_course, reference='FIRST')
+        self.submit_payment(self.paid_course, reference='SECOND')
+        self.assertEqual(Payment.objects.count(), 1)
+        self.assertEqual(Payment.objects.get().reference, 'FIRST')
+
+    def test_60_checkout_redirects_away_for_staff_and_free_courses(self):
+        self.client.force_login(self.teacher)
+        self.assertRedirects(
+            self.client.get(reverse('checkout', kwargs={'slug': self.paid_course.slug})),
+            reverse('course-detail', kwargs={'slug': self.paid_course.slug}),
+            fetch_redirect_response=False,
+        )
+        self.client.force_login(self.student)
+        self.assertRedirects(
+            self.client.get(reverse('checkout', kwargs={'slug': self.free_course.slug})),
+            reverse('course-detail', kwargs={'slug': self.free_course.slug}),
+            fetch_redirect_response=False,
+        )
+        self.assertFalse(Payment.objects.exists())
+
+    # -- admin review queue ------------------------------------------------
+    def test_61_review_queue_is_admin_only(self):
+        for name in ('payment-list',):
+            for role in (UserRole.STUDENT, UserRole.TEACHER):
+                user = User.objects.create_user(
+                    username=f'q-{role}', password='pw', role=role,
+                    email=f'q-{role}@mel.edu.mm',
+                )
+                self.client.force_login(user)
+                self.assertEqual(
+                    self.client.get(reverse(name)).status_code, 403,
+                    f'{role} must not reach {name}',
+                )
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(reverse('payment-list')).status_code, 200)
+
+    def test_62_approving_a_payment_enrolls_the_student(self):
+        self.client.force_login(self.student)
+        self.submit_payment(self.paid_course)
+        payment = Payment.objects.get()
+
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('payment-review', kwargs={'payment_id': payment.id}),
+            {'action': 'approve'},
+        )
+        self.assertRedirects(
+            response, reverse('payment-list'), fetch_redirect_response=False
+        )
+
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, Payment.Status.APPROVED)
+        self.assertEqual(payment.reviewed_by, self.admin)
+        self.assertIsNotNone(payment.period_start)
+        self.assertIsNone(payment.period_end)
+
+        enrollment = Enrollment.objects.get(course=self.paid_course)
+        self.assertEqual(enrollment.status, Enrollment.Status.ACTIVE)
+        self.assertTrue(can_access_course(self.student, self.paid_course))
+        self.assertIsNotNone(active_payment_for(self.student, self.paid_course))
+
+    def test_63_monthly_approvals_receive_an_expiry_date(self):
+        self.client.force_login(self.student)
+        self.submit_payment(self.monthly_course)
+        payment = Payment.objects.get()
+
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse('payment-review', kwargs={'payment_id': payment.id}),
+            {'action': 'approve'},
+        )
+        payment.refresh_from_db()
+        self.assertEqual(payment.billing_period, Course.BillingPeriod.MONTHLY)
+        self.assertEqual(payment.period_end.month, payment.period_start.month + 1)
+
+    def test_64_rejection_requires_a_reason_and_leaves_the_student_out(self):
+        self.client.force_login(self.student)
+        self.submit_payment(self.paid_course)
+        payment = Payment.objects.get()
+
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('payment-review', kwargs={'payment_id': payment.id}),
+            {'action': 'reject', 'rejection_reason': ''},
+        )
+        payment.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(payment.status, Payment.Status.PENDING)
+
+        self.client.post(
+            reverse('payment-review', kwargs={'payment_id': payment.id}),
+            {'action': 'reject', 'rejection_reason': 'No such wallet record.'},
+        )
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, Payment.Status.REJECTED)
+        self.assertEqual(payment.rejection_reason, 'No such wallet record.')
+        self.assertFalse(Enrollment.objects.filter(course=self.paid_course).exists())
+        self.assertFalse(can_access_course(self.student, self.paid_course))
+
+    def test_65_already_reviewed_payments_are_locked(self):
+        self.client.force_login(self.student)
+        self.submit_payment(self.paid_course)
+        payment = Payment.objects.get()
+        payment.status = Payment.Status.APPROVED
+        payment.save(update_fields=['status'])
+
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse('payment-review', kwargs={'payment_id': payment.id}),
+            {'action': 'reject', 'rejection_reason': 'nope'},
+        )
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, Payment.Status.APPROVED)
+        self.assertNotEqual(payment.rejection_reason, 'nope')
+
+    # -- authoring ownership ----------------------------------------------
+    def test_66_a_teacher_cannot_edit_another_teachers_course(self):
+        self.client.force_login(self.other_teacher)
+        response = self.client.get(
+            reverse('course-edit', kwargs={'slug': self.paid_course.slug})
+        )
+        self.assertEqual(response.status_code, 404)
+
+        self.client.force_login(self.teacher)
+        self.assertEqual(
+            self.client.get(
+                reverse('course-edit', kwargs={'slug': self.paid_course.slug})
+            ).status_code,
+            200,
+        )
+
+        self.client.force_login(self.admin)
+        self.assertEqual(
+            self.client.get(
+                reverse('course-edit', kwargs={'slug': self.paid_course.slug})
+            ).status_code,
+            200,
+        )
+
+    def test_67_a_new_course_is_owned_by_its_creator(self):
+        self.client.force_login(self.other_teacher)
+        self.client.post(reverse('course-create'), {
+            'title': 'Brand New', 'slug': 'brand-new', 'description': 'd',
+            'duration_months': 3, 'is_published': 'on',
+            'price': '0', 'billing_period': 'one_time',
+        })
+        course = Course.objects.get(slug='brand-new')
+        self.assertEqual(course.owner, self.other_teacher)
+        self.assertTrue(course.is_free)
+
+    # -- reporting ---------------------------------------------------------
+    def test_68_earnings_report_shows_the_revenue_split(self):
+        self.client.force_login(self.student)
+        self.submit_payment(self.paid_course)
+        self.client.force_login(self.admin)
+        self.client.post(
+            reverse('payment-review', kwargs={'payment_id': Payment.objects.get().id}),
+            {'action': 'approve'},
+        )
+
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse('report-earnings'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Paid Course')
+        self.assertContains(response, '1250')
+        self.assertContains(response, '3750')
+        self.assertEqual(response.context['totals']['sales'], 1)
+        self.assertEqual(response.context['totals']['fee'], Decimal('1250.00'))
+        self.assertEqual(response.context['totals']['earned'], Decimal('3750.00'))
+
+        self.client.force_login(self.other_teacher)
+        response = self.client.get(reverse('report-earnings'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['totals']['sales'], 0)
+
+    def test_69_student_sees_their_own_payment_history(self):
+        self.client.force_login(self.student)
+        self.submit_payment(self.paid_course)
+
+        response = self.client.get(reverse('payment-history'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Paid Course')
+        self.assertEqual(len(response.context['payments']), 1)

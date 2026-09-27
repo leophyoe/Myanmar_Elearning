@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Earnings Report - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-800">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-wide">Earnings Report</h1>
+            <p class="text-xs text-slate-400 mt-1">
+                Approved payments only. The platform keeps {{ commission_rate }}% of every sale
+                and the course owner receives the rest.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs">
+            {% if is_admin %}
+            <a href="{% url 'payment-list' %}" class="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition">Payment queue</a>
+            <a href="{% url 'report-courses' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Course report</a>
+            {% endif %}
+            <a href="{% url 'manage-home' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Content Studio</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Sales</div>
+            <div class="text-2xl font-bold text-white">{{ totals.sales }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Gross</div>
+            <div class="text-2xl font-bold text-white">{{ totals.gross }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Platform {{ commission_rate }}%</div>
+            <div class="text-2xl font-bold text-emerald-400">{{ totals.fee }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">{% if is_admin %}Teacher share{% else %}Your earnings{% endif %}</div>
+            <div class="text-2xl font-bold text-cyan-400">{{ totals.earned }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Awaiting review</div>
+            <div class="text-2xl font-bold text-amber-400">{{ totals.pending }}</div>
+        </div>
+    </div>
+
+    <div class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden">
+        <table class="w-full text-xs">
+            <thead class="bg-slate-950 text-slate-500 uppercase tracking-wider text-[10px]">
+                <tr>
+                    <th class="text-left px-5 py-3 font-semibold">Course</th>
+                    <th class="text-left px-5 py-3 font-semibold">Owner</th>
+                    <th class="text-right px-5 py-3 font-semibold">Sales</th>
+                    <th class="text-right px-5 py-3 font-semibold">Gross</th>
+                    <th class="text-right px-5 py-3 font-semibold">Platform {{ commission_rate }}%</th>
+                    <th class="text-right px-5 py-3 font-semibold">Teacher share</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for row in rows %}
+                <tr class="hover:bg-slate-800/40">
+                    <td class="px-5 py-3">
+                        <a href="{% url 'course-detail' slug=row.course__slug %}" class="text-white hover:text-cyan-300 transition">{{ row.course__title }}</a>
+                    </td>
+                    <td class="px-5 py-3 text-slate-400">{{ row.course__owner__username|default:"—" }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-slate-300">{{ row.sales }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-white">{{ row.gross }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-emerald-400">{{ row.fee }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-cyan-300">{{ row.earned }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="px-5 py-10 text-center text-slate-500">No approved payments yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

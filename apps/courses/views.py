@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.urls import reverse_lazy, reverse
 
 from apps.common.permissions import RoleRequiredMixin
+from apps.billing.models import active_payment_for, Payment
 from .models import (
     Subject, Course, Module, Lesson, LessonType, Quiz, Question, Choice,
     UserProgress, Enrollment, Assignment, AssignmentSubmission,
@@ -23,14 +24,23 @@ from .forms import (
 # Helpers
 # ----------------------------------------------------------------------
 def can_access_course(user, course):
-    """Teachers/admins always see a course; students must hold an active enrollment."""
+    """Teachers/admins always see a course.
+
+    Students need an active enrollment, and on paid courses an approved,
+    unexpired payment on top of it (the enrolment alone is not enough).
+    """
     if not getattr(user, 'is_authenticated', False):
         return False
     if user.is_teacher or user.is_admin:
         return True
-    return Enrollment.objects.filter(
+    if not Enrollment.objects.filter(
         course=course, student=user, status=Enrollment.Status.ACTIVE
-    ).exists()
+    ).exists():
+        return False
+    if course.is_free:
+        return True
+    payment = active_payment_for(user, course)
+    return bool(payment and payment.is_current)
 
 
 def course_progress_pct(user, course):
@@ -101,6 +111,15 @@ class CourseDetailView(DetailView):
             )
             context['progress_pct'] = course_progress_pct(user, course) if enrollment else 0
             context['can_manage'] = user.is_teacher or user.is_admin
+            context['has_access'] = can_access_course(user, course)
+            context['is_purchased'] = False
+            context['pending_payment'] = None
+            if not course.is_free:
+                payment = active_payment_for(user, course)
+                context['is_purchased'] = bool(payment and payment.is_current)
+                context['pending_payment'] = Payment.objects.filter(
+                    student=user, course=course, status=Payment.Status.PENDING
+                ).first()
         return context
 
 
@@ -179,6 +198,17 @@ class EnrollView(LoginRequiredMixin, View):
         if not request.user.is_student:
             messages.info(request, "Staff accounts do not need to enrol.")
             return redirect('course-detail', slug=slug)
+
+        if not course.is_free:
+            payment = active_payment_for(request.user, course)
+            if not (payment and payment.is_current):
+                messages.info(
+                    request,
+                    f"{course.title} is a paid course — complete checkout first "
+                    f"({course.price} {course.currency} / "
+                    f"{course.get_billing_period_display()})."
+                )
+                return redirect('checkout', slug=slug)
 
         enrollment, created = Enrollment.objects.get_or_create(
             course=course, student=request.user,
@@ -329,6 +359,7 @@ class CourseCreateView(TeacherRequiredMixin, CreateView):
         return initial
 
     def form_valid(self, form):
+        form.instance.owner = self.request.user
         messages.success(self.request, f"Course “{form.cleaned_data['title']}” created.")
         return super().form_valid(form)
 
@@ -340,7 +371,18 @@ class CourseUpdateView(TeacherRequiredMixin, UpdateView):
     slug_url_kwarg = 'slug'
     success_url = reverse_lazy('manage-home')
 
+    def get_queryset(self):
+        # Admins edit everything; teachers only their own courses (legacy courses
+        # without an owner remain open to every teacher).
+        if self.request.user.is_admin:
+            return Course.objects.all()
+        return Course.objects.filter(owner__isnull=True) | Course.objects.filter(
+            owner=self.request.user
+        )
+
     def form_valid(self, form):
+        if not form.instance.owner_id:
+            form.instance.owner = self.request.user
         messages.success(self.request, "Course updated.")
         return super().form_valid(form)
 

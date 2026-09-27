@@ -46,6 +46,7 @@ LOCAL_APPS = [
     'apps.common',
     'apps.users',
     'apps.courses',
+    'apps.billing',
     'apps.labs',
     'apps.ctf',
     'apps.scoring',
@@ -157,6 +158,13 @@ PLATFORM_NAME = os.environ.get('PLATFORM_NAME', 'Myanmar E-Learning')
 ORGANIZATION_NAME = os.environ.get('ORGANIZATION_NAME', PLATFORM_NAME)
 DIPLOMA_PROGRAM_TITLE = os.environ.get('DIPLOMA_PROGRAM_TITLE', 'Diploma in Cyber Security')
 DIPLOMA_DURATION_MONTHS = 10
+
+# Payments & revenue share (Phase 5)
+PLATFORM_CURRENCY = os.environ.get('PLATFORM_CURRENCY', 'MMK')
+# The platform keeps this fraction of every approved payment; the rest goes to
+# the teacher who owns the course.
+PAYMENT_PLATFORM_COMMISSION_RATE = float(os.environ.get('PAYMENT_PLATFORM_COMMISSION_RATE', 0.25))
+PAYMENT_RECEIPT_MAX_MB = int(os.environ.get('PAYMENT_RECEIPT_MAX_MB', 10))
 LAB_DEFAULT_DURATION_MINUTES = int(os.environ.get('LAB_DEFAULT_DURATION_MINUTES', 90))
 LAB_MAX_EXTENSIONS = int(os.environ.get('LAB_MAX_EXTENSIONS', 2))
 LAB_EXTENSION_MINUTES = int(os.environ.get('LAB_EXTENSION_MINUTES', 30))

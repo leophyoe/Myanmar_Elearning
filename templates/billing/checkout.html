@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout - {{ course.title }} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <a href="{% url 'course-detail' slug=course.slug %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to course</a>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
+        <!-- Order summary -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <h1 class="text-sm uppercase tracking-wider text-slate-500 mb-4">Order summary</h1>
+                <h2 class="text-lg font-bold text-white leading-snug">{{ course.title }}</h2>
+                {% if course.subject %}
+                <p class="text-[11px] text-cyan-400 mt-1">{{ course.subject.title }}</p>
+                {% endif %}
+                <div class="flex items-end justify-between mt-6 pt-4 border-t border-slate-800">
+                    <span class="text-xs text-slate-400">{{ course.get_billing_period_display }}</span>
+                    <span class="text-2xl font-bold text-amber-300">
+                        {{ course.price }} <span class="text-sm">{{ course.currency }}</span>
+                    </span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-3 leading-relaxed">
+                    {{ course.duration_months }} months of access to {{ total_lessons|default:"all" }}
+                    lessons, quizzes, assignments and the certificate of completion.
+                </p>
+            </div>
+
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <h3 class="text-sm uppercase tracking-wider text-slate-500 mb-3">How to pay</h3>
+                <ol class="text-[12px] text-slate-400 space-y-2 leading-relaxed list-decimal list-inside">
+                    <li>Send <strong class="text-white">{{ course.price }} {{ course.currency }}</strong>
+                        to <strong class="text-white">09-XXXX-XXXX</strong> with
+                        <strong class="text-white">KBZ&nbsp;Pay</strong> or <strong class="text-white">Wave&nbsp;Pay</strong>,
+                        or transfer to <strong class="text-white">KBZ Bank 1234-5678</strong>.</li>
+                    <li>Enter the transaction ID below and attach the screenshot.</li>
+                    <li>An administrator reviews it — usually within a few hours — and unlocks the course.</li>
+                </ol>
+            </div>
+
+            {% if pending %}
+            <div class="p-6 rounded-2xl bg-amber-950/60 border border-amber-800">
+                <p class="text-sm text-amber-200 font-semibold mb-1">Awaiting review</p>
+                <p class="text-[12px] text-amber-300/80 leading-relaxed">
+                    You already submitted a payment for this course on
+                    {{ pending.created_at|date:"d M Y, H:i" }}. An administrator will review it soon.
+                </p>
+                <a href="{% url 'payment-history' %}"
+                   class="inline-block mt-3 text-xs px-3 py-1.5 rounded bg-amber-500 text-slate-950 font-bold">
+                    View my payments
+                </a>
+            </div>
+            {% elif existing %}
+            <div class="p-6 rounded-2xl bg-emerald-950/60 border border-emerald-800">
+                <p class="text-sm text-emerald-200 font-semibold mb-1">You already own this course</p>
+                <a href="{% url 'my-courses' %}" class="inline-block mt-1 text-xs text-emerald-300 hover:underline">
+                    Go to My Courses &rarr;
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Payment form -->
+        <div class="lg:col-span-2">
+            <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+                <div class="pb-5 mb-6 border-b border-slate-800 flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-white">Submit your payment</h2>
+                    <span class="text-[11px] px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 uppercase">
+                        Manual review
+                    </span>
+                </div>
+
+                {% if pending or existing %}
+                <p class="text-sm text-slate-400">Checkout is closed for this course right now.</p>
+                {% else %}
+                <form method="POST" enctype="multipart/form-data" class="space-y-5 text-sm">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    {% for field in form %}
+                    <div>
+                        <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-400">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}<p class="text-[10px] text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
+                        {% for error in field.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+                    {% endfor %}
+
+                    <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-800">
+                        <span class="text-[11px] text-slate-500">
+                            Paying <strong class="text-amber-300">{{ course.price }} {{ course.currency }}</strong>
+                        </span>
+                        <button type="submit"
+                                class="px-6 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-bold transition">
+                            Submit for review
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

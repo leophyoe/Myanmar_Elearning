@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Review - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex flex-col md:flex-row md:items-end justify-between pb-6 mb-8 border-b border-slate-800 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-wide">Payment Review</h1>
+            <p class="text-xs text-slate-400 mt-1">
+                Manual payments submitted by students (KBZ Pay, Wave Pay, bank transfer).
+            </p>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-right">
+            <div class="text-[11px] uppercase tracking-wider text-slate-500">Platform earnings to date</div>
+            <div class="text-xl font-bold text-emerald-300 font-mono">{{ platform_earnings }} MMK</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">25% of every approved payment</div>
+        </div>
+    </div>
+
+    <!-- Status tabs -->
+    <div class="flex flex-wrap gap-2 mb-6">
+        {% for value, label, count in status_tabs %}
+        <a href="{% url 'payment-list' %}?status={{ value }}"
+           class="text-xs px-4 py-2 rounded-lg font-semibold transition border
+           {% if status == value %}bg-cyan-600 border-cyan-500 text-white
+           {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+            {{ label }}
+            <span class="ml-1.5 font-mono {% if status == value %}text-cyan-100{% else %}text-slate-600{% endif %}">{{ count }}</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if payments %}
+    <div class="overflow-x-auto rounded-2xl bg-slate-900 border border-slate-800">
+        <table class="w-full text-sm text-left">
+            <thead class="text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-800">
+                <tr>
+                    <th class="px-5 py-3">Submitted</th>
+                    <th class="px-5 py-3">Student</th>
+                    <th class="px-5 py-3">Course</th>
+                    <th class="px-5 py-3">Amount</th>
+                    <th class="px-5 py-3">Split</th>
+                    <th class="px-5 py-3">Method / Reference</th>
+                    <th class="px-5 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for payment in payments %}
+                <tr>
+                    <td class="px-5 py-3 text-slate-400 whitespace-nowrap text-xs">{{ payment.created_at|date:"d M Y, H:i" }}</td>
+                    <td class="px-5 py-3">
+                        <div class="text-white">{{ payment.student.username }}</div>
+                        <div class="text-[11px] text-slate-500">{{ payment.student.email }}</div>
+                    </td>
+                    <td class="px-5 py-3 text-slate-300">{{ payment.course.title }}</td>
+                    <td class="px-5 py-3 font-mono text-amber-300 whitespace-nowrap">
+                        {{ payment.amount }} {{ payment.currency }}
+                    </td>
+                    <td class="px-5 py-3 whitespace-nowrap text-xs">
+                        <span class="text-emerald-400">{{ payment.platform_fee }}</span>
+                        <span class="text-slate-600">/</span>
+                        <span class="text-cyan-300">{{ payment.teacher_amount }}</span>
+                    </td>
+                    <td class="px-5 py-3 text-xs text-slate-400">
+                        <div>{{ payment.get_method_display }}</div>
+                        {% if payment.reference %}
+                        <div class="font-mono text-[11px] text-slate-500">{{ payment.reference }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3 text-right whitespace-nowrap">
+                        <a href="{% url 'payment-review' payment_id=payment.id %}"
+                           class="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                            Review &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-12 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+        <p class="text-sm text-slate-400">No payments in this queue.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

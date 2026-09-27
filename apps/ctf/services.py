@@ -81,15 +81,16 @@ class FlagVerificationService:
                 points_awarded=challenge.points
             )
 
-            # Update student total points
-            profile = getattr(user, 'student_profile', None)
-            if profile:
-                profile.points += challenge.points
-                profile.save(update_fields=['points'])
+            # Update student total points (only for students, admins/staff do not compete)
+            if getattr(user, 'role', None) == 'student' and not user.is_staff and not user.is_superuser:
+                profile = getattr(user, 'student_profile', None)
+                if profile:
+                    profile.points += challenge.points
+                    profile.save(update_fields=['points'])
 
-            # Check for badge unlock criteria
-            from apps.scoring.services import BadgeAwardService
-            BadgeAwardService.evaluate_user_achievements(user)
+                # Check for badge unlock criteria
+                from apps.scoring.services import BadgeAwardService
+                BadgeAwardService.evaluate_user_achievements(user)
 
             return {
                 'success': True,

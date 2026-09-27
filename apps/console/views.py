@@ -10,11 +10,14 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, DetailView, TemplateView, UpdateView, View
 
+from django.core.paginator import Paginator
 from apps.billing.models import Payment
 from apps.courses.models import Course, Enrollment
 from apps.common.permissions import RoleRequiredMixin
 from apps.portfolio.models import ExternalCertificate
 from apps.users.models import AdminProfile, StudentProfile, TeacherProfile, UserRole
+from apps.analytics.models import ActivityLog, SystemLog, ActivityAction, SystemLogLevel
+from apps.ctf.models import FlagSubmission
 from .forms import AdminPasswordResetForm, AdminUserCreateForm, AdminUserUpdateForm
 
 User = get_user_model()
@@ -457,3 +460,65 @@ class CredentialActionView(AdminRequiredMixin, View):
         return redirect(
             reverse('console-credential-list') + f'?status={request.POST.get("status", "pending")}'
         )
+
+
+class AdminLogListView(AdminRequiredMixin, TemplateView):
+    """Multi-tab audit log viewer for administrators (Activity, System, CTF Flags)."""
+    template_name = 'console/log_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        tab = self.request.GET.get('tab', 'activity')
+        q = self.request.GET.get('q', '').strip()
+        page_number = self.request.GET.get('page', 1)
+
+        if tab == 'system':
+            qs = SystemLog.objects.all().order_by('-created_at')
+            level = self.request.GET.get('level', '')
+            if level:
+                qs = qs.filter(level=level)
+            if q:
+                qs = qs.filter(Q(component__icontains=q) | Q(message__icontains=q))
+        elif tab == 'flags':
+            qs = FlagSubmission.objects.select_related('user', 'challenge').all().order_by('-created_at')
+            correct = self.request.GET.get('correct', '')
+            if correct == '1' or correct == 'yes':
+                qs = qs.filter(is_correct=True)
+            elif correct == '0' or correct == 'no':
+                qs = qs.filter(is_correct=False)
+            if q:
+                qs = qs.filter(
+                    Q(user__username__icontains=q) |
+                    Q(challenge__title__icontains=q) |
+                    Q(submitted_flag_clean__icontains=q)
+                )
+        else:
+            tab = 'activity'
+            qs = ActivityLog.objects.select_related('user').all().order_by('-created_at')
+            action = self.request.GET.get('action', '')
+            if action:
+                qs = qs.filter(action=action)
+            if q:
+                qs = qs.filter(
+                    Q(user__username__icontains=q) |
+                    Q(action__icontains=q) |
+                    Q(path__icontains=q)
+                )
+
+        paginator = Paginator(qs, 50)
+        page_obj = paginator.get_page(page_number)
+
+        context.update({
+            'active_tab': tab,
+            'page_obj': page_obj,
+            'logs': page_obj.object_list,
+            'q': q,
+            'action_filter': self.request.GET.get('action', ''),
+            'level_filter': self.request.GET.get('level', ''),
+            'correct_filter': self.request.GET.get('correct', ''),
+            'activity_actions': ActivityAction.choices,
+            'system_levels': SystemLogLevel.choices,
+            'total_count': paginator.count,
+        })
+        return context
+

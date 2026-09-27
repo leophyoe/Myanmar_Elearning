@@ -69,8 +69,15 @@
                         <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-800 uppercase font-bold">Deactivated</span>
                         {% endif %}
                     </td>
-                    <td class="px-5 py-3 text-xs text-slate-500 whitespace-nowrap">{{ u.created_at|date:"d M Y" }}</td>
-                    <td class="px-5 py-3 text-right whitespace-nowrap">
+                    <td class="px-5 py-3 text-right whitespace-nowrap space-x-2">
+                        {% if not u.is_active and u.role == 'teacher' %}
+                        <form method="POST" action="{% url 'console-user-toggle' user_id=u.pk %}?next={{ request.get_full_path|urlencode }}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-xs px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition shadow-sm">
+                                Approve &amp; Activate
+                            </button>
+                        </form>
+                        {% endif %}
                         <a href="{% url 'console-user-detail' user_id=u.pk %}" class="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Open</a>
                     </td>
                 </tr>

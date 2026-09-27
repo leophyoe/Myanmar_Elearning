@@ -2594,6 +2594,10 @@ class CyberStudioTests(TestCase):
             username='cyb_student', email='cybs@mel.edu.mm',
             password='Passw0rd!23', role='student',
         )
+        self.admin = User.objects.create_user(
+            username='cyb_admin', email='cyba@mel.edu.mm',
+            password='Passw0rd!23', role='admin', is_staff=True,
+        )
 
     # -- helpers --------------------------------------------------------
     def zip_bytes(self, files):
@@ -2870,5 +2874,75 @@ class CyberStudioTests(TestCase):
         self.assertTrue(len(rec) > 0)
 
         await communicator.disconnect()
+
+    # -- leaderboard separation -----------------------------------------
+    def test_158_admin_and_teacher_excluded_from_leaderboard(self):
+        # Update student points
+        self.student.student_profile.points = 500
+        self.student.student_profile.save()
+
+        # Check leaderboard
+        response = self.client.get(reverse('leaderboard'))
+        self.assertEqual(response.status_code, 200)
+        students = list(response.context['students'])
+        user_ids = [s.user_id for s in students]
+        self.assertIn(self.student.id, user_ids)
+        self.assertNotIn(self.admin.id, user_ids)
+        self.assertNotIn(self.teacher.id, user_ids)
+
+    # -- admin audit log viewer ----------------------------------------
+    def test_159_admin_audit_logs_viewer(self):
+        from apps.analytics.models import ActivityLog, SystemLog
+        ActivityLog.objects.create(
+            user=self.admin, action='login', path='/login/', metadata={'info': 'Admin logged in'},
+        )
+        SystemLog.objects.create(
+            level='INFO', component='auth', message='Auth verification successful',
+        )
+
+        # Student cannot access console logs
+        self.client.force_login(self.student)
+        self.assertEqual(self.client.get(reverse('console-log-list')).status_code, 403)
+
+        # Admin can access and filter by tabs
+        self.client.force_login(self.admin)
+        res_activity = self.client.get(reverse('console-log-list'))
+        self.assertEqual(res_activity.status_code, 200)
+        self.assertContains(res_activity, 'Audit Logs')
+        self.assertContains(res_activity, 'User Login')
+
+        res_system = self.client.get(reverse('console-log-list') + '?tab=system')
+        self.assertEqual(res_system.status_code, 200)
+        self.assertContains(res_system, 'Auth verification successful')
+
+        res_flags = self.client.get(reverse('console-log-list') + '?tab=flags')
+        self.assertEqual(res_flags.status_code, 200)
+
+    # -- teacher application approval flow -----------------------------
+    def test_160_admin_approves_pending_teacher(self):
+        pending_teacher = User.objects.create_user(
+            username='pending_prof',
+            email='pending_prof@mel.edu.mm',
+            password='Passw0rd!23',
+            role='teacher',
+            is_active=False,
+        )
+
+        self.client.force_login(self.admin)
+        # Admin views pending users
+        url = reverse('console-user-list') + '?role=teacher&status=inactive'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'pending_prof')
+        self.assertContains(res, 'Approve &amp; Activate')
+
+        # Admin approves the teacher
+        toggle_url = reverse('console-user-toggle', kwargs={'user_id': pending_teacher.id})
+        post_res = self.client.post(toggle_url, {'next': url})
+        self.assertEqual(post_res.status_code, 302)
+
+        pending_teacher.refresh_from_db()
+        self.assertTrue(pending_teacher.is_active)
+
 
 

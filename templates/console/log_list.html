@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Audit Logs - Administration Console - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="pb-6 mb-8 border-b border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-wide">System &amp; Audit Logs</h1>
+            <p class="text-xs text-slate-400 mt-1">Immutable security event logging, user audit trails, and CTF challenge telemetry.</p>
+        </div>
+        <div class="text-xs text-slate-400 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
+            Total records: <span class="text-cyan-400 font-mono font-bold">{{ total_count }}</span>
+        </div>
+    </div>
+
+    {% include 'console/_tabs.html' with active='logs' %}
+
+    <!-- Log Type Subtabs -->
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b border-slate-800 pb-4">
+        <div class="flex space-x-2 text-xs">
+            <a href="{% url 'console-log-list' %}?tab=activity{% if q %}&amp;q={{ q }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg font-medium transition
+               {% if active_tab == 'activity' %}bg-cyan-600 text-white shadow-sm
+               {% else %}bg-slate-900 text-slate-400 hover:text-white border border-slate-800{% endif %}">
+                👤 User Activity Logs
+            </a>
+            <a href="{% url 'console-log-list' %}?tab=system{% if q %}&amp;q={{ q }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg font-medium transition
+               {% if active_tab == 'system' %}bg-purple-600 text-white shadow-sm
+               {% else %}bg-slate-900 text-slate-400 hover:text-white border border-slate-800{% endif %}">
+                ⚙️ System &amp; Engine Logs
+            </a>
+            <a href="{% url 'console-log-list' %}?tab=flags{% if q %}&amp;q={{ q }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg font-medium transition
+               {% if active_tab == 'flags' %}bg-amber-600 text-white shadow-sm
+               {% else %}bg-slate-900 text-slate-400 hover:text-white border border-slate-800{% endif %}">
+                🚩 CTF Flag Submissions
+            </a>
+        </div>
+
+        <!-- Filter Search Form -->
+        <form method="get" class="flex flex-wrap items-center gap-2 text-xs">
+            <input type="hidden" name="tab" value="{{ active_tab }}">
+            
+            {% if active_tab == 'activity' %}
+            <select name="action" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500">
+                <option value="">All Actions</option>
+                {% for act_val, act_label in activity_actions %}
+                    <option value="{{ act_val }}" {% if action_filter == act_val %}selected{% endif %}>{{ act_label }}</option>
+                {% endfor %}
+            </select>
+            {% elif active_tab == 'system' %}
+            <select name="level" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-purple-500">
+                <option value="">All Levels</option>
+                {% for lvl_val, lvl_label in system_levels %}
+                    <option value="{{ lvl_val }}" {% if level_filter == lvl_val %}selected{% endif %}>{{ lvl_label }}</option>
+                {% endfor %}
+            </select>
+            {% elif active_tab == 'flags' %}
+            <select name="correct" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500">
+                <option value="">All Results</option>
+                <option value="1" {% if correct_filter == '1' %}selected{% endif %}>Correct Only</option>
+                <option value="0" {% if correct_filter == '0' %}selected{% endif %}>Incorrect Only</option>
+            </select>
+            {% endif %}
+
+            <input type="text" name="q" value="{{ q }}" placeholder="Search logs..."
+                   class="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 w-48 sm:w-64 focus:outline-none focus:border-cyan-500 placeholder-slate-500">
+            <button type="submit" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-medium transition">
+                Filter
+            </button>
+            {% if q or action_filter or level_filter or correct_filter %}
+            <a href="{% url 'console-log-list' %}?tab={{ active_tab }}" class="px-2.5 py-1.5 text-slate-400 hover:text-red-400 transition">
+                Reset
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Log Table -->
+    <div class="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                {% if active_tab == 'activity' %}
+                <thead class="bg-slate-950/80 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Timestamp</th>
+                        <th class="py-3 px-4">User</th>
+                        <th class="py-3 px-4">Action</th>
+                        <th class="py-3 px-4">Path</th>
+                        <th class="py-3 px-4">IP Address</th>
+                        <th class="py-3 px-4">Metadata</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800 font-mono">
+                    {% for item in logs %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-4 text-slate-400 whitespace-nowrap">{{ item.created_at|date:"Y-m-d H:i:s" }}</td>
+                        <td class="py-3 px-4 font-sans font-medium text-white">
+                            {% if item.user %}
+                                <a href="{% url 'console-user-detail' user_id=item.user.id %}" class="text-cyan-400 hover:underline">
+                                    {{ item.user.username }}
+                                </a>
+                                <span class="text-[10px] text-slate-500 block">({{ item.user.role }})</span>
+                            {% else %}
+                                <span class="text-slate-500">Anonymous</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-sans
+                                {% if item.action == 'login' %}bg-emerald-950/80 text-emerald-400 border border-emerald-800/60
+                                {% elif item.action == 'logout' %}bg-slate-800 text-slate-300 border border-slate-700
+                                {% elif 'submit' in item.action %}bg-purple-950/80 text-purple-300 border border-purple-800/60
+                                {% elif 'lab' in item.action %}bg-cyan-950/80 text-cyan-300 border border-cyan-800/60
+                                {% else %}bg-slate-800 text-slate-400 border border-slate-700{% endif %}">
+                                {{ item.get_action_display }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 text-slate-400 truncate max-w-xs" title="{{ item.path }}">{{ item.path|default:"-" }}</td>
+                        <td class="py-3 px-4 text-slate-400 whitespace-nowrap">{{ item.ip_address|default:"-" }}</td>
+                        <td class="py-3 px-4 text-slate-400 truncate max-w-xs font-mono text-[11px]" title="{{ item.metadata }}">{{ item.metadata|default:"{}" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-500 font-sans">
+                            No user activity logs recorded matching criteria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+                {% elif active_tab == 'system' %}
+                <thead class="bg-slate-950/80 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Timestamp</th>
+                        <th class="py-3 px-4">Level</th>
+                        <th class="py-3 px-4">Component</th>
+                        <th class="py-3 px-4">Message</th>
+                        <th class="py-3 px-4">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800 font-mono">
+                    {% for item in logs %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-4 text-slate-400 whitespace-nowrap">{{ item.created_at|date:"Y-m-d H:i:s" }}</td>
+                        <td class="py-3 px-4">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase
+                                {% if item.level == 'INFO' %}bg-blue-950/80 text-blue-400 border border-blue-800/60
+                                {% elif item.level == 'WARNING' %}bg-amber-950/80 text-amber-400 border border-amber-800/60
+                                {% elif item.level == 'ERROR' or item.level == 'CRITICAL' %}bg-red-950/80 text-red-400 border border-red-800/60
+                                {% else %}bg-slate-800 text-slate-300{% endif %}">
+                                {{ item.level }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 font-sans text-cyan-300 font-medium">{{ item.component }}</td>
+                        <td class="py-3 px-4 text-slate-200 font-sans whitespace-pre-wrap">{{ item.message }}</td>
+                        <td class="py-3 px-4 text-slate-400 truncate max-w-xs text-[11px]" title="{{ item.details }}">{{ item.details|default:"{}" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-slate-500 font-sans">
+                            No system logs recorded matching criteria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+
+                {% elif active_tab == 'flags' %}
+                <thead class="bg-slate-950/80 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Timestamp</th>
+                        <th class="py-3 px-4">User</th>
+                        <th class="py-3 px-4">Challenge</th>
+                        <th class="py-3 px-4">Submitted Flag</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4">IP Address</th>
+                        <th class="py-3 px-4">Attempt #</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800 font-mono">
+                    {% for item in logs %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-4 text-slate-400 whitespace-nowrap">{{ item.created_at|date:"Y-m-d H:i:s" }}</td>
+                        <td class="py-3 px-4 font-sans font-medium text-white">
+                            {% if item.user %}
+                                <a href="{% url 'console-user-detail' user_id=item.user.id %}" class="text-cyan-400 hover:underline">
+                                    {{ item.user.username }}
+                                </a>
+                            {% else %}
+                                <span class="text-slate-500">Anonymous</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 font-sans text-slate-300 font-medium">{{ item.challenge.title }}</td>
+                        <td class="py-3 px-4 text-slate-300 select-all">{{ item.submitted_flag_clean }}</td>
+                        <td class="py-3 px-4">
+                            {% if item.is_correct %}
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
+                                    ✓ Solved
+                                </span>
+                            {% else %}
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-red-950/80 text-red-400 border border-red-800/60">
+                                    ✗ Incorrect
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-slate-400">{{ item.ip_address|default:"-" }}</td>
+                        <td class="py-3 px-4 text-slate-400">{{ item.attempt_number }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-slate-500 font-sans">
+                            No flag submissions recorded matching criteria.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% endif %}
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-4 py-3 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <div>
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </div>
+            <div class="flex space-x-1">
+                {% if page_obj.has_previous %}
+                    <a href="?tab={{ active_tab }}&amp;page={{ page_obj.previous_page_number }}{% if q %}&amp;q={{ q }}{% endif %}{% if action_filter %}&amp;action={{ action_filter }}{% endif %}{% if level_filter %}&amp;level={{ level_filter }}{% endif %}{% if correct_filter %}&amp;correct={{ correct_filter }}{% endif %}"
+                       class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+                        &larr; Previous
+                    </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                    <a href="?tab={{ active_tab }}&amp;page={{ page_obj.next_page_number }}{% if q %}&amp;q={{ q }}{% endif %}{% if action_filter %}&amp;action={{ action_filter }}{% endif %}{% if level_filter %}&amp;level={{ level_filter }}{% endif %}{% if correct_filter %}&amp;correct={{ correct_filter }}{% endif %}"
+                       class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+                        Next &rarr;
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

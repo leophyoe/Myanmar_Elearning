@@ -76,6 +76,9 @@
         <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
             <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Quick actions</h3>
             <div class="flex flex-wrap gap-2 text-xs">
+                <a href="{% url 'console-log-list' %}" class="px-3 py-2 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 font-semibold transition">📋 Audit Logs</a>
+                <a href="{% url 'cyber-home' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">🛡️ Cyber Range</a>
+                <a href="{% url 'cyber-lab-upload' %}" class="px-3 py-2 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 transition">⬆️ Upload Lab Bundle</a>
                 <a href="{% url 'console-user-list' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Find a user</a>
                 <a href="{% url 'payment-list' %}" class="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition">Payment queue</a>
                 <a href="{% url 'manage-home' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Content Studio</a>

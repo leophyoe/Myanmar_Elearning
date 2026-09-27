@@ -5,6 +5,7 @@ from .views import (
     UserPasswordResetView, UserToggleActiveView,
     AdminCourseListView, FeeOverviewView, PaymentRefundView,
     CredentialReviewView, CredentialActionView,
+    AdminLogListView,
 )
 
 urlpatterns = [
@@ -20,4 +21,5 @@ urlpatterns = [
     path('payments/<uuid:payment_id>/refund/', PaymentRefundView.as_view(), name='console-payment-refund'),
     path('credentials/', CredentialReviewView.as_view(), name='console-credential-list'),
     path('credentials/<uuid:cert_id>/<str:action>/', CredentialActionView.as_view(), name='console-credential-action'),
+    path('logs/', AdminLogListView.as_view(), name='console-log-list'),
 ]

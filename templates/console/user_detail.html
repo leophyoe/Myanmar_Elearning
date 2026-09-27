@@ -42,8 +42,9 @@
                 <button type="submit"
                         class="px-3 py-2 rounded-lg font-semibold transition
                         {% if subject_user.is_active %}bg-red-950 hover:bg-red-900 border border-red-800 text-red-300
+                        {% elif subject_user.role == 'teacher' %}bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm
                         {% else %}bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300{% endif %}">
-                    {% if subject_user.is_active %}Deactivate{% else %}Reactivate{% endif %}
+                    {% if subject_user.is_active %}Deactivate{% elif subject_user.role == 'teacher' %}✓ Approve &amp; Activate Teacher{% else %}Reactivate{% endif %}
                 </button>
             </form>
             {% endif %}

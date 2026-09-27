@@ -29,8 +29,18 @@
        {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
         Credentials
     </a>
+    <a href="{% url 'console-log-list' %}"
+       class="px-4 py-2 rounded-lg font-semibold transition border
+       {% if active == 'logs' %}bg-cyan-600 border-cyan-500 text-white
+       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+        Audit logs
+    </a>
     <a href="{% url 'payment-list' %}"
        class="px-4 py-2 rounded-lg font-semibold transition border bg-amber-950 border-amber-800 text-amber-300 hover:bg-amber-900">
         Payment queue
+    </a>
+    <a href="{% url 'cyber-home' %}"
+       class="px-4 py-2 rounded-lg font-semibold transition border bg-cyan-950 border-cyan-800 text-cyan-300 hover:bg-cyan-900">
+        Cyber Range
     </a>
 </div>

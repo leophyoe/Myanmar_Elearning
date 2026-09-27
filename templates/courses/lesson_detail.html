@@ -39,6 +39,27 @@
         </div>
     </div>
 
+    {% if can_manage %}
+    <div class="flex flex-wrap gap-2 mb-8 text-xs">
+        <a href="{% url 'quiz-edit' lesson_id=lesson.id %}"
+           class="px-3 py-2 rounded-lg bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-200 font-semibold transition">
+            {% if quiz %}Edit quiz{% else %}+ Add quiz{% endif %}
+        </a>
+        <a href="{% url 'assignment-create' %}?module={{ lesson.module_id }}"
+           class="px-3 py-2 rounded-lg bg-violet-950 hover:bg-violet-900 border border-violet-800 text-violet-200 font-semibold transition">
+            + Assignment
+        </a>
+        <a href="{% url 'submission-list' %}"
+           class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold transition">
+            Grading queue
+        </a>
+        <a href="{% url 'lesson-edit' lesson_id=lesson.id %}"
+           class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold transition">
+            Edit lesson
+        </a>
+    </div>
+    {% endif %}
+
     <!-- Video -->
     {% if lesson.has_video %}
     <div class="rounded-2xl bg-slate-900 border border-slate-800 shadow-xl overflow-hidden mb-8">
@@ -109,6 +130,39 @@
             </div>
             {% endfor %}
         </div>
+    </div>
+    {% endif %}
+
+    <!-- Module assignments -->
+    {% if assignments %}
+    <div class="rounded-2xl bg-slate-900 border border-slate-800 shadow-xl overflow-hidden mb-10">
+        <div class="px-6 py-3 border-b border-slate-800">
+            <h2 class="text-xs font-bold text-white uppercase tracking-wider">Assignments in {{ lesson.module.code }}</h2>
+        </div>
+        <ul class="divide-y divide-slate-800">
+            {% for a in assignments %}
+            <li class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4">
+                <div class="min-w-0">
+                    <a href="{% url 'assignment-detail' assignment_id=a.id %}" class="text-sm text-slate-200 hover:text-cyan-300 font-semibold">
+                        {{ a.title }}
+                    </a>
+                    <p class="text-[11px] text-slate-500 mt-0.5">
+                        max {{ a.max_score }} pts
+                        {% if a.due_date %} · due {{ a.due_date|date:"d M Y H:i" }}{% endif %}
+                    </p>
+                </div>
+                <div class="flex items-center gap-3 shrink-0 text-[11px]">
+                    {% if a.id in my_submissions %}
+                    <span class="font-mono text-slate-500">submitted</span>
+                    {% endif %}
+                    <a href="{% url 'assignment-detail' assignment_id=a.id %}"
+                       class="px-3 py-1.5 rounded-lg bg-violet-950 hover:bg-violet-900 border border-violet-800 text-violet-200 font-semibold transition">
+                        {% if a.id in my_submissions %}View / update{% else %}Open{% endif %}
+                    </a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
     </div>
     {% endif %}
 

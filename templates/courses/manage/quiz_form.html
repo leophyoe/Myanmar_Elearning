@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Quiz Builder - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <a href="{% url 'lesson-detail' lesson_id=lesson.id %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to “{{ lesson.title }}”</a>
+
+    <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mt-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-5 mb-6 border-b border-slate-800">
+            <div>
+                <h1 class="text-xl font-bold text-white">Quiz Builder</h1>
+                <p class="text-xs text-slate-400 mt-1">
+                    {{ course.title }} &rsaquo; {{ module.code }} &rsaquo; {{ lesson.title }}
+                </p>
+            </div>
+            <span class="text-[11px] font-mono text-slate-500">{{ quiz.questions.count }} question(s)</span>
+        </div>
+
+        <form method="POST" class="space-y-8 text-sm">
+            {% csrf_token %}
+
+            {% if form.non_field_errors or question_formset.non_form_errors %}
+            <div class="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs space-y-1">
+                {{ form.non_field_errors }}
+                {{ question_formset.non_form_errors }}
+            </div>
+            {% endif %}
+
+            <!-- Quiz settings -->
+            <div>
+                <h2 class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider mb-3">Quiz settings</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {% for field in form %}
+                    <div class="{% if field.name == 'title' %}md:col-span-3{% endif %}">
+                        <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">
+                            {{ field.label }}{% if field.field.required %} <span class="text-red-400">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% for error in field.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Questions -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">Questions</h2>
+                    <p class="text-[10px] text-slate-600">Tick “Delete” on a row to remove it.</p>
+                </div>
+
+                {{ question_formset.management_form }}
+
+                <div class="space-y-5">
+                    {% for qform in question_formset.forms %}
+                    <fieldset class="p-5 rounded-xl bg-slate-950 border border-slate-800">
+                        <legend class="px-2 text-[11px] font-bold text-white uppercase tracking-wider">
+                            Question {{ forloop.counter }}
+                        </legend>
+
+                        {% for hidden in qform.hidden_fields %}{{ hidden }}{% endfor %}
+
+                        {% if qform.non_field_errors %}
+                        <div class="mb-3 p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs">
+                            {{ qform.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                            <div class="md:col-span-9">
+                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Prompt</label>
+                                {{ qform.prompt }}
+                                {% for error in qform.prompt.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="md:col-span-1">
+                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Order</label>
+                                {{ qform.order }}
+                                {% for error in qform.order.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Points</label>
+                                {{ qform.points }}
+                                {% for error in qform.points.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Option 1</label>
+                                {{ qform.choice_1 }}
+                                {% for error in qform.choice_1.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Option 2</label>
+                                {{ qform.choice_2 }}
+                                {% for error in qform.choice_2.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Option 3</label>
+                                {{ qform.choice_3 }}
+                                {% for error in qform.choice_3.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Option 4</label>
+                                {{ qform.choice_4 }}
+                                {% for error in qform.choice_4.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-2">Correct answer</label>
+                            <div class="flex flex-wrap gap-x-6 gap-y-2 p-3 rounded-lg bg-slate-900 border border-slate-800">
+                                {{ qform.correct_choice }}
+                            </div>
+                            {% for error in qform.correct_choice.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="mt-4">
+                            <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Explanation (optional)</label>
+                            {{ qform.explanation }}
+                            {% for error in qform.explanation.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        {% if qform.instance.pk %}
+                        <div class="mt-4 flex items-center gap-2 text-[11px] text-slate-500">
+                            {{ qform.DELETE }} <span>Remove this question</span>
+                        </div>
+                        {% endif %}
+                    </fieldset>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-4 border-t border-slate-800">
+                <button type="submit" class="px-6 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition">
+                    Save Quiz
+                </button>
+                <a href="{% url 'lesson-detail' lesson_id=lesson.id %}" class="px-6 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

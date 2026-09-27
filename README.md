@@ -156,6 +156,35 @@ for `video_url`, a download card for `document_file`, and the existing quiz/CTF 
 
 ---
 
+## Quizzes, Assignments & Grading (Phase 3)
+
+Assessment is authored by teachers, taken by enrolled students and marked in a
+single grading queue.
+
+| Route | Access | Purpose |
+| :--- | :--- | :--- |
+| `/courses/manage/lessons/<id>/quiz/` | teacher, admin | Quiz builder: settings + multiple choice questions |
+| `/courses/manage/assignments/new/` | teacher, admin | Publish an assignment for a module |
+| `/courses/manage/assignments/<id>/edit/` | teacher, admin | Edit or delete an assignment |
+| `/courses/manage/submissions/` | teacher, admin | Grading queue (ungraded / graded filters) |
+| `/courses/manage/submissions/<id>/grade/` | teacher, admin | Award a score out of `max_score` + feedback |
+| `/courses/assignments/<id>/` | enrolled student | Assignment brief, hand-in form and feedback |
+
+* **Quiz builder** — each question carries four answer slots and a "correct answer"
+  radio; saving writes the `Choice` rows in one pass. Empty prompts are ignored,
+  a quiz must keep at least one question, and every kept question needs a correct
+  answer. Students still submit through `quiz-submit`, which auto-grades, awards
+  points and completes the lesson.
+* **Hand-ins** — text and/or a file (25 MB). Re-submitting replaces the previous
+  attempt (`AssignmentSubmission` is unique per assignment + student).
+* **Grading** — the score is capped by `max_score`. At 60 % or better the module's
+  `assignment` lesson is marked complete and the student's enrolment progress is
+  recomputed.
+* Access rules are enforced end to end: students need an active enrolment, staff
+  never submit work, and the whole Content Studio / queue is `403` for students.
+
+---
+
 ## Local Development (Without Docker)
 
 You can also run Myanmar E-Learning locally with SQLite:

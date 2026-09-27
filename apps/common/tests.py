@@ -3,7 +3,8 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from apps.users.models import UserRole, StudentProfile, TeacherProfile, AdminProfile
 from apps.courses.models import (
-    Subject, Course, Module, Lesson, LessonType, Quiz, Question, Choice, Enrollment
+    Subject, Course, Module, Lesson, LessonType, Quiz, Question, Choice, Enrollment,
+    Assignment, AssignmentSubmission, UserProgress,
 )
 from apps.labs.models import Lab, LabTemplate, LabInstance, LabCategory, LabDifficulty
 from apps.ctf.models import Challenge, ChallengeCategory, FlagSubmission, SolvedChallenge
@@ -530,3 +531,255 @@ class CourseAuthoringAndEnrollmentTests(TestCase):
         for name, kwargs in routes:
             response = self.client.get(reverse(name, kwargs=kwargs))
             self.assertEqual(response.status_code, 200, f"{name} failed to render")
+
+
+class AssessmentAndGradingTests(TestCase):
+    """Phase 3: quiz building, assignment hand-ins and the grading queue."""
+
+    def setUp(self):
+        self.client = Client()
+        self.subject = Subject.objects.create(title='Operations', slug='operations', kind=Subject.Kind.GENERAL)
+        self.course = Course.objects.create(
+            title='Ops Basics', slug='ops-basics', subject=self.subject, description='Run things.'
+        )
+        self.module = Module.objects.create(
+            course=self.course, order=1, code='OPS-01', title='First steps',
+            summary='Getting started.', learning_objectives=['Ship safely']
+        )
+        self.lesson = Lesson.objects.create(
+            module=self.module, order=1, title='Intro to Ops',
+            content_markdown='Read this.', lesson_type=LessonType.TEXT,
+        )
+        self.assignment_lesson = Lesson.objects.create(
+            module=self.module, order=2, title='Write the report',
+            content_markdown='Deliver a report.', lesson_type=LessonType.ASSIGNMENT,
+        )
+        self.assignment = Assignment.objects.create(
+            module=self.module, title='Incident report',
+            description='Document the incident end to end.', max_score=100,
+        )
+
+        self.student = User.objects.create_user(
+            username='a3_student', email='a3s@mel.edu.mm',
+            role=UserRole.STUDENT, password='StrongCyberPass2026!'
+        )
+        self.teacher = User.objects.create_user(
+            username='a3_teacher', email='a3t@mel.edu.mm',
+            role=UserRole.TEACHER, password='StrongCyberPass2026!'
+        )
+        self.admin = User.objects.create_user(
+            username='a3_admin', email='a3a@mel.edu.mm',
+            role=UserRole.ADMIN, password='StrongCyberPass2026!'
+        )
+
+    # -- helpers -------------------------------------------------------
+    def quiz_payload(self, **overrides):
+        """Build a quiz-builder POST for a single new question."""
+        from apps.courses.forms import QuestionFormSet
+
+        quiz, _ = Quiz.objects.get_or_create(
+            lesson=self.lesson, defaults={'title': 'Checkpoint'}
+        )
+        prefix = QuestionFormSet(instance=quiz).prefix
+        data = {
+            'title': 'Checkpoint',
+            'passing_percentage': '50',
+            'max_attempts': '3',
+            f'{prefix}-TOTAL_FORMS': '1',
+            f'{prefix}-INITIAL_FORMS': '0',
+            f'{prefix}-MIN_NUM_FORMS': '0',
+            f'{prefix}-MAX_NUM_FORMS': '1000',
+            f'{prefix}-0-order': '1',
+            f'{prefix}-0-prompt': 'What is 2 + 2?',
+            f'{prefix}-0-points': '10',
+            f'{prefix}-0-explanation': 'Basic arithmetic.',
+            f'{prefix}-0-choice_1': '3',
+            f'{prefix}-0-choice_2': '4',
+            f'{prefix}-0-choice_3': '',
+            f'{prefix}-0-choice_4': '',
+            f'{prefix}-0-correct_choice': '2',
+        }
+        for key, value in overrides.items():
+            data[key if key.startswith(prefix) else f'{prefix}-0-{key}'] = value
+        return data
+
+    # -- quiz authoring ------------------------------------------------
+    def test_24_teacher_builds_a_quiz(self):
+        self.client.force_login(self.teacher)
+        response = self.client.post(
+            reverse('quiz-edit', kwargs={'lesson_id': self.lesson.id}),
+            self.quiz_payload(),
+        )
+        self.assertEqual(response.status_code, 302)
+
+        quiz = Quiz.objects.get(lesson=self.lesson)
+        self.assertEqual(quiz.questions.count(), 1)
+
+        question = quiz.questions.first()
+        self.assertEqual(question.prompt, 'What is 2 + 2?')
+        self.assertEqual(question.choices.count(), 2)
+        correct = list(question.choices.filter(is_correct=True))
+        self.assertEqual(len(correct), 1)
+        self.assertEqual(correct[0].text, '4')
+
+        self.lesson.refresh_from_db()
+        self.assertTrue(self.lesson.has_quiz)
+
+    def test_25_quiz_requires_a_correct_answer(self):
+        self.client.force_login(self.teacher)
+        payload = self.quiz_payload(choice_1='', choice_2='4', correct_choice='1')
+        response = self.client.post(
+            reverse('quiz-edit', kwargs={'lesson_id': self.lesson.id}), payload
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Question.objects.exists())
+
+    def test_26_quiz_builder_is_teacher_only(self):
+        self.client.force_login(self.student)
+        response = self.client.get(
+            reverse('quiz-edit', kwargs={'lesson_id': self.lesson.id})
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_27_quiz_builder_renders_existing_choices(self):
+        self.client.force_login(self.teacher)
+        self.client.post(
+            reverse('quiz-edit', kwargs={'lesson_id': self.lesson.id}), self.quiz_payload()
+        )
+        response = self.client.get(
+            reverse('quiz-edit', kwargs={'lesson_id': self.lesson.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'What is 2 + 2?')
+        # The saved option text must come back into the form
+        self.assertContains(response, 'value="4"')
+
+    # -- assignments ---------------------------------------------------
+    def test_28_assignment_requires_enrolment(self):
+        url = reverse('assignment-detail', kwargs={'assignment_id': self.assignment.id})
+        self.client.force_login(self.student)
+        self.assertIn(reverse('course-detail', kwargs={'slug': self.course.slug}),
+                      self.client.get(url).url)
+
+        self.client.post(reverse('enroll', kwargs={'slug': self.course.slug}))
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_29_student_hand_in_is_upserted(self):
+        self.client.force_login(self.student)
+        self.client.post(reverse('enroll', kwargs={'slug': self.course.slug}))
+        url = reverse('assignment-submit', kwargs={'assignment_id': self.assignment.id})
+
+        self.client.post(url, {'submission_text': 'First draft'})
+        self.assertEqual(AssignmentSubmission.objects.count(), 1)
+
+        self.client.post(url, {'submission_text': 'Revised draft'})
+        submission = AssignmentSubmission.objects.get()
+        self.assertEqual(submission.submission_text, 'Revised draft')
+        self.assertEqual(submission.student, self.student)
+
+    def test_30_empty_hand_in_is_rejected(self):
+        self.client.force_login(self.student)
+        self.client.post(reverse('enroll', kwargs={'slug': self.course.slug}))
+        response = self.client.post(
+            reverse('assignment-submit', kwargs={'assignment_id': self.assignment.id}),
+            {'submission_text': '   '},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(AssignmentSubmission.objects.exists())
+
+    def test_31_grading_awards_score_and_completes_the_lesson(self):
+        submission = AssignmentSubmission.objects.create(
+            assignment=self.assignment, student=self.student, submission_text='Done'
+        )
+        url = reverse('submission-grade', kwargs={'submission_id': submission.id})
+
+        self.client.force_login(self.teacher)
+        response = self.client.post(url, {'score': 80, 'feedback': 'Solid work.'})
+        self.assertEqual(response.status_code, 302)
+
+        submission.refresh_from_db()
+        self.assertEqual(submission.score, 80)
+        self.assertEqual(submission.feedback, 'Solid work.')
+        self.assertEqual(submission.graded_by, self.teacher)
+        self.assertIsNotNone(submission.graded_at)
+
+        progress = UserProgress.objects.get(
+            user=self.student, lesson=self.assignment_lesson
+        )
+        self.assertTrue(progress.is_completed)
+
+    def test_32_failing_grade_leaves_progress_untouched(self):
+        submission = AssignmentSubmission.objects.create(
+            assignment=self.assignment, student=self.student, submission_text='meh'
+        )
+        self.client.force_login(self.teacher)
+        self.client.post(
+            reverse('submission-grade', kwargs={'submission_id': submission.id}),
+            {'score': 10, 'feedback': 'Too thin.'},
+        )
+        submission.refresh_from_db()
+        self.assertEqual(submission.score, 10)
+        self.assertFalse(
+            UserProgress.objects.filter(user=self.student, is_completed=True).exists()
+        )
+
+    def test_33_score_above_max_is_rejected(self):
+        submission = AssignmentSubmission.objects.create(
+            assignment=self.assignment, student=self.student, submission_text='x'
+        )
+        self.client.force_login(self.teacher)
+        response = self.client.post(
+            reverse('submission-grade', kwargs={'submission_id': submission.id}),
+            {'score': 500, 'feedback': 'nope'},
+        )
+        self.assertEqual(response.status_code, 200)
+        submission.refresh_from_db()
+        self.assertIsNone(submission.score)
+
+    # -- access control ------------------------------------------------
+    def test_34_grading_queue_is_role_restricted(self):
+        self.client.force_login(self.student)
+        self.assertEqual(self.client.get(reverse('submission-list')).status_code, 403)
+
+        for user in (self.teacher, self.admin):
+            self.client.force_login(user)
+            self.assertEqual(self.client.get(reverse('submission-list')).status_code, 200)
+
+    def test_35_assignment_create_is_teacher_only(self):
+        self.client.force_login(self.student)
+        self.assertEqual(self.client.get(reverse('assignment-create')).status_code, 403)
+
+    def test_36_student_sees_module_assignments_on_lesson(self):
+        self.client.force_login(self.student)
+        self.client.post(reverse('enroll', kwargs={'slug': self.course.slug}))
+        response = self.client.get(
+            reverse('lesson-detail', kwargs={'lesson_id': self.lesson.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Incident report')
+
+    def test_37_student_can_take_a_teacher_built_quiz(self):
+        self.client.force_login(self.teacher)
+        self.client.post(
+            reverse('quiz-edit', kwargs={'lesson_id': self.lesson.id}), self.quiz_payload()
+        )
+        quiz = Quiz.objects.get(lesson=self.lesson)
+        question = quiz.questions.get()
+        correct = question.choices.get(is_correct=True)
+
+        self.client.logout()
+        self.client.force_login(self.student)
+        self.client.post(reverse('enroll', kwargs={'slug': self.course.slug}))
+
+        response = self.client.post(
+            reverse('quiz-submit', kwargs={'lesson_id': self.lesson.id}),
+            {f'question_{question.id}': correct.id},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        progress = UserProgress.objects.get(user=self.student, lesson=self.lesson)
+        self.assertTrue(progress.is_completed)
+        # Re-read: the view saved a separate StudentProfile instance.
+        self.assertEqual(
+            StudentProfile.objects.get(user=self.student).points, question.points
+        )

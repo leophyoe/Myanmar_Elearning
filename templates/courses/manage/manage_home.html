@@ -13,6 +13,10 @@
             <a href="{% url 'subject-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Subject</a>
             <a href="{% url 'course-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Course</a>
             <a href="{% url 'module-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Module</a>
+            <a href="{% url 'assignment-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Assignment</a>
+            <a href="{% url 'submission-list' %}" class="text-xs px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition">
+                Grading queue{% if ungraded_count %} · {{ ungraded_count }}{% endif %}
+            </a>
             <a href="{% url 'lesson-create' %}" class="text-xs px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">+ Lesson</a>
         </div>
     </div>

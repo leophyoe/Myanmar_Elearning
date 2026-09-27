@@ -7,6 +7,10 @@ from .views import (
     CourseCreateView, CourseUpdateView,
     ModuleCreateView, ModuleUpdateView,
     LessonCreateView, LessonUpdateView, LessonDeleteView,
+    QuizBuilderView,
+    AssignmentCreateView, AssignmentUpdateView, AssignmentDeleteView,
+    AssignmentDetailView, AssignmentSubmitView,
+    SubmissionListView, SubmissionGradeView,
 )
 
 urlpatterns = [
@@ -21,6 +25,10 @@ urlpatterns = [
     path('lessons/<uuid:lesson_id>/', LessonDetailView.as_view(), name='lesson-detail'),
     path('lessons/<uuid:lesson_id>/quiz/submit/', QuizSubmitView.as_view(), name='quiz-submit'),
 
+    # Assessment (students)
+    path('assignments/<uuid:assignment_id>/', AssignmentDetailView.as_view(), name='assignment-detail'),
+    path('assignments/<uuid:assignment_id>/submit/', AssignmentSubmitView.as_view(), name='assignment-submit'),
+
     # Teacher / admin authoring
     path('manage/', ManageHomeView.as_view(), name='manage-home'),
     path('manage/subjects/new/', SubjectCreateView.as_view(), name='subject-create'),
@@ -32,6 +40,14 @@ urlpatterns = [
     path('manage/lessons/new/', LessonCreateView.as_view(), name='lesson-create'),
     path('manage/lessons/<uuid:lesson_id>/edit/', LessonUpdateView.as_view(), name='lesson-edit'),
     path('manage/lessons/<uuid:lesson_id>/delete/', LessonDeleteView.as_view(), name='lesson-delete'),
+
+    # Assessment authoring & grading
+    path('manage/lessons/<uuid:lesson_id>/quiz/', QuizBuilderView.as_view(), name='quiz-edit'),
+    path('manage/assignments/new/', AssignmentCreateView.as_view(), name='assignment-create'),
+    path('manage/assignments/<uuid:assignment_id>/edit/', AssignmentUpdateView.as_view(), name='assignment-edit'),
+    path('manage/assignments/<uuid:assignment_id>/delete/', AssignmentDeleteView.as_view(), name='assignment-delete'),
+    path('manage/submissions/', SubmissionListView.as_view(), name='submission-list'),
+    path('manage/submissions/<uuid:submission_id>/grade/', SubmissionGradeView.as_view(), name='submission-grade'),
 
     # Single-segment catch-all must stay last
     path('<slug:slug>/', CourseDetailView.as_view(), name='course-detail'),

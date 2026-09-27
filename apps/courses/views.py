@@ -2,14 +2,21 @@ from django.views.generic import (
     ListView, DetailView, View, CreateView, UpdateView, DeleteView, TemplateView
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.utils import timezone
 from django.urls import reverse_lazy, reverse
 
 from apps.common.permissions import RoleRequiredMixin
-from .models import Subject, Course, Module, Lesson, Quiz, Question, Choice, UserProgress, Enrollment
-from .forms import SubjectForm, CourseForm, ModuleForm, LessonForm
+from .models import (
+    Subject, Course, Module, Lesson, LessonType, Quiz, Question, Choice,
+    UserProgress, Enrollment, Assignment, AssignmentSubmission,
+)
+from .forms import (
+    SubjectForm, CourseForm, ModuleForm, LessonForm,
+    QuizForm, QuestionFormSet, AssignmentForm, AssignmentSubmitForm,
+    SubmissionGradeForm,
+)
 
 
 # ----------------------------------------------------------------------
@@ -17,6 +24,8 @@ from .forms import SubjectForm, CourseForm, ModuleForm, LessonForm
 # ----------------------------------------------------------------------
 def can_access_course(user, course):
     """Teachers/admins always see a course; students must hold an active enrollment."""
+    if not getattr(user, 'is_authenticated', False):
+        return False
     if user.is_teacher or user.is_admin:
         return True
     return Enrollment.objects.filter(
@@ -100,6 +109,11 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['course'] = self.object.course
+        context['assignments'] = self.object.assignments.all().order_by('due_date')
+        user = self.request.user
+        context['can_manage'] = bool(
+            user.is_authenticated and (user.is_teacher or user.is_admin)
+        )
         return context
 
 
@@ -110,6 +124,8 @@ class LessonDetailView(LoginRequiredMixin, DetailView):
     pk_url_kwarg = 'lesson_id'
 
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
         lesson = self.get_object()
         if not can_access_course(request.user, lesson.module.course):
             messages.info(request, "Please enrol in this course before opening its lessons.")
@@ -132,6 +148,18 @@ class LessonDetailView(LoginRequiredMixin, DetailView):
         )
         context['progress'] = progress
         context['labs'] = lesson.labs.filter(is_active=True)
+        context['can_manage'] = self.request.user.is_teacher or self.request.user.is_admin
+        context['assignments'] = lesson.module.assignments.all().order_by('due_date')
+        if self.request.user.is_authenticated:
+            context['my_submissions'] = {
+                s.assignment_id: s
+                for s in AssignmentSubmission.objects.filter(
+                    student=self.request.user,
+                    assignment__in=context['assignments'],
+                )
+            }
+        else:
+            context['my_submissions'] = {}
         return context
 
 
@@ -256,6 +284,7 @@ class ManageHomeView(TeacherRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context['subjects'] = Subject.objects.all().prefetch_related('courses')
         context['courses'] = Course.objects.all().prefetch_related('modules__lessons', 'subject')
+        context['ungraded_count'] = AssignmentSubmission.objects.filter(score__isnull=True).count()
         return context
 
 
@@ -388,3 +417,262 @@ class LessonDeleteView(TeacherRequiredMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, "Lesson deleted.")
         return super().form_valid(form)
+
+
+# ----------------------------------------------------------------------
+# Phase 3 - quizzes, assignments, submissions and grading
+# ----------------------------------------------------------------------
+class QuizBuilderView(TeacherRequiredMixin, View):
+    """
+    One screen for building a lesson's checkpoint quiz: quiz settings plus a
+    formset of multiple choice questions, each with four answer slots.
+    """
+
+    template_name = 'courses/manage/quiz_form.html'
+
+    def get_object(self, **kwargs):
+        return get_object_or_404(Lesson, id=self.kwargs['lesson_id'])
+
+    def _render(self, request, lesson, quiz, quiz_form=None, question_formset=None):
+        context = {
+            'lesson': lesson,
+            'course': lesson.module.course,
+            'module': lesson.module,
+            'quiz': quiz,
+            'form': quiz_form or QuizForm(instance=quiz),
+            'question_formset': question_formset or QuestionFormSet(instance=quiz),
+        }
+        return render(request, self.template_name, context)
+
+    def get(self, request, *args, **kwargs):
+        lesson = self.get_object()
+        quiz, _ = Quiz.objects.get_or_create(
+            lesson=lesson, defaults={'title': f'Checkpoint — {lesson.title}'}
+        )
+        return self._render(request, lesson, quiz)
+
+    def post(self, request, *args, **kwargs):
+        lesson = self.get_object()
+        quiz, _ = Quiz.objects.get_or_create(
+            lesson=lesson, defaults={'title': f'Checkpoint — {lesson.title}'}
+        )
+        quiz_form = QuizForm(request.POST, instance=quiz)
+        question_formset = QuestionFormSet(request.POST, instance=quiz)
+
+        if quiz_form.is_valid() and question_formset.is_valid():
+            saved_quiz = quiz_form.save()
+            question_formset.save()
+            if not lesson.has_quiz:
+                lesson.has_quiz = True
+                lesson.save(update_fields=['has_quiz'])
+            messages.success(
+                request,
+                f'Quiz “{saved_quiz.title}” saved with '
+                f'{saved_quiz.questions.count()} question(s).'
+            )
+            return redirect('lesson-detail', lesson_id=lesson.id)
+
+        messages.error(request, 'Please fix the highlighted errors before saving the quiz.')
+        return self._render(request, lesson, quiz, quiz_form, question_formset)
+
+
+class AssignmentCreateView(TeacherRequiredMixin, CreateView):
+    model = Assignment
+    form_class = AssignmentForm
+    template_name = 'courses/manage/assignment_form.html'
+    success_url = reverse_lazy('manage-home')
+
+    def get_initial(self):
+        initial = super().get_initial()
+        module_pk = self.request.GET.get('module')
+        if module_pk:
+            initial['module'] = module_pk
+        return initial
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Assignment “{form.cleaned_data["title"]}” created.')
+        return super().form_valid(form)
+
+
+class AssignmentUpdateView(TeacherRequiredMixin, UpdateView):
+    model = Assignment
+    form_class = AssignmentForm
+    template_name = 'courses/manage/assignment_form.html'
+    pk_url_kwarg = 'assignment_id'
+    success_url = reverse_lazy('manage-home')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Assignment updated.')
+        return super().form_valid(form)
+
+
+class AssignmentDeleteView(TeacherRequiredMixin, DeleteView):
+    model = Assignment
+    template_name = 'courses/manage/assignment_confirm_delete.html'
+    pk_url_kwarg = 'assignment_id'
+    success_url = reverse_lazy('manage-home')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Assignment deleted.')
+        return super().form_valid(form)
+
+
+def mark_assignment_progress(submission):
+    """Passing a graded assignment completes the module's assignment lesson."""
+    assignment = submission.assignment
+    if submission.score is None or not assignment.max_score:
+        return
+    if submission.score < assignment.max_score * 0.6:
+        return
+
+    module = assignment.module
+    lesson = module.lessons.filter(lesson_type=LessonType.ASSIGNMENT).first()
+    if not lesson:
+        return
+
+    progress, _ = UserProgress.objects.get_or_create(
+        user=submission.student,
+        course=module.course,
+        module=module,
+        lesson=lesson,
+    )
+    if progress.is_completed:
+        return
+    progress.is_completed = True
+    progress.completed_at = timezone.now()
+    progress.save(update_fields=['is_completed', 'completed_at'])
+    sync_enrollment_progress(submission.student, module.course)
+
+
+class SubmissionListView(TeacherRequiredMixin, ListView):
+    """Grading queue: what still needs a score, and what has been marked."""
+
+    model = AssignmentSubmission
+    template_name = 'courses/manage/submission_list.html'
+    context_object_name = 'submissions'
+    paginate_by = 25
+
+    STATUS_FILTERS = {
+        'ungraded': {'score__isnull': True},
+        'graded': {'score__isnull': False},
+    }
+
+    def get_status(self):
+        status = self.request.GET.get('status', 'ungraded')
+        return status if status in self.STATUS_FILTERS else 'ungraded'
+
+    def get_queryset(self):
+        qs = AssignmentSubmission.objects.select_related(
+            'assignment__module__course', 'student', 'graded_by'
+        ).order_by('-created_at')
+        return qs.filter(**self.STATUS_FILTERS[self.get_status()])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['status'] = self.get_status()
+        context['ungraded_count'] = AssignmentSubmission.objects.filter(score__isnull=True).count()
+        context['graded_count'] = AssignmentSubmission.objects.filter(score__isnull=False).count()
+        context['assignments'] = Assignment.objects.select_related('module__course').order_by(
+            'module__course__title', 'module__order'
+        )
+        return context
+
+
+class SubmissionGradeView(TeacherRequiredMixin, UpdateView):
+    model = AssignmentSubmission
+    form_class = SubmissionGradeForm
+    template_name = 'courses/manage/grade_submission.html'
+    pk_url_kwarg = 'submission_id'
+
+    def get_queryset(self):
+        return AssignmentSubmission.objects.select_related(
+            'assignment__module__course', 'student'
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['assignment'] = self.object.assignment
+        return context
+
+    def form_valid(self, form):
+        submission = form.save(commit=False)
+        submission.graded_by = self.request.user
+        submission.graded_at = timezone.now()
+        submission.save()
+        mark_assignment_progress(submission)
+        messages.success(
+            self.request,
+            f'Graded {submission.student.get_full_name() or submission.student.username}: '
+            f'{submission.score}/{submission.assignment.max_score}.'
+        )
+        return redirect('submission-list')
+
+
+class AssignmentDetailView(LoginRequiredMixin, DetailView):
+    """Student view of an assignment plus their own hand-in state."""
+
+    model = Assignment
+    template_name = 'courses/assignment_detail.html'
+    pk_url_kwarg = 'assignment_id'
+    context_object_name = 'assignment'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        assignment = self.get_object()
+        if not can_access_course(request.user, assignment.module.course):
+            messages.info(request, 'Please enrol in this course before opening its assignments.')
+            return redirect('course-detail', slug=assignment.module.course.slug)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        assignment = self.object
+        context['course'] = assignment.module.course
+        context['module'] = assignment.module
+        context['submission'] = AssignmentSubmission.objects.filter(
+            assignment=assignment, student=self.request.user
+        ).first()
+        context['submission_form'] = AssignmentSubmitForm(
+            instance=context['submission']
+        )
+        context['total_submissions'] = assignment.submissions.count()
+        context['graded_submissions'] = assignment.submissions.filter(score__isnull=False).count()
+        return context
+
+
+class AssignmentSubmitView(LoginRequiredMixin, View):
+    """POST-only hand-in; re-submitting replaces the previous attempt."""
+
+    def post(self, request, assignment_id):
+        assignment = get_object_or_404(Assignment, id=assignment_id)
+        course = assignment.module.course
+        if not can_access_course(request.user, course):
+            messages.info(request, 'Please enrol in this course first.')
+            return redirect('course-detail', slug=course.slug)
+        if not request.user.is_student:
+            messages.info(request, 'Staff accounts do not submit work.')
+            return redirect('assignment-detail', assignment_id=assignment.id)
+
+        submission = AssignmentSubmission.objects.filter(
+            assignment=assignment, student=request.user
+        ).first()
+        created_now = submission is None
+        form = AssignmentSubmitForm(
+            request.POST, request.FILES, instance=submission
+        )
+        if form.is_valid():
+            submission = form.save(commit=False)
+            submission.assignment = assignment
+            submission.student = request.user
+            submission.save()
+            action = 'Submitted' if created_now else 'Updated'
+            messages.success(
+                request,
+                f'{action} “{assignment.title}” — waiting for your teacher to grade it.'
+            )
+        else:
+            messages.error(request, 'Submission not saved: ' + ' '.join(
+                error for errors in form.errors.values() for error in errors
+            ))
+        return redirect('assignment-detail', assignment_id=assignment.id)

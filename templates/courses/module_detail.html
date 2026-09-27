@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ module.code }} - {{ module.title }} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex items-center space-x-2 text-xs text-slate-500 mb-6">
+        <a href="{% url 'course-list' %}" class="hover:text-cyan-400">Courses</a>
+        <span>/</span>
+        <a href="{% url 'course-detail' slug=course.slug %}" class="hover:text-cyan-400">{{ course.title }}</a>
+        <span>/</span>
+        <span class="text-slate-300 font-semibold">{{ module.code }}</span>
+    </div>
+
+    <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mb-8">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <span class="text-xs px-2.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
+                    {{ module.code }} • Module {{ module.order }}
+                </span>
+                <h1 class="text-2xl sm:text-3xl font-bold text-white mt-2">{{ module.title }}</h1>
+                <p class="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">{{ module.summary }}</p>
+            </div>
+            <span class="text-xs text-slate-500 font-mono shrink-0">{{ module.lessons.count }} Lessons</span>
+        </div>
+
+        {% if module.learning_objectives %}
+        <div class="mt-6 pt-5 border-t border-slate-800">
+            <h2 class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider mb-2">Learning objectives</h2>
+            <ul class="space-y-1.5 text-xs text-slate-300">
+                {% for objective in module.learning_objectives %}
+                <li class="flex items-start gap-2"><span class="text-cyan-500">›</span><span>{{ objective }}</span></li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="space-y-3">
+        {% for lesson in module.lessons.all %}
+        <a href="{% url 'lesson-detail' lesson_id=lesson.id %}"
+           class="flex items-center justify-between p-4 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/60 transition group">
+            <div class="flex items-center gap-4 min-w-0">
+                <span class="text-xs font-mono text-slate-600 w-6 shrink-0">{{ lesson.order|stringformat:"02d" }}</span>
+                <div class="min-w-0">
+                    <div class="text-sm font-semibold text-slate-200 group-hover:text-cyan-300 transition truncate">{{ lesson.title }}</div>
+                    <div class="text-[11px] text-slate-500 mt-0.5">
+                        {{ lesson.get_lesson_type_display }} • {{ lesson.estimated_minutes }} min
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0 text-[10px]">
+                {% if lesson.has_video %}<span class="px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">Video</span>{% endif %}
+                {% if lesson.has_document %}<span class="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800">PDF</span>{% endif %}
+                {% if lesson.has_lab %}<span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">Lab</span>{% endif %}
+                {% if lesson.has_quiz %}<span class="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">Quiz</span>{% endif %}
+                <span class="text-cyan-400 group-hover:translate-x-0.5 transition">→</span>
+            </div>
+        </a>
+        {% empty %}
+        <p class="text-xs text-slate-500 p-4 rounded-xl bg-slate-900 border border-slate-800">No lessons published yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

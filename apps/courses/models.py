@@ -80,6 +80,16 @@ class Module(BaseModel):
         return f"{self.code}: {self.title}"
 
 
+class LessonType(models.TextChoices):
+    TEXT = 'text', 'Text / Article'
+    VIDEO = 'video', 'Video'
+    PDF = 'pdf', 'PDF Document'
+    QUIZ = 'quiz', 'Quiz'
+    ASSIGNMENT = 'assignment', 'Assignment'
+    LAB = 'lab', 'Hands-on Lab'
+    CTF = 'ctf', 'CTF Challenge'
+
+
 class Lesson(BaseModel):
     """
     Structured learning unit inside a module.
@@ -87,7 +97,30 @@ class Lesson(BaseModel):
     module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='lessons')
     order = models.PositiveSmallIntegerField(db_index=True)
     title = models.CharField(max_length=255)
+    lesson_type = models.CharField(
+        max_length=16,
+        choices=LessonType.choices,
+        default=LessonType.TEXT,
+        db_index=True,
+        help_text="Determines how the lesson body is rendered for students.",
+    )
     content_markdown = models.TextField(help_text="Detailed theoretical lecture in Markdown format")
+    video_url = models.URLField(
+        blank=True,
+        help_text="External video link (YouTube, Vimeo, ...). Used when no file is uploaded.",
+    )
+    video_file = models.FileField(
+        upload_to='lessons/video/%Y/%m/',
+        null=True,
+        blank=True,
+        help_text="Uploaded video file (mp4/webm).",
+    )
+    document_file = models.FileField(
+        upload_to='lessons/docs/%Y/%m/',
+        null=True,
+        blank=True,
+        help_text="Attached document, e.g. a PDF handout.",
+    )
     estimated_minutes = models.PositiveIntegerField(default=45)
     has_lab = models.BooleanField(default=False)
     has_quiz = models.BooleanField(default=False)
@@ -98,6 +131,18 @@ class Lesson(BaseModel):
 
     def __str__(self):
         return f"{self.module.code} - L{self.order}: {self.title}"
+
+    @property
+    def course(self):
+        return self.module.course
+
+    @property
+    def has_video(self):
+        return bool(self.video_file or self.video_url)
+
+    @property
+    def has_document(self):
+        return bool(self.document_file)
 
 
 class Topic(BaseModel):
@@ -203,4 +248,37 @@ class UserProgress(BaseModel):
 
     def __str__(self):
         return f"{self.user.username} - {self.lesson or self.module} ({'Done' if self.is_completed else 'Pending'})"
+
+
+class Enrollment(BaseModel):
+    """
+    A student's registration on a course. Required before lessons can be opened.
+    """
+
+    class Status(models.TextChoices):
+        ACTIVE = 'active', 'Active'
+        COMPLETED = 'completed', 'Completed'
+        DROPPED = 'dropped', 'Dropped'
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='enrollments')
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+        db_index=True,
+    )
+    progress_pct = models.PositiveSmallIntegerField(default=0)
+    enrolled_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-enrolled_at']
+        unique_together = [('course', 'student')]
+        indexes = [
+            models.Index(fields=['student', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.student.username} -> {self.course.title} ({self.get_status_display()})"
 

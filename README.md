@@ -131,6 +131,31 @@ by migration `users.0003`.
 
 ---
 
+## Course Authoring & Enrolment (Phase 2)
+
+Teachers (and administrators) get a **Content Studio** at `/courses/manage/` for the full
+`Subject → Course → Module → Lesson` hierarchy. Students must **enrol** before a course's
+lessons unlock.
+
+| Route | Access | Purpose |
+| :--- | :--- | :--- |
+| `/courses/manage/` | teacher, admin | Authoring cockpit — subjects, courses, modules, lessons |
+| `/courses/manage/subjects/new/` | teacher, admin | Create a subject (`general` or `cyber`) |
+| `/courses/manage/courses/new/` | teacher, admin | Create / publish a course |
+| `/courses/manage/modules/new/` | teacher, admin | Add a module (code, objectives) |
+| `/courses/manage/lessons/new/` | teacher, admin | Author a lesson incl. **video & PDF upload** |
+| `/courses/my/` | student | Enrolled courses with live progress % |
+| `/courses/<slug>/enroll/` | student (POST) | Enrolment — required before lessons open |
+
+**Lesson types** — `text`, `video`, `pdf`, `quiz`, `assignment`, `lab`, `ctf`.
+The lesson page renders the matching block: HTML5 `<video>` for uploads, an external link
+for `video_url`, a download card for `document_file`, and the existing quiz/CTF widgets.
+
+**Upload limits** — video 200 MB (`mp4/webm/ogg/mov`), documents 25 MB
+(`pdf/doc/docx/ppt/pptx/txt/md/zip`). Files land under `media/lessons/{video,docs}/`.
+
+---
+
 ## Local Development (Without Docker)
 
 You can also run Myanmar E-Learning locally with SQLite:

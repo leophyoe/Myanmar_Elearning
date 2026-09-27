@@ -20,6 +20,14 @@
                 <span class="text-xs px-2.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
                     {{ lesson.module.code }} • Lesson {{ lesson.order }}
                 </span>
+                <span class="ml-2 text-[10px] px-2 py-0.5 rounded font-bold uppercase
+                    {% if lesson.lesson_type == 'video' %}bg-indigo-950 text-indigo-300 border border-indigo-800
+                    {% elif lesson.lesson_type == 'pdf' %}bg-rose-950 text-rose-300 border border-rose-800
+                    {% elif lesson.lesson_type == 'quiz' %}bg-amber-950 text-amber-300 border border-amber-800
+                    {% elif lesson.lesson_type == 'lab' or lesson.lesson_type == 'ctf' %}bg-emerald-950 text-emerald-300 border border-emerald-800
+                    {% else %}bg-slate-800 text-slate-300 border border-slate-700{% endif %}">
+                    {{ type_label }}
+                </span>
                 <h1 class="text-2xl sm:text-3xl font-bold text-white mt-2">{{ lesson.title }}</h1>
                 <p class="text-xs text-slate-400 mt-1">Estimated duration: {{ lesson.estimated_minutes }} minutes</p>
             </div>
@@ -31,10 +39,51 @@
         </div>
     </div>
 
+    <!-- Video -->
+    {% if lesson.has_video %}
+    <div class="rounded-2xl bg-slate-900 border border-slate-800 shadow-xl overflow-hidden mb-8">
+        <div class="px-6 py-3 border-b border-slate-800 flex items-center justify-between">
+            <h2 class="text-xs font-bold text-white uppercase tracking-wider">Video lecture</h2>
+            {% if lesson.video_file %}
+            <a href="{{ lesson.video_file.url }}" download class="text-[11px] text-cyan-400 hover:underline">Download</a>
+            {% endif %}
+        </div>
+        <div class="p-4">
+            {% if lesson.video_file %}
+                <video controls preload="metadata" class="w-full max-h-[480px] rounded-lg bg-black" src="{{ lesson.video_file.url }}">
+                    Your browser does not support embedded video.
+                    <a href="{{ lesson.video_file.url }}" class="text-cyan-400 underline">Download the file</a>.
+                </video>
+            {% else %}
+                <a href="{{ lesson.video_url }}" target="_blank" rel="noopener noreferrer"
+                   class="block text-sm text-cyan-300 hover:text-cyan-200 underline break-all">
+                    {{ lesson.video_url }}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Attached document -->
+    {% if lesson.has_document %}
+    <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mb-8 flex items-center justify-between gap-4">
+        <div class="min-w-0">
+            <h2 class="text-xs font-bold text-white uppercase tracking-wider mb-1">Course material</h2>
+            <p class="text-xs text-slate-400 truncate">{{ lesson.document_file.name }}</p>
+        </div>
+        <a href="{{ lesson.document_file.url }}" target="_blank" rel="noopener"
+           class="shrink-0 text-xs px-4 py-2 rounded-lg bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-200 font-semibold transition">
+            Open / Download
+        </a>
+    </div>
+    {% endif %}
+
     <!-- Theoretical Lecture Content -->
+    {% if lesson.content_markdown %}
     <article class="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-slate-300 text-sm leading-relaxed mb-8 prose prose-invert max-w-none">
         {{ lesson.content_markdown|linebreaks }}
     </article>
+    {% endif %}
 
     <!-- Hands-on Lab Sandbox Link (if available) -->
     {% if labs %}

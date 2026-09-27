@@ -2,7 +2,9 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from apps.users.models import UserRole, StudentProfile, TeacherProfile, AdminProfile
-from apps.courses.models import Course, Module, Lesson, Quiz, Question, Choice
+from apps.courses.models import (
+    Subject, Course, Module, Lesson, LessonType, Quiz, Question, Choice, Enrollment
+)
 from apps.labs.models import Lab, LabTemplate, LabInstance, LabCategory, LabDifficulty
 from apps.ctf.models import Challenge, ChallengeCategory, FlagSubmission, SolvedChallenge
 from apps.ctf.services import FlagVerificationService
@@ -356,3 +358,175 @@ class RoleBasedAccessTests(TestCase):
             self.assertEqual(response.status_code, 200, f"profile failed for {user.username}")
             self.assertContains(response, user.get_role_display())
         self.client.logout()
+
+
+class CourseAuthoringAndEnrollmentTests(TestCase):
+    """
+    Phase 2: Subject/Module/Lesson authoring, enrolment gating and media uploads.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.subject = Subject.objects.create(
+            title="Networking", slug="networking", kind=Subject.Kind.GENERAL
+        )
+        self.course = Course.objects.create(
+            title="Networking Fundamentals", slug="networking-fundamentals",
+            subject=self.subject, description="IP, DNS, routing."
+        )
+        self.module = Module.objects.create(
+            course=self.course, order=1, code="NET-01",
+            title="OSI Model", summary="Seven layers.",
+            learning_objectives=["Map the OSI layers"]
+        )
+        self.lesson = Lesson.objects.create(
+            module=self.module, order=1, title="Layer 1-3 overview",
+            content_markdown="# Hello", lesson_type=LessonType.TEXT,
+        )
+
+        self.student = User.objects.create_user(
+            username='p2_student', email='p2s@mel.edu.mm',
+            role=UserRole.STUDENT, password='StrongCyberPass2026!'
+        )
+        self.teacher = User.objects.create_user(
+            username='p2_teacher', email='p2t@mel.edu.mm',
+            role=UserRole.TEACHER, password='StrongCyberPass2026!'
+        )
+        self.admin = User.objects.create_user(
+            username='p2_admin', email='p2a@mel.edu.mm',
+            role=UserRole.ADMIN, password='StrongCyberPass2026!'
+        )
+
+    def test_15_lesson_requires_active_enrollment(self):
+        url = reverse('lesson-detail', kwargs={'lesson_id': self.lesson.id})
+
+        self.client.force_login(self.student)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('course-detail', kwargs={'slug': self.course.slug}), response.url)
+
+        # Enrol, then the lesson opens
+        self.client.post(reverse('enroll', kwargs={'slug': self.course.slug}))
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_16_enrollment_is_created_and_listed(self):
+        self.client.force_login(self.student)
+        self.client.post(reverse('enroll', kwargs={'slug': self.course.slug}))
+
+        enrollment = Enrollment.objects.get(course=self.course, student=self.student)
+        self.assertEqual(enrollment.status, Enrollment.Status.ACTIVE)
+        self.assertEqual(enrollment.progress_pct, 0)
+
+        response = self.client.get(reverse('my-courses'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.course.title)
+
+        # Re-enrolling does not duplicate
+        self.client.post(reverse('enroll', kwargs={'slug': self.course.slug}))
+        self.assertEqual(
+            Enrollment.objects.filter(course=self.course, student=self.student).count(), 1
+        )
+
+    def test_17_content_studio_is_role_restricted(self):
+        url = reverse('manage-home')
+
+        for user, expected in ((self.teacher, 200), (self.admin, 200), (self.student, 403)):
+            self.client.force_login(user)
+            self.assertEqual(
+                self.client.get(url).status_code, expected,
+                f"{user.username} got unexpected status"
+            )
+
+    def test_18_teacher_can_publish_a_typed_lesson(self):
+        self.client.force_login(self.teacher)
+        response = self.client.post(reverse('lesson-create'), {
+            'module': self.module.id,
+            'order': 2,
+            'title': 'Video: Subnetting',
+            'lesson_type': LessonType.VIDEO,
+            'content_markdown': 'Watch and learn.',
+            'video_url': 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            'estimated_minutes': 20,
+            'has_lab': '',
+            'has_quiz': '',
+        })
+        self.assertEqual(response.status_code, 302)
+
+        lesson = Lesson.objects.get(title='Video: Subnetting')
+        self.assertEqual(lesson.lesson_type, LessonType.VIDEO)
+        self.assertTrue(lesson.has_video)
+        self.assertEqual(lesson.module, self.module)
+
+    def test_19_student_cannot_use_content_studio(self):
+        self.client.force_login(self.student)
+        for name, kwargs in (
+            ('manage-home', {}),
+            ('subject-create', {}),
+            ('course-create', {}),
+            ('module-create', {}),
+            ('lesson-create', {}),
+        ):
+            response = self.client.get(reverse(name, kwargs=kwargs))
+            self.assertEqual(response.status_code, 403, f"{name} must be teacher-only")
+
+    def test_20_module_detail_template_renders(self):
+        """course_list links to module-detail - the template used to be missing."""
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('module-detail', kwargs={'module_id': self.module.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.module.title)
+
+    def test_21_pdf_lesson_renders_document_link(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+        import tempfile, os
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with override_settings(MEDIA_ROOT=tmp):
+                self.lesson.lesson_type = LessonType.PDF
+                self.lesson.document_file.save(
+                    'handout.pdf',
+                    SimpleUploadedFile('handout.pdf', b'%PDF-1.4 fake', content_type='application/pdf')
+                )
+                self.lesson.save()
+
+                self.client.force_login(self.student)
+                self.client.post(reverse('enroll', kwargs={'slug': self.course.slug}))
+                response = self.client.get(reverse('lesson-detail', kwargs={'lesson_id': self.lesson.id}))
+
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'handout.pdf')
+                self.assertTrue(os.path.exists(self.lesson.document_file.path))
+
+    def test_22_oversized_video_is_rejected(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from apps.courses.forms import LessonForm
+
+        big = SimpleUploadedFile('huge.mp4', b'x', content_type='video/mp4')
+        big.size = (LessonForm.MAX_VIDEO_MB + 1) * 1024 * 1024
+        form = LessonForm(data={
+            'module': self.module.id, 'order': 9, 'title': 'Too big',
+            'lesson_type': LessonType.VIDEO, 'content_markdown': 'x',
+            'estimated_minutes': 5,
+        }, files={'video_file': big})
+        self.assertFalse(form.is_valid())
+        self.assertIn('video_file', form.errors)
+
+    def test_23_all_authoring_forms_render(self):
+        """Every Content Studio GET route must render for a teacher."""
+        self.client.force_login(self.teacher)
+        routes = [
+            ('subject-create', {}),
+            ('subject-edit', {'subject_id': self.subject.id}),
+            ('course-create', {}),
+            ('course-edit', {'slug': self.course.slug}),
+            ('module-create', {}),
+            ('module-edit', {'module_id': self.module.id}),
+            ('lesson-create', {}),
+            ('lesson-edit', {'lesson_id': self.lesson.id}),
+            ('lesson-delete', {'lesson_id': self.lesson.id}),
+            ('manage-home', {}),
+        ]
+        for name, kwargs in routes:
+            response = self.client.get(reverse(name, kwargs=kwargs))
+            self.assertEqual(response.status_code, 200, f"{name} failed to render")

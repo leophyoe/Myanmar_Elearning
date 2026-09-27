@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Content Studio - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-800">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-wide">Content Studio</h1>
+            <p class="text-xs text-slate-400 mt-1">Create subjects, structure courses, add modules and publish lessons.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'subject-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Subject</a>
+            <a href="{% url 'course-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Course</a>
+            <a href="{% url 'module-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Module</a>
+            <a href="{% url 'lesson-create' %}" class="text-xs px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">+ Lesson</a>
+        </div>
+    </div>
+
+    <!-- Subjects -->
+    <section class="mb-10">
+        <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Subjects</h2>
+        {% if subjects %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for subject in subjects %}
+            <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 flex items-start justify-between gap-3">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase
+                            {% if subject.kind == 'cyber' %}bg-purple-950 text-purple-300 border border-purple-800
+                            {% else %}bg-cyan-950 text-cyan-300 border border-cyan-800{% endif %}">
+                            {{ subject.get_kind_display }}
+                        </span>
+                        {% if not subject.is_active %}<span class="text-[10px] text-amber-400">inactive</span>{% endif %}
+                    </div>
+                    <h3 class="text-sm font-bold text-white mt-2">{{ subject.title }}</h3>
+                    <p class="text-[11px] text-slate-500 mt-1">{{ subject.courses.count }} course(s)</p>
+                </div>
+                <a href="{% url 'subject-edit' subject_id=subject.id %}" class="text-[11px] text-cyan-400 hover:underline shrink-0">Edit</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-xs text-slate-500">No subjects yet — create one to group your courses.</p>
+        {% endif %}
+    </section>
+
+    <!-- Courses -->
+    <section>
+        <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Courses, Modules &amp; Lessons</h2>
+        {% for course in courses %}
+        <div class="p-6 rounded-xl bg-slate-900 border border-slate-800 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-800">
+                <div>
+                    <div class="flex items-center gap-2 text-[10px]">
+                        <span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 uppercase font-bold">
+                            {{ course.subject.title|default:"Unassigned" }}
+                        </span>
+                        <span class="px-1.5 py-0.5 rounded font-bold uppercase
+                            {% if course.is_published %}bg-emerald-950 text-emerald-300 border border-emerald-800
+                            {% else %}bg-amber-950 text-amber-300 border border-amber-800{% endif %}">
+                            {{ course.is_published|yesno:"Published,Draft" }}
+                        </span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mt-1.5">{{ course.title }}</h3>
+                </div>
+                <div class="flex gap-2 text-xs">
+                    <a href="{% url 'course-edit' slug=course.slug %}" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">Edit Course</a>
+                    <a href="{% url 'module-create' %}?course={{ course.id }}" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">+ Module</a>
+                    <a href="{% url 'course-detail' slug=course.slug %}" class="px-3 py-1.5 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300">Preview</a>
+                </div>
+            </div>
+
+            {% for module in course.modules.all %}
+            <div class="mb-4 last:mb-0 pl-3 border-l-2 border-slate-800">
+                <div class="flex flex-wrap items-center justify-between gap-2 py-1">
+                    <div class="text-xs">
+                        <span class="font-mono font-bold text-cyan-400 mr-2">{{ module.code }}</span>
+                        <span class="text-white font-semibold">{{ module.title }}</span>
+                        <span class="text-slate-500 ml-2">{{ module.lessons.count }} lesson(s)</span>
+                    </div>
+                    <div class="flex gap-2 text-[11px]">
+                        <a href="{% url 'lesson-create' %}?module={{ module.id }}" class="text-cyan-400 hover:underline">+ Lesson</a>
+                        <a href="{% url 'module-edit' module_id=module.id %}" class="text-slate-400 hover:underline">Edit</a>
+                    </div>
+                </div>
+                <ul class="mt-1 space-y-1">
+                    {% for lesson in module.lessons.all %}
+                    <li class="flex items-center justify-between text-[11px] bg-slate-950/60 rounded px-3 py-1.5">
+                        <span class="text-slate-300">
+                            <span class="text-slate-600 mr-2">{{ lesson.order }}.</span>
+                            {{ lesson.title }}
+                            <span class="ml-2 px-1 py-0.5 rounded bg-slate-800 text-slate-400 uppercase text-[9px]">{{ lesson.get_lesson_type_display }}</span>
+                        </span>
+                        <span class="flex gap-2">
+                            <a href="{% url 'lesson-edit' lesson_id=lesson.id %}" class="text-cyan-400 hover:underline">Edit</a>
+                            <a href="{% url 'lesson-delete' lesson_id=lesson.id %}" class="text-red-400 hover:underline">Delete</a>
+                        </span>
+                    </li>
+                    {% empty %}
+                    <li class="text-[11px] text-slate-600 px-3">No lessons yet.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% empty %}
+            <p class="text-xs text-slate-500">No modules yet — add one to start structuring this course.</p>
+            {% endfor %}
+        </div>
+        {% empty %}
+        <p class="text-xs text-slate-500">No courses yet.</p>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

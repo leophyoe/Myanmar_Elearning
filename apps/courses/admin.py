@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Subject, Course, Module, Lesson, Topic, Quiz, Question, Choice, Assignment, AssignmentSubmission, UserProgress
+from .models import Subject, Course, Module, Lesson, Topic, Quiz, Question, Choice, Assignment, AssignmentSubmission, UserProgress, Enrollment
 
 class ModuleInline(admin.StackedInline):
     model = Module
@@ -38,8 +38,8 @@ class ModuleAdmin(admin.ModelAdmin):
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ('title', 'module', 'order', 'has_lab', 'has_quiz')
-    list_filter = ('module__course', 'module')
+    list_display = ('title', 'module', 'order', 'lesson_type', 'has_lab', 'has_quiz')
+    list_filter = ('lesson_type', 'module__course', 'module')
     search_fields = ('title', 'content_markdown')
 
 @admin.register(Topic)
@@ -68,3 +68,10 @@ class UserProgressAdmin(admin.ModelAdmin):
     list_display = ('user', 'course', 'module', 'lesson', 'is_completed', 'completed_at')
     list_filter = ('is_completed', 'course')
 
+
+@admin.register(Enrollment)
+class EnrollmentAdmin(admin.ModelAdmin):
+    list_display = ('student', 'course', 'status', 'progress_pct', 'enrolled_at', 'completed_at')
+    list_filter = ('status', 'course')
+    search_fields = ('student__username', 'student__email', 'course__title')
+    readonly_fields = ('enrolled_at', 'completed_at')

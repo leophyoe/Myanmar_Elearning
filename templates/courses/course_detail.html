@@ -6,8 +6,69 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
     <div class="mb-8">
         <a href="{% url 'course-list' %}" class="text-xs text-cyan-400 hover:underline mb-2 inline-block">&larr; Back to Programs</a>
-        <h1 class="text-3xl font-bold text-white mb-2">{{ course.title }}</h1>
-        <p class="text-sm text-slate-400 max-w-4xl leading-relaxed">{{ course.description }}</p>
+
+        <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+            <div class="max-w-3xl">
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    {% if course.subject %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 uppercase font-bold">
+                        {{ course.subject.title }}
+                    </span>
+                    {% endif %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 uppercase font-bold">
+                        {{ course.duration_months }} Months
+                    </span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 uppercase font-bold">
+                        {{ total_lessons }} Lessons
+                    </span>
+                </div>
+                <h1 class="text-3xl font-bold text-white mb-2">{{ course.title }}</h1>
+                <p class="text-sm text-slate-400 max-w-4xl leading-relaxed">{{ course.description }}</p>
+            </div>
+
+            <!-- Enrolment panel -->
+            <div class="lg:w-72 shrink-0 p-5 rounded-2xl bg-slate-900 border border-slate-800">
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'login' %}?next={% url 'course-detail' slug=course.slug %}"
+                       class="block w-full text-center text-sm px-4 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
+                        Sign in to enrol
+                    </a>
+                {% elif can_manage %}
+                    <a href="{% url 'course-edit' slug=course.slug %}"
+                       class="block w-full text-center text-xs px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold transition">
+                        Edit course in Content Studio
+                    </a>
+                    <a href="{% url 'module-create' %}?course={{ course.id }}"
+                       class="block w-full text-center text-xs px-4 py-2.5 rounded-lg mt-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold transition">
+                        + Add module
+                    </a>
+                {% elif is_enrolled %}
+                    <div class="flex items-center justify-between text-[11px] mb-1.5">
+                        <span class="text-slate-400">Your progress</span>
+                        <span class="text-cyan-400 font-mono font-bold">{{ progress_pct }}%</span>
+                    </div>
+                    <div class="h-2 w-full rounded-full bg-slate-800 overflow-hidden mb-3">
+                        <div class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                             style="width: {{ progress_pct }}%"></div>
+                    </div>
+                    <a href="{% url 'my-courses' %}"
+                       class="block w-full text-center text-xs px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition">
+                        ✓ Enrolled — go to My Courses
+                    </a>
+                {% else %}
+                    <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">
+                        Enrol to open the lessons, track progress and earn a certificate.
+                    </p>
+                    <form method="POST" action="{% url 'enroll' slug=course.slug %}">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="w-full text-sm px-4 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition">
+                            Enrol in this course
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
     </div>
 
     <!-- Modules Accordion / List -->
@@ -17,7 +78,9 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-4 mb-4 border-b border-slate-800 gap-2">
                 <div>
                     <span class="text-xs font-mono font-bold text-cyan-400">{{ module.code }}</span>
-                    <h2 class="text-lg font-bold text-white">{{ module.title }}</h2>
+                    <h2 class="text-lg font-bold text-white">
+                        <a href="{% url 'module-detail' module_id=module.id %}" class="hover:text-cyan-300 transition">{{ module.title }}</a>
+                    </h2>
                     <p class="text-xs text-slate-400 mt-0.5">{{ module.summary }}</p>
                 </div>
                 <span class="text-xs text-slate-500 font-mono">{{ module.lessons.count }} Lessons</span>
@@ -36,6 +99,7 @@
                         <h3 class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition">{{ lesson.title }}</h3>
                     </div>
                     <div class="flex items-center space-x-2 mt-3 text-[10px]">
+                        <span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 uppercase">{{ lesson.get_lesson_type_display }}</span>
                         {% if lesson.has_lab %}
                             <span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">Lab</span>
                         {% endif %}

@@ -48,7 +48,13 @@
 
             <!-- Navigation Links -->
             <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-300">
-                <a href="{% url 'course-list' %}" class="hover:text-cyan-400 transition">Curriculum</a>
+                <a href="{% url 'course-list' %}" class="hover:text-cyan-400 transition">Courses</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'my-courses' %}" class="hover:text-cyan-400 transition">My Courses</a>
+                    {% if is_teacher %}
+                        <a href="{% url 'manage-home' %}" class="hover:text-cyan-400 transition">Content Studio</a>
+                    {% endif %}
+                {% endif %}
                 <a href="{% url 'lab-list' %}" class="hover:text-cyan-400 transition">Cyber Labs</a>
                 <a href="{% url 'ctf-board' %}" class="hover:text-cyan-400 transition">CTF Challenges</a>
                 <a href="{% url 'leaderboard' %}" class="hover:text-cyan-400 transition">Leaderboard</a>

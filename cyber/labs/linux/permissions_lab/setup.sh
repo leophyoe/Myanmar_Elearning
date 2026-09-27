@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+# Start SSH daemon for external student VPN connections
+if [ -x /usr/sbin/sshd ]; then
+    /usr/sbin/sshd
+fi
+
 # Write the dynamic flag from environment into protected target location
 FLAG="${FTCR_FLAG:-FTCR{linux_permissions_default_flag_test}}"
 

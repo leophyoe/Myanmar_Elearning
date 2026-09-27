@@ -41,7 +41,7 @@ class DockerOrchestrator:
             # Simulated environment when Docker daemon is not active
             instance.container_id = f"sim-{instance.id}"
             instance.network_name = f"sim-net-{instance.id}"
-            instance.target_ip = "172.30.1.100"
+            instance.target_ip = "10.10.10.5"
             instance.status = 'running'
             instance.save()
             return True
@@ -116,10 +116,12 @@ class DockerOrchestrator:
             inject_cmd = (
                 f"sh -c 'mkdir -p /root /home/student 2>/dev/null; "
                 f"echo \"{safe_flag}\" > /root/flag.txt 2>/dev/null; "
+                f"echo \"{safe_flag}\" > /root/root.txt 2>/dev/null; "
                 f"echo \"{safe_flag}\" > /home/student/flag.txt 2>/dev/null; "
+                f"echo \"{safe_flag}\" > /home/student/user.txt 2>/dev/null; "
                 f"echo \"{safe_flag}\" > /tmp/flag.txt 2>/dev/null; "
-                f"chmod 644 /home/student/flag.txt /tmp/flag.txt 2>/dev/null; "
-                f"chmod 600 /root/flag.txt 2>/dev/null || true'"
+                f"chmod 644 /home/student/flag.txt /home/student/user.txt /tmp/flag.txt 2>/dev/null; "
+                f"chmod 600 /root/flag.txt /root/root.txt 2>/dev/null || true'"
             )
             container.exec_run(inject_cmd, user="root")
             logger.info(f"Dynamic flag injected successfully into container {container.id[:12]}")

@@ -16,6 +16,8 @@ urlpatterns = [
     path('', LandingPageView.as_view(), name='landing-page'),
     path('auth/', include('apps.users.urls')),
     path('courses/', include('apps.courses.urls')),
+    path('vpn/', include('apps.vpn.urls')),
+    path('labs/vpn/', include('apps.vpn.urls')),
     path('labs/', include('apps.labs.urls')),
     path('cyber/', include('apps.labs.manage_urls')),
     path('terminal/', include('apps.terminal.urls')),

@@ -1,6 +1,9 @@
 FROM alpine:3.19
 
-RUN apk add --no-cache bash shadow sudo coreutils
+RUN apk add --no-cache bash shadow sudo coreutils openssh openssh-server && \
+    ssh-keygen -A && \
+    mkdir -p /var/run/sshd && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
 # Create unprivileged student user
 RUN useradd -m -s /bin/bash -u 1000 student && \

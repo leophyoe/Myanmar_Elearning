@@ -1,8 +1,22 @@
-# Future Tech Cyber Range
+# Myanmar E-Learning
 
-An enterprise-grade, Docker-orchestrated cybersecurity training and laboratory platform engineered for the **10-Month Diploma in Cyber Security**.
+An institutional e-learning platform for Myanmar: online courses with video/PDF lessons, quizzes with instant grading, assignments, progress tracking and verifiable certificates — plus an integrated, Docker-orchestrated **cyber security range** (isolated labs, CTF challenges and an in-browser terminal) engineered for the **10-Month Diploma in Cyber Security**.
 
-Built for educational institutions, technical universities, defense academies, and commercial training colleges.
+Built for schools, colleges, technical institutes, universities and commercial training academies.
+
+---
+
+## Platform Structure
+
+- **`apps/users`** — accounts and role-based access (`ADMIN` / `TEACHER` / `STUDENT`)
+- **`apps/courses`** — subjects, modules, lessons, quizzes, assignments, progress
+- **`apps/certificates`** — verifiable PDF credentials + public `/verify/` gateway
+- **`apps/labs` + `apps/ctf` + `apps/terminal`** — cyber range (Docker sandboxes, CTF, WebSocket terminal)
+- **`apps/scoring`** — badges, points and leaderboard
+- **`apps/analytics`** — admin / instructor reporting
+
+> Phase 0 (this snapshot): platform rebrand, Git version control, and the `Subject` category model.
+> Cyber lab engine is intentionally left untouched.
 
 ---
 
@@ -77,17 +91,49 @@ docker compose exec web python manage.py createsuperuser
 ```
 
 ### 5. Access the Platform
-- **Public Range Portal**: [http://localhost](http://localhost) (or port 8000 if accessing Daphne directly)
-- **Student Dashboard**: `http://localhost/auth/dashboard/`
-- **Instructor Command Center**: `http://localhost/analytics/instructor/`
-- **System Telemetry & Health**: `http://localhost/analytics/system/`
-- **Health Check API**: `http://localhost/api/health/`
+- **Public Portal**: [http://localhost](http://localhost) (or port 8000 if accessing Daphne directly)
+- **Student Dashboard**: `/auth/dashboard/`
+- **Teacher Dashboard**: `/analytics/instructor/`
+- **Administrator Dashboard**: `/analytics/system/`
+- **Health Check API**: `/api/health/`
+
+---
+
+## Accounts & Roles
+
+Three institutional roles are supported. Every account automatically receives a matching
+profile (`StudentProfile` / `TeacherProfile` / `AdminProfile`) via a `post_save` signal.
+
+| Role | Value | Can do | Dashboard |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `admin` | Everything: user management, publishing, payments, system telemetry | `/analytics/system/` |
+| **Teacher** | `teacher` | Author courses/lessons, set quizzes & assignments, grade, view class progress | `/analytics/instructor/` |
+| **Student** | `student` | Self-register, enrol, learn, submit, track progress, earn certificates | `/auth/dashboard/` |
+
+**Provisioning**
+
+```bash
+# Administrator (also creates a Django superuser)
+python manage.py createsuperuser
+# then set role = admin in the Django admin (/admin/)
+
+# Teacher
+python manage.py shell -c "
+from apps.users.models import User, UserRole
+User.objects.create_user('u_kyaw', 'kyaw@mel.edu.mm', 'ChangeMe2026!', role=UserRole.TEACHER)
+"
+
+# Students self-register at /auth/register/ (always role = student)
+```
+
+Legacy role values (`super_admin`, `lab_admin`, `instructor`) are remapped automatically
+by migration `users.0003`.
 
 ---
 
 ## Local Development (Without Docker)
 
-You can also run Future Tech Cyber Range locally with SQLite:
+You can also run Myanmar E-Learning locally with SQLite:
 
 ```bash
 # Run database migrations

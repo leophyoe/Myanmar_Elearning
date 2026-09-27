@@ -1,2 +1,2 @@
-"""Modular applications package for Future Tech Cyber Range."""
+"""Modular applications package for Myanmar E-Learning."""
 

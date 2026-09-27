@@ -9,7 +9,7 @@ class Command(BaseCommand):
     help = "Seeds the complete 14-Module 10-Month Diploma in Cyber Security curriculum, labs, CTF challenges, and badges."
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.NOTICE("Seeding Future Tech Cyber Range curriculum..."))
+        self.stdout.write(self.style.NOTICE("Seeding Myanmar E-Learning curriculum..."))
 
         # 1. Main Course: Diploma in Cyber Security
         course, created = Course.objects.get_or_create(

@@ -2,12 +2,52 @@ from django.db import models
 from django.conf import settings
 from apps.common.models import BaseModel
 
+
+class Subject(BaseModel):
+    """
+    Top-level subject / category that groups courses.
+
+    Kind distinguishes general academic subjects from the integrated
+    cyber security range (which exposes labs, CTF and the web terminal).
+    """
+
+    class Kind(models.TextChoices):
+        GENERAL = 'general', 'General'
+        CYBER = 'cyber', 'Cyber Security'
+
+    title = models.CharField(max_length=128, unique=True)
+    slug = models.SlugField(unique=True, db_index=True)
+    description = models.TextField(blank=True)
+    icon_name = models.CharField(max_length=64, default="book-open")
+    kind = models.CharField(
+        max_length=16,
+        choices=Kind.choices,
+        default=Kind.GENERAL,
+        db_index=True,
+    )
+    order = models.PositiveSmallIntegerField(default=0, db_index=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        ordering = ['order', 'title']
+
+    def __str__(self):
+        return self.title
+
+
 class Course(BaseModel):
     """
     Top-level academic program (e.g. Diploma in Cyber Security).
     """
     title = models.CharField(max_length=255, default="Diploma in Cyber Security")
     slug = models.SlugField(unique=True, db_index=True)
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='courses',
+    )
     description = models.TextField()
     duration_months = models.PositiveSmallIntegerField(default=10)
     is_published = models.BooleanField(default=True, db_index=True)

@@ -3,11 +3,12 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from apps.common.models import BaseModel
 
+
 class UserRole(models.TextChoices):
+    """Three institutional roles. ADMIN is a superset of every capability."""
+    ADMIN = 'admin', 'Administrator'
+    TEACHER = 'teacher', 'Teacher'
     STUDENT = 'student', 'Student'
-    INSTRUCTOR = 'instructor', 'Instructor'
-    LAB_ADMIN = 'lab_admin', 'Lab Administrator'
-    SUPER_ADMIN = 'super_admin', 'Super Administrator'
 
 
 class User(AbstractUser):
@@ -39,26 +40,38 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
 
+    # ------------------------------------------------------------------
+    # Role capability checks
+    # ------------------------------------------------------------------
+    @property
+    def is_admin(self):
+        return self.role == UserRole.ADMIN or self.is_superuser
+
+    @property
+    def is_teacher(self):
+        return self.role in (UserRole.TEACHER, UserRole.ADMIN)
+
     @property
     def is_student(self):
         return self.role == UserRole.STUDENT
 
+    # Legacy aliases kept so older templates/queries keep working.
     @property
     def is_instructor(self):
-        return self.role in [UserRole.INSTRUCTOR, UserRole.SUPER_ADMIN]
+        return self.is_teacher
 
     @property
     def is_lab_admin(self):
-        return self.role in [UserRole.LAB_ADMIN, UserRole.SUPER_ADMIN]
+        return self.is_admin
 
     @property
     def is_super_admin(self):
-        return self.role == UserRole.SUPER_ADMIN or self.is_superuser
+        return self.is_admin
 
 
 class StudentProfile(BaseModel):
     """
-    Academic profile for enrolled cyber security students.
+    Academic profile for enrolled students.
     """
     user = models.OneToOneField(
         User,
@@ -69,7 +82,7 @@ class StudentProfile(BaseModel):
         max_length=32,
         unique=True,
         db_index=True,
-        help_text="Official institution student ID, e.g., FTCR-2026-0042"
+        help_text="Official institution student ID, e.g., MEL-2026-0042"
     )
     batch = models.CharField(
         max_length=64,
@@ -86,19 +99,38 @@ class StudentProfile(BaseModel):
         return f"{self.student_id} - {self.user.get_full_name() or self.user.username}"
 
 
-class InstructorProfile(BaseModel):
+class TeacherProfile(BaseModel):
     """
-    Professional profile for faculty, course creators, and lab instructors.
+    Professional profile for course authors, lecturers and graders.
     """
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
-        related_name='instructor_profile'
+        related_name='teacher_profile'
     )
-    department = models.CharField(max_length=128, default="Cyber Security & Defense")
-    title = models.CharField(max_length=128, default="Senior Cyber Security Lecturer")
-    qualifications = models.TextField(blank=True, help_text="Industry certifications (OSCP, CISSP, CEH, etc.)")
+    department = models.CharField(max_length=128, default="Academic Department")
+    title = models.CharField(max_length=128, default="Lecturer")
+    qualifications = models.TextField(
+        blank=True,
+        help_text="Degrees, certifications and teaching experience"
+    )
 
     def __str__(self):
         return f"{self.title} {self.user.get_full_name() or self.user.username}"
 
+
+class AdminProfile(BaseModel):
+    """
+    Operational profile for platform administrators.
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='admin_profile'
+    )
+    department = models.CharField(max_length=128, default="Administration")
+    title = models.CharField(max_length=128, default="Platform Administrator")
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.title} {self.user.get_full_name() or self.user.username}"

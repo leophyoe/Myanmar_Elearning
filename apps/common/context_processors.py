@@ -1,4 +1,15 @@
 from django.conf import settings
+from django.urls import reverse
+
+
+def _dashboard_url(user):
+    """Return the dashboard route that matches the user's role."""
+    if user.is_admin:
+        return reverse('admin-dashboard')
+    if user.is_teacher:
+        return reverse('teacher-dashboard')
+    return reverse('dashboard')
+
 
 def platform_context(request):
     """Expose platform-wide configurations and user role flags to all templates."""
@@ -10,13 +21,16 @@ def platform_context(request):
     }
 
     if request.user.is_authenticated:
-        role = getattr(request.user, 'role', 'student')
+        user = request.user
         context.update({
-            'is_student': role == 'student',
-            'is_instructor': role == 'instructor',
-            'is_lab_admin': role == 'lab_admin',
-            'is_super_admin': role == 'super_admin' or request.user.is_superuser,
-            'user_role_display': request.user.get_role_display() if hasattr(request.user, 'get_role_display') else role,
+            'is_student': user.is_student,
+            'is_teacher': user.is_teacher,
+            'is_admin': user.is_admin,
+            # Legacy flags (deprecated - prefer is_admin / is_teacher)
+            'is_instructor': user.is_teacher,
+            'is_lab_admin': user.is_admin,
+            'is_super_admin': user.is_admin,
+            'user_role_display': user.get_role_display() if hasattr(user, 'get_role_display') else '',
+            'DASHBOARD_URL': _dashboard_url(user),
         })
     return context
-

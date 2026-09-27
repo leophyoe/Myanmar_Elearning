@@ -1,7 +1,7 @@
 .PHONY: help build up down restart logs migrate makemigrations test seed shell clean
 
 help:
-	@echo "Future Tech Cyber Range - Commands"
+	@echo "Myanmar E-Learning - Commands"
 	@echo "  make build          Build docker containers"
 	@echo "  make up             Start containers in background"
 	@echo "  make down           Stop containers"

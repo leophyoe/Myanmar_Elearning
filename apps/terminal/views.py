@@ -11,7 +11,7 @@ class TerminalView(LoginRequiredMixin, DetailView):
 
     def get_queryset(self):
         # Only allow students to view their own running instances (or super admins)
-        if self.request.user.is_super_admin:
+        if self.request.user.is_admin:
             return LabInstance.objects.all()
         return LabInstance.objects.filter(user=self.request.user)
 

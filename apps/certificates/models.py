@@ -21,7 +21,7 @@ class Certificate(BaseModel):
         max_length=64,
         unique=True,
         db_index=True,
-        help_text="Public certificate serial ID, e.g. FTCR-CERT-2026-89A1"
+        help_text="Public certificate serial ID, e.g. MEL-CERT-2026-89A1"
     )
     student_name = models.CharField(max_length=255)
     program_title = models.CharField(max_length=255, default="Diploma in Cyber Security")
@@ -39,5 +39,5 @@ class Certificate(BaseModel):
     @classmethod
     def generate_code(cls):
         rand = secrets.token_hex(4).upper()
-        return f"FTCR-CERT-2026-{rand}"
+        return f"MEL-CERT-2026-{rand}"
 

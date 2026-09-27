@@ -2,6 +2,7 @@ from functools import wraps
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.mixins import AccessMixin
 
+
 class RoleRequiredMixin(AccessMixin):
     """CBV Mixin to restrict access based on user role."""
     allowed_roles = []
@@ -10,8 +11,8 @@ class RoleRequiredMixin(AccessMixin):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
 
-        # Superusers always pass
-        if request.user.is_superuser or request.user.role == 'super_admin':
+        # Administrators always pass
+        if request.user.is_admin:
             return super().dispatch(request, *args, **kwargs)
 
         if self.allowed_roles and request.user.role not in self.allowed_roles:
@@ -27,7 +28,7 @@ def role_required(allowed_roles):
         def _wrapped_view(request, *args, **kwargs):
             if not request.user.is_authenticated:
                 raise PermissionDenied("Authentication required.")
-            if request.user.is_superuser or request.user.role == 'super_admin':
+            if request.user.is_admin:
                 return view_func(request, *args, **kwargs)
             if request.user.role not in allowed_roles:
                 raise PermissionDenied("You do not possess the required role permissions for this operation.")
@@ -42,20 +43,20 @@ try:
 
     class IsStudent(BasePermission):
         def has_permission(self, request, view):
-            return bool(request.user and request.user.is_authenticated and request.user.role in ['student', 'super_admin'])
+            return bool(request.user and request.user.is_authenticated and request.user.is_student)
 
-    class IsInstructor(BasePermission):
+    class IsTeacher(BasePermission):
         def has_permission(self, request, view):
-            return bool(request.user and request.user.is_authenticated and request.user.role in ['instructor', 'super_admin'])
+            return bool(request.user and request.user.is_authenticated and request.user.is_teacher)
 
-    class IsLabAdmin(BasePermission):
+    class IsAdmin(BasePermission):
         def has_permission(self, request, view):
-            return bool(request.user and request.user.is_authenticated and request.user.role in ['lab_admin', 'super_admin'])
+            return bool(request.user and request.user.is_authenticated and request.user.is_admin)
 
-    class IsSuperAdmin(BasePermission):
-        def has_permission(self, request, view):
-            return bool(request.user and request.user.is_authenticated and (request.user.role == 'super_admin' or request.user.is_superuser))
+    # Legacy aliases
+    IsInstructor = IsTeacher
+    IsLabAdmin = IsAdmin
+    IsSuperAdmin = IsAdmin
 
 except ImportError:
     pass
-

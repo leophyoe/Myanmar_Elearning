@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from apps.users.models import UserRole, StudentProfile, InstructorProfile
+from apps.users.models import UserRole, StudentProfile, TeacherProfile, AdminProfile
 from apps.courses.models import Course, Module, Lesson, Quiz, Question, Choice
 from apps.labs.models import Lab, LabTemplate, LabInstance, LabCategory, LabDifficulty
 from apps.ctf.models import Challenge, ChallengeCategory, FlagSubmission, SolvedChallenge
@@ -36,29 +36,47 @@ class Phase1SystemTests(TestCase):
             last_name="Anderson"
         )
 
-        # 2. Create Instructor User
+        # 2. Create Teacher User
         self.instructor = User.objects.create_user(
             username="prof_morpheus",
             email="morpheus@futuretech.edu",
             password="StrongCyberPass2026!",
-            role=UserRole.INSTRUCTOR,
+            role=UserRole.TEACHER,
             first_name="Morpheus",
-            last_name="Instructor"
+            last_name="Teacher"
+        )
+
+        # 3. Create Administrator User
+        self.admin = User.objects.create_user(
+            username="sys_admin",
+            email="admin@futuretech.edu",
+            password="StrongCyberPass2026!",
+            role=UserRole.ADMIN,
+            first_name="Ada",
+            last_name="Administrator"
         )
 
     def test_01_user_and_rbac_profiles(self):
-        """Verify Custom User model, RBAC role detection, and signal profile creation."""
+        """Verify Custom User model, three-role RBAC, and signal profile creation."""
         self.assertEqual(self.student.role, UserRole.STUDENT)
         self.assertTrue(self.student.is_student)
-        self.assertFalse(self.student.is_instructor)
+        self.assertFalse(self.student.is_teacher)
+        self.assertFalse(self.student.is_admin)
 
         # Verify StudentProfile was auto-created by signals
         self.assertTrue(hasattr(self.student, 'student_profile'))
-        self.assertTrue(self.student.student_profile.student_id.startswith("FTCR-2026-"))
+        self.assertTrue(self.student.student_profile.student_id.startswith("MEL-2026-"))
 
-        # Verify InstructorProfile was auto-created for instructor
-        self.assertTrue(hasattr(self.instructor, 'instructor_profile'))
-        self.assertTrue(self.instructor.is_instructor)
+        # Verify TeacherProfile was auto-created for the teacher
+        self.assertTrue(hasattr(self.instructor, 'teacher_profile'))
+        self.assertTrue(self.instructor.is_teacher)
+        self.assertFalse(self.instructor.is_admin)
+
+        # Verify AdminProfile was auto-created for the administrator
+        self.assertTrue(hasattr(self.admin, 'admin_profile'))
+        self.assertTrue(self.admin.is_admin)
+        self.assertTrue(self.admin.is_teacher)   # admin inherits teaching capability
+        self.assertFalse(self.admin.is_student)
 
     def test_02_course_and_curriculum_integrity(self):
         """Verify Course, Module, Lesson, and Quiz relationships."""
@@ -209,7 +227,7 @@ class Phase1SystemTests(TestCase):
             grade="Distinction"
         )
 
-        self.assertTrue(cert.certificate_code.startswith("FTCR-CERT-2026-"))
+        self.assertTrue(cert.certificate_code.startswith("MEL-CERT-2026-"))
 
         # Access public verification URL
         response = self.client.get(reverse('certificate-verify', kwargs={'cert_id': cert.id}))
@@ -229,3 +247,112 @@ class Phase1SystemTests(TestCase):
         self.assertIn('database', data['components'])
         self.assertEqual(data['components']['database']['status'], 'connected')
 
+
+
+class RoleBasedAccessTests(TestCase):
+    """
+    Phase 1 RBAC suite: three roles, three dashboards, role-aware redirects.
+    """
+
+    def setUp(self):
+        self.client = Client()
+        self.credentials = {'password': 'StrongCyberPass2026!'}
+
+        self.student = User.objects.create_user(
+            username='rbac_student', email='s@mel.edu.mm',
+            role=UserRole.STUDENT, **self.credentials
+        )
+        self.teacher = User.objects.create_user(
+            username='rbac_teacher', email='t@mel.edu.mm',
+            role=UserRole.TEACHER, **self.credentials
+        )
+        self.admin = User.objects.create_user(
+            username='rbac_admin', email='a@mel.edu.mm',
+            role=UserRole.ADMIN, **self.credentials
+        )
+
+    def test_07_role_values_are_three(self):
+        """The platform exposes exactly ADMIN / TEACHER / STUDENT."""
+        self.assertEqual(
+            [value for value, _ in UserRole.choices],
+            ['admin', 'teacher', 'student']
+        )
+
+    def test_08_dashboard_routes_resolve(self):
+        """All three dashboard routes are reversible, plus the legacy alias names."""
+        self.assertEqual(reverse('dashboard'), '/auth/dashboard/')
+        self.assertEqual(reverse('teacher-dashboard'), '/analytics/instructor/')
+        self.assertEqual(reverse('admin-dashboard'), '/analytics/system/')
+        for name in ('instructor-dashboard', 'system-telemetry'):
+            self.assertTrue(reverse(name))
+
+    def test_09_student_dashboard_is_role_restricted(self):
+        # Student reaches their own cockpit
+        self.client.force_login(self.student)
+        self.assertEqual(self.client.get(reverse('dashboard')).status_code, 200)
+
+        # Teachers and admins are bounced to their own dashboards
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.endswith(reverse('teacher-dashboard').lstrip('/')))
+
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.endswith(reverse('admin-dashboard').lstrip('/')))
+
+    def test_10_teacher_dashboard_access_matrix(self):
+        url = reverse('teacher-dashboard')
+
+        self.client.force_login(self.teacher)
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+        self.client.force_login(self.student)
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_11_admin_dashboard_access_matrix(self):
+        url = reverse('admin-dashboard')
+
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+        self.client.force_login(self.teacher)
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+        self.client.force_login(self.student)
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_12_anonymous_is_redirected_to_login(self):
+        for name in ('dashboard', 'teacher-dashboard', 'admin-dashboard'):
+            response = self.client.get(reverse(name))
+            self.assertEqual(response.status_code, 302)
+            self.assertIn('login', response.url)
+
+    def test_13_login_redirects_to_role_dashboard(self):
+        cases = [
+            (self.student, 'dashboard'),
+            (self.teacher, 'teacher-dashboard'),
+            (self.admin, 'admin-dashboard'),
+        ]
+        for user, expected in cases:
+            self.client.logout()
+            response = self.client.post(reverse('login'), {
+                'username': user.username,
+                'password': 'StrongCyberPass2026!',
+            })
+            self.assertEqual(response.status_code, 302, f"no redirect for {user.username}")
+            self.assertEqual(response.url, reverse(expected),
+                             f"{user.username} landed on {response.url}")
+        self.client.logout()
+
+    def test_14_profile_page_renders_for_every_role(self):
+        for user in (self.student, self.teacher, self.admin):
+            self.client.force_login(user)
+            response = self.client.get(reverse('profile'))
+            self.assertEqual(response.status_code, 200, f"profile failed for {user.username}")
+            self.assertContains(response, user.get_role_display())
+        self.client.logout()

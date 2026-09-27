@@ -65,20 +65,22 @@
                         </span>
                     </div>
 
-                    {% if is_instructor or is_super_admin %}
-                        <a href="{% url 'instructor-dashboard' %}" class="text-xs px-3 py-1.5 rounded bg-emerald-950 border border-emerald-700 text-emerald-300 hover:bg-emerald-900 transition">
-                            Instructor Panel
+                    {% if is_admin %}
+                        <a href="{% url 'admin-dashboard' %}" class="text-xs px-3 py-1.5 rounded bg-purple-950 border border-purple-700 text-purple-300 hover:bg-purple-900 transition">
+                            Admin Console
+                        </a>
+                    {% elif is_teacher %}
+                        <a href="{% url 'teacher-dashboard' %}" class="text-xs px-3 py-1.5 rounded bg-emerald-950 border border-emerald-700 text-emerald-300 hover:bg-emerald-900 transition">
+                            Teacher Console
                         </a>
                     {% endif %}
 
-                    {% if is_lab_admin or is_super_admin %}
-                        <a href="{% url 'system-telemetry' %}" class="text-xs px-3 py-1.5 rounded bg-purple-950 border border-purple-700 text-purple-300 hover:bg-purple-900 transition">
-                            Admin Telemetry
-                        </a>
-                    {% endif %}
-
-                    <a href="{% url 'dashboard' %}" class="text-xs px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
+                    <a href="{{ DASHBOARD_URL }}" class="text-xs px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
                         Dashboard
+                    </a>
+
+                    <a href="{% url 'profile' %}" class="text-xs text-slate-400 hover:text-white transition">
+                        Profile
                     </a>
 
                     <form method="POST" action="{% url 'logout' %}" class="inline">
@@ -123,8 +125,8 @@
     <footer class="border-t border-slate-800/80 bg-[#080d19] py-8 mt-16 text-xs text-slate-500">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div class="flex items-center space-x-2">
-                <span class="text-cyan-400 font-bold">FUTURE TECH CYBER RANGE</span>
-                <span>• 10-Month Professional Diploma in Cyber Security</span>
+                <span class="text-cyan-400 font-bold">{{ PLATFORM_NAME }}</span>
+                <span>• Online Courses, Cyber Labs &amp; Certificates</span>
             </div>
             <div class="text-slate-500 text-center md:text-right">
                 All cybersecurity exercises execute strictly inside isolated Docker sandbox environments. Egress WAN disabled.

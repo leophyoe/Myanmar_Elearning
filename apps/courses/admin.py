@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Course, Module, Lesson, Topic, Quiz, Question, Choice, Assignment, AssignmentSubmission, UserProgress
+from .models import Subject, Course, Module, Lesson, Topic, Quiz, Question, Choice, Assignment, AssignmentSubmission, UserProgress
 
 class ModuleInline(admin.StackedInline):
     model = Module
@@ -15,9 +15,17 @@ class ChoiceInline(admin.TabularInline):
     model = Choice
     extra = 4
 
+@admin.register(Subject)
+class SubjectAdmin(admin.ModelAdmin):
+    list_display = ('title', 'slug', 'kind', 'order', 'is_active')
+    list_filter = ('kind', 'is_active')
+    search_fields = ('title', 'slug')
+    prepopulated_fields = {'slug': ('title',)}
+
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'duration_months', 'is_published', 'created_at')
+    list_display = ('title', 'subject', 'duration_months', 'is_published', 'created_at')
+    list_filter = ('subject', 'is_published')
     prepopulated_fields = {'slug': ('title',)}
     inlines = [ModuleInline]
 

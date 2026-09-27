@@ -31,7 +31,7 @@ class TerminalConsumer(AsyncWebsocketConsumer):
         # Send welcome header
         welcome_banner = (
             "\r\n\x1b[1;36m========================================================\x1b[0m\r\n"
-            f"\x1b[1;32m  FUTURE TECH CYBER RANGE - ISOLATED LAB TERMINAL\x1b[0m\r\n"
+            f"\x1b[1;32m  MYANMAR E-LEARNING - ISOLATED LAB TERMINAL\x1b[0m\r\n"
             f"\x1b[0;37m  Target Environment Instance: {self.instance_id}\x1b[0m\r\n"
             f"\x1b[0;37m  Logged in as: {self.user.username} (Restricted Access)\x1b[0m\r\n"
             "\x1b[1;36m========================================================\x1b[0m\r\n\r\n"

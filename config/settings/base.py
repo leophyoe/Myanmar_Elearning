@@ -93,6 +93,11 @@ ASGI_APPLICATION = 'config.asgi.application'
 # Custom Abstract User Model
 AUTH_USER_MODEL = 'users.User'
 
+# Authentication redirects (named URLs from apps.users.urls)
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'landing-page'
+
 # Password Validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

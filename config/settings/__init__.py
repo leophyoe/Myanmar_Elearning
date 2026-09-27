@@ -1,2 +1,2 @@
-"""Settings package for Future Tech Cyber Range."""
+"""Settings package for Myanmar E-Learning."""
 

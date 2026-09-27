@@ -1,15 +1,16 @@
 from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
 from apps.common.permissions import RoleRequiredMixin
 from apps.users.models import User, StudentProfile
-from apps.labs.models import LabInstance, Lab
-from apps.courses.models import Course, Module, UserProgress, AssignmentSubmission
+from apps.labs.models import LabInstance
+from apps.courses.models import UserProgress, AssignmentSubmission
 from apps.ctf.models import Challenge, SolvedChallenge
 from .models import SystemLog, ActivityLog
 
-class InstructorDashboardView(RoleRequiredMixin, TemplateView):
+
+class TeacherDashboardView(RoleRequiredMixin, TemplateView):
+    """Teacher Command Center - students, submissions and live class activity."""
     template_name = 'dashboards/instructor_dashboard.html'
-    allowed_roles = ['instructor', 'super_admin']
+    allowed_roles = ['teacher']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -26,9 +27,10 @@ class InstructorDashboardView(RoleRequiredMixin, TemplateView):
         return context
 
 
-class SystemTelemetryView(RoleRequiredMixin, TemplateView):
+class AdminDashboardView(RoleRequiredMixin, TemplateView):
+    """Administrator Command Center - platform health, users and lab infrastructure."""
     template_name = 'dashboards/admin_dashboard.html'
-    allowed_roles = ['lab_admin', 'super_admin']
+    allowed_roles = ['admin']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -65,9 +67,16 @@ class SystemTelemetryView(RoleRequiredMixin, TemplateView):
             'db_status': db_status,
             'redis_status': redis_status,
             'docker_status': docker_status,
+            'total_users': User.objects.count(),
+            'total_teachers': User.objects.filter(role='teacher', is_active=True).count(),
+            'total_students': User.objects.filter(role='student', is_active=True).count(),
             'active_instances': LabInstance.objects.filter(status='running'),
             'system_logs': SystemLog.objects.all()[:20],
             'recent_activities': ActivityLog.objects.select_related('user')[:20],
         })
         return context
 
+
+# Legacy aliases (kept for imports that still use the old names)
+InstructorDashboardView = TeacherDashboardView
+SystemTelemetryView = AdminDashboardView

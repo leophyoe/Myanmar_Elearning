@@ -281,6 +281,38 @@ custom link. The joining URL is treated as private course content.
 * The student dashboard lists the next five sessions across enrolled courses.
 * Teachers only schedule on courses they own (`Course.owner`); admins on any.
 
+---
+
+## Administration Console (Phase 7)
+
+One admin-only workspace for accounts, courses and money. Every route lives under
+`/console/` and is guarded by `AdminRequiredMixin` (`allowed_roles = ['admin']`).
+
+| Route | Purpose |
+| :--- | :--- |
+| `/console/` | Platform totals: users, courses, enrolments, revenue |
+| `/console/users/` | User management — search, role filter, status filter, pagination |
+| `/console/users/new/` | Provision a student, teacher or administrator |
+| `/console/users/<uuid>/` | Account detail: enrolments, payments, certificates |
+| `/console/users/<uuid>/edit/` | Identity, role and active status |
+| `/console/users/<uuid>/password/` | Administrator password reset |
+| `/console/users/<uuid>/toggle/` | POST-only deactivate / reactivate |
+| `/console/courses/` | Course & fee list: price, owner, enrolments, gross, platform share |
+| `/console/fees/` | Revenue split, status totals, pending queue, refund action |
+| `/console/payments/<uuid>/refund/` | POST-only refund of an approved payment |
+
+**Rules enforced in the console**
+
+* A user always keeps the profile of their current role — changing
+  `student` → `teacher` creates the missing `TeacherProfile` immediately.
+* Administrators cannot demote themselves, deactivate themselves or rename
+  their own account (`AdminUserUpdateForm.clean`).
+* Deactivation blocks sign-in but never deletes the account, its enrolments,
+  payments or certificates.
+* Emails are unique case-insensitively on create and update.
+* A role's profile (`StudentProfile` / `TeacherProfile` / `AdminProfile`) is
+  created by the console as well as by the `post_save` signal on self-registration.
+
 ## Local Development (Without Docker)
 
 You can also run Myanmar E-Learning locally with SQLite:

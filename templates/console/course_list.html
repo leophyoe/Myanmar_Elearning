@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Courses &amp; Fees - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="pb-6 mb-8 border-b border-slate-800">
+        <h1 class="text-2xl font-bold text-white tracking-wide">Courses &amp; Fees</h1>
+        <p class="text-xs text-slate-400 mt-1">
+            {{ courses|length }} courses · {{ free_count }} free · {{ paid_count }} paid.
+            Prices are set by the course owner; the platform keeps its commission on every approved sale.
+        </p>
+    </div>
+
+    {% include 'console/_tabs.html' with active='courses' %}
+
+    <form method="GET" class="flex flex-wrap gap-2 items-center mb-5">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search title or slug…"
+               class="w-full sm:w-72 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+        <select name="order" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+            <option value="title" {% if order == 'title' %}selected{% endif %}>Sort: A → Z</option>
+            <option value="-price" {% if order == '-price' %}selected{% endif %}>Sort: price high → low</option>
+            <option value="price" {% if order == 'price' %}selected{% endif %}>Sort: price low → high</option>
+            <option value="-enrolled" {% if order == '-enrolled' %}selected{% endif %}>Sort: most enrolled</option>
+        </select>
+        <button type="submit" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition">Apply</button>
+        <a href="{% url 'manage-home' %}" class="ml-auto px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-sm transition">Open Content Studio</a>
+    </form>
+
+    {% if courses %}
+    <div class="overflow-x-auto rounded-2xl bg-slate-900 border border-slate-800">
+        <table class="w-full text-xs">
+            <thead class="text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-800">
+                <tr>
+                    <th class="px-5 py-3 text-left">Course</th>
+                    <th class="px-5 py-3 text-left">Owner</th>
+                    <th class="px-5 py-3 text-left">Pricing</th>
+                    <th class="px-5 py-3 text-right">Enrolled</th>
+                    <th class="px-5 py-3 text-right">Sales</th>
+                    <th class="px-5 py-3 text-right">Gross</th>
+                    <th class="px-5 py-3 text-right">Platform</th>
+                    <th class="px-5 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for c in courses %}
+                <tr class="hover:bg-slate-800/40">
+                    <td class="px-5 py-3">
+                        <a href="{% url 'course-detail' slug=c.slug %}" class="text-white hover:text-cyan-300 transition font-medium">{{ c.title }}</a>
+                        <div class="text-[10px] text-slate-600 font-mono">/{{ c.slug }}/</div>
+                    </td>
+                    <td class="px-5 py-3 text-slate-400">{{ c.owner.username|default:"—" }}</td>
+                    <td class="px-5 py-3">
+                        {% if c.is_free %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 uppercase font-bold">Free</span>
+                        {% else %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 uppercase font-bold">
+                            {{ c.price }} {{ c.currency }}{% if c.billing_period == 'monthly' %} / mo{% endif %}
+                        </span>
+                        {% endif %}
+                        {% if not c.is_published %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 border border-slate-700 uppercase font-bold ml-1">Draft</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3 text-right font-mono text-slate-300">{{ c.enrolled }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-slate-300">{{ c.sales }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-white">{{ c.gross }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-emerald-400">{{ c.fee }}</td>
+                    <td class="px-5 py-3 text-right whitespace-nowrap">
+                        <a href="{% url 'course-edit' slug=c.slug %}"
+                           class="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Edit price</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-12 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+        <p class="text-sm text-slate-400">No courses match that search.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

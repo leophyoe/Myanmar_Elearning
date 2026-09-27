@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="pb-6 mb-8 border-b border-slate-800">
+        <h1 class="text-2xl font-bold text-white tracking-wide">User Management</h1>
+        <p class="text-xs text-slate-400 mt-1">{{ total_users }} accounts on the platform.</p>
+    </div>
+
+    {% include 'console/_tabs.html' with active='users' %}
+
+    <!-- Filters -->
+    <form method="GET" class="flex flex-wrap gap-2 items-center mb-5">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search username, email, name…"
+               class="w-full sm:w-72 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+        <select name="role" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+            <option value="all" {% if role == 'all' %}selected{% endif %}>All roles ({{ counts.all }})</option>
+            {% for value, label, count in role_options %}
+            <option value="{{ value }}" {% if role == value %}selected{% endif %}>{{ label }} ({{ count }})</option>
+            {% endfor %}
+        </select>
+        <select name="status" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500">
+            <option value="all" {% if status == 'all' %}selected{% endif %}>Any status</option>
+            <option value="active" {% if status == 'active' %}selected{% endif %}>Active ({{ counts.active }})</option>
+            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Deactivated ({{ counts.inactive }})</option>
+        </select>
+        <button type="submit" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition">Filter</button>
+        <a href="{% url 'console-user-list' %}" class="px-3 py-2 text-xs text-slate-400 hover:text-slate-200">Reset</a>
+        <a href="{% url 'console-user-create' %}" class="ml-auto px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition">+ New account</a>
+    </form>
+
+    {% if page_obj.object_list %}
+    <div class="overflow-x-auto rounded-2xl bg-slate-900 border border-slate-800">
+        <table class="w-full text-sm text-left">
+            <thead class="text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-800">
+                <tr>
+                    <th class="px-5 py-3">Account</th>
+                    <th class="px-5 py-3">Role</th>
+                    <th class="px-5 py-3">Status</th>
+                    <th class="px-5 py-3">Joined</th>
+                    <th class="px-5 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for u in page_obj.object_list %}
+                <tr class="hover:bg-slate-800/40">
+                    <td class="px-5 py-3">
+                        <a href="{% url 'console-user-detail' user_id=u.pk %}" class="text-white hover:text-cyan-300 transition font-medium">{{ u.username }}</a>
+                        <div class="text-[11px] text-slate-500">
+                            {{ u.get_full_name|default:"—" }} · {{ u.email }}
+                        </div>
+                    </td>
+                    <td class="px-5 py-3">
+                        <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border
+                            {% if u.role == 'admin' %}bg-purple-950 text-purple-300 border-purple-800
+                            {% elif u.role == 'teacher' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                            {% else %}bg-cyan-950 text-cyan-300 border-cyan-800{% endif %}">
+                            {{ u.get_role_display }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3">
+                        {% if u.is_active %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 uppercase font-bold">Active</span>
+                        {% else %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-800 uppercase font-bold">Deactivated</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3 text-xs text-slate-500 whitespace-nowrap">{{ u.created_at|date:"d M Y" }}</td>
+                    <td class="px-5 py-3 text-right whitespace-nowrap">
+                        <a href="{% url 'console-user-detail' user_id=u.pk %}" class="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Open</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="flex items-center justify-between mt-5 text-xs text-slate-400">
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} accounts</span>
+        <div class="flex gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?q={{ q }}&role={{ role }}&status={{ status }}&page={{ page_obj.previous_page_number }}"
+               class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">&larr; Previous</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?q={{ q }}&role={{ role }}&status={{ status }}&page={{ page_obj.next_page_number }}"
+               class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Next &rarr;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="p-12 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+        <p class="text-sm text-slate-400 mb-4">No accounts match these filters.</p>
+        <a href="{% url 'console-user-list' %}" class="inline-block text-xs px-5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">Clear filters</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

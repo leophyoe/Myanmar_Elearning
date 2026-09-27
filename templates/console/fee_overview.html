@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Fees &amp; Revenue - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="pb-6 mb-8 border-b border-slate-800">
+        <h1 class="text-2xl font-bold text-white tracking-wide">Fees &amp; Revenue</h1>
+        <p class="text-xs text-slate-400 mt-1">
+            Every approved payment is split {{ commission_rate }}% to the platform and
+            {{ teacher_share_pct }}% to the course owner — set by
+            <code class="text-slate-300">PAYMENT_PLATFORM_COMMISSION_RATE</code>.
+            Currency: {{ currency }}.
+        </p>
+    </div>
+
+    {% include 'console/_tabs.html' with active='fees' %}
+
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mt-8">
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Sales</div>
+            <div class="text-2xl font-bold text-white">{{ totals.sales|default:0 }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Gross</div>
+            <div class="text-2xl font-bold text-white font-mono">{{ totals.gross|default:0 }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Platform {{ commission_rate }}%</div>
+            <div class="text-2xl font-bold text-emerald-400 font-mono">{{ totals.fee|default:0 }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Teachers</div>
+            <div class="text-2xl font-bold text-cyan-400 font-mono">{{ totals.teacher|default:0 }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Awaiting review</div>
+            <div class="text-2xl font-bold text-amber-400 font-mono">{{ counts.pending }}</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+        {% for value, label, count in status_options %}
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">{{ label }}</span>
+            <span class="text-lg font-bold font-mono
+                {% if value == 'approved' %}text-emerald-400
+                {% elif value == 'pending' %}text-amber-400
+                {% elif value == 'rejected' %}text-red-400
+                {% else %}text-purple-400{% endif %}">{{ count }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pending queue -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider">Awaiting review</h3>
+            <a href="{% url 'payment-list' %}" class="text-xs text-cyan-400 hover:underline">Full payment queue &rarr;</a>
+        </div>
+        {% if pending %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+                <thead class="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-800">
+                    <tr>
+                        <th class="py-2.5 px-3 text-left">Student</th>
+                        <th class="py-2.5 px-3 text-left">Course</th>
+                        <th class="py-2.5 px-3 text-right">Amount</th>
+                        <th class="py-2.5 px-3 text-left">Method</th>
+                        <th class="py-2.5 px-3 text-left">Submitted</th>
+                        <th class="py-2.5 px-3"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for p in pending %}
+                    <tr>
+                        <td class="py-3 px-3 text-white">{{ p.student.username }}</td>
+                        <td class="py-3 px-3 text-slate-300">{{ p.course.title }}</td>
+                        <td class="py-3 px-3 text-right font-mono text-amber-300">{{ p.amount }} {{ p.currency }}</td>
+                        <td class="py-3 px-3 text-slate-400">{{ p.get_method_display }}</td>
+                        <td class="py-3 px-3 text-slate-500">{{ p.created_at|date:"d M Y, H:i" }}</td>
+                        <td class="py-3 px-3 text-right">
+                            <a href="{% url 'payment-review' payment_id=p.id %}"
+                               class="text-xs px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white font-semibold transition">Review</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-500">Nothing waiting — the queue is clear.</p>
+        {% endif %}
+    </div>
+
+    <!-- Recent approved -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider">Recent approved payments</h3>
+            <a href="{% url 'report-earnings' %}" class="text-xs text-emerald-400 hover:underline">Earnings report &rarr;</a>
+        </div>
+        {% if recent %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+                <thead class="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-800">
+                    <tr>
+                        <th class="py-2.5 px-3 text-left">Student</th>
+                        <th class="py-2.5 px-3 text-left">Course</th>
+                        <th class="py-2.5 px-3 text-right">Gross</th>
+                        <th class="py-2.5 px-3 text-right">Platform</th>
+                        <th class="py-2.5 px-3 text-right">Teacher</th>
+                        <th class="py-2.5 px-3 text-left">Approved</th>
+                        <th class="py-2.5 px-3"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for p in recent %}
+                    <tr>
+                        <td class="py-3 px-3 text-white">{{ p.student.username }}</td>
+                        <td class="py-3 px-3 text-slate-300">{{ p.course.title }}</td>
+                        <td class="py-3 px-3 text-right font-mono text-white">{{ p.amount }}</td>
+                        <td class="py-3 px-3 text-right font-mono text-emerald-400">{{ p.platform_fee }}</td>
+                        <td class="py-3 px-3 text-right font-mono text-cyan-300">{{ p.teacher_amount }}</td>
+                        <td class="py-3 px-3 text-slate-500">{{ p.reviewed_at|date:"d M Y" }}</td>
+                        <td class="py-3 px-3 text-right">
+                            <form method="POST" action="{% url 'console-payment-refund' payment_id=p.id %}" class="inline"
+                                  onsubmit="return confirm('Refund {{ p.amount }} {{ p.currency }} to {{ p.student.username }}?');">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-purple-950 border border-slate-700 hover:border-purple-700 text-slate-400 hover:text-purple-300 transition">
+                                    Refund
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-500">No approved payments yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

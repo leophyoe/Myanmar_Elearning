@@ -53,6 +53,7 @@ LOCAL_APPS = [
     'apps.certificates',
     'apps.projects',
     'apps.analytics',
+    'apps.console',
     'apps.terminal',
 ]
 

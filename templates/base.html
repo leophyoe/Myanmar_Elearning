@@ -52,6 +52,7 @@
                 {% if user.is_authenticated %}
                     <a href="{% url 'my-courses' %}" class="hover:text-cyan-400 transition">My Courses</a>
                     {% if is_admin %}
+                        <a href="{% url 'console-home' %}" class="hover:text-cyan-400 transition">Console</a>
                         <a href="{% url 'payment-list' %}" class="hover:text-cyan-400 transition">Payments</a>
                     {% elif is_student %}
                         <a href="{% url 'payment-history' %}" class="hover:text-cyan-400 transition">Payments</a>

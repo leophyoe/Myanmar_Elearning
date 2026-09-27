@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Administration Console - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="pb-6 mb-8 border-b border-slate-800">
+        <h1 class="text-2xl font-bold text-white tracking-wide">Administration Console</h1>
+        <p class="text-xs text-slate-400 mt-1">Accounts, courses, pricing and revenue — all in one place.</p>
+    </div>
+
+    {% include 'console/_tabs.html' with active='home' %}
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+        <a href="{% url 'console-user-list' %}?role=student" class="p-5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-600 transition block">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Students</div>
+            <div class="text-2xl font-bold text-white">{{ students }}</div>
+        </a>
+        <a href="{% url 'console-user-list' %}?role=teacher" class="p-5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-600 transition block">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Teachers</div>
+            <div class="text-2xl font-bold text-emerald-400">{{ teachers }}</div>
+        </a>
+        <a href="{% url 'console-user-list' %}?role=admin" class="p-5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-600 transition block">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Administrators</div>
+            <div class="text-2xl font-bold text-purple-400">{{ admins }}</div>
+        </a>
+        <a href="{% url 'console-user-list' %}?status=inactive" class="p-5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-600 transition block">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Deactivated</div>
+            <div class="text-2xl font-bold text-red-400">{{ deactivated }}</div>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <!-- Courses -->
+        <a href="{% url 'console-course-list' %}" class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-cyan-600 transition block">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-3">Course catalogue</div>
+            <div class="text-3xl font-bold text-white mb-1">{{ courses }}</div>
+            <div class="text-[11px] text-slate-500">
+                {{ published_courses }} published · {{ paid_courses }} paid · {{ enrolments }} enrolments
+            </div>
+            <div class="text-xs text-cyan-400 mt-4">Manage courses &rarr;</div>
+        </a>
+
+        <!-- Fees -->
+        <a href="{% url 'console-fee-overview' %}" class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-amber-600 transition block">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-3">Fees &amp; revenue</div>
+            <div class="text-3xl font-bold text-amber-300 font-mono mb-1">{{ gross }}</div>
+            <div class="text-[11px] text-slate-500">
+                Platform {{ platform_fee }} · Teachers {{ teacher_share }}
+                {% if pending_payments %}· <span class="text-amber-400">{{ pending_payments }} awaiting review</span>{% endif %}
+            </div>
+            <div class="text-xs text-amber-400 mt-4">Open fee overview &rarr;</div>
+        </a>
+
+        <!-- Users -->
+        <a href="{% url 'console-user-create' %}" class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-600 transition block">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-3">Provisioning</div>
+            <div class="text-3xl font-bold text-emerald-400 mb-1">+ Account</div>
+            <div class="text-[11px] text-slate-500">Create a student, teacher or administrator</div>
+            <div class="text-xs text-emerald-400 mt-4">Create account &rarr;</div>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Quick actions</h3>
+            <div class="flex flex-wrap gap-2 text-xs">
+                <a href="{% url 'console-user-list' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Find a user</a>
+                <a href="{% url 'payment-list' %}" class="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition">Payment queue</a>
+                <a href="{% url 'manage-home' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Content Studio</a>
+                <a href="{% url 'report-earnings' %}" class="px-3 py-2 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 transition">Earnings report</a>
+                <a href="{% url 'admin-dashboard' %}" class="px-3 py-2 rounded-lg bg-purple-950 hover:bg-purple-900 border border-purple-800 text-purple-300 transition">System telemetry</a>
+                <a href="/admin/" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 transition">Django admin</a>
+            </div>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Account status</h3>
+            <ul class="text-sm space-y-2 text-slate-400">
+                <li class="flex justify-between"><span>Active accounts</span><span class="font-mono text-white">{{ counts.active|default:0 }}</span></li>
+                <li class="flex justify-between"><span>Deactivated accounts</span><span class="font-mono text-red-400">{{ counts.inactive|default:0 }}</span></li>
+                <li class="flex justify-between"><span>Pending payments</span><span class="font-mono text-amber-400">{{ pending_payments }}</span></li>
+                <li class="flex justify-between"><span>Free / paid courses</span><span class="font-mono text-white">{{ published_courses }}</span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

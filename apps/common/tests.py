@@ -1592,3 +1592,272 @@ class LiveSessionTests(TestCase):
             self.assertEqual(response.status_code, 200, name)
         response = self.client.get(reverse('live-session-edit', kwargs={'session_id': self.session.id}))
         self.assertEqual(response.status_code, 200)
+
+
+class AdminConsoleTests(TestCase):
+    """Phase 7: administration console — accounts, courses and fees."""
+
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            username='p7admin', password='pw-Adm1n!', email='p7a@mel.edu.mm',
+            role=UserRole.ADMIN,
+        )
+        self.other_admin = User.objects.create_user(
+            username='p7admin2', password='pw-Adm1n!', email='p7a2@mel.edu.mm',
+            role=UserRole.ADMIN,
+        )
+        self.student = User.objects.create_user(
+            username='p7student', password='pw-Std1234', email='p7s@mel.edu.mm',
+            role=UserRole.STUDENT,
+        )
+        self.teacher = User.objects.create_user(
+            username='p7teacher', password='pw-Tch1234', email='p7t@mel.edu.mm',
+            role=UserRole.TEACHER,
+        )
+        self.course = Course.objects.create(
+            title='Fee Course', slug='fee-course', description='x',
+            owner=self.teacher, price=Decimal('3000.00'),
+        )
+
+    def as_admin(self):
+        self.client.force_login(self.admin)
+
+    # -- access control ----------------------------------------------------
+    def test_81_console_is_admin_only(self):
+        routes = (
+            'console-home', 'console-user-list', 'console-user-create',
+            'console-user-edit', 'console-course-list', 'console-fee-overview',
+        )
+        for name in routes:
+            for account in (self.student, self.teacher):
+                self.client.force_login(account)
+                kwargs = {'user_id': self.student.pk} if name == 'console-user-edit' else {}
+                self.assertEqual(
+                    self.client.get(reverse(name, kwargs=kwargs)).status_code, 403,
+                    f'{name} must reject {account.role}',
+                )
+
+        self.as_admin()
+        for name in routes:
+            kwargs = {'user_id': self.student.pk} if name == 'console-user-edit' else {}
+            self.assertEqual(
+                self.client.get(reverse(name, kwargs=kwargs)).status_code, 200, name
+            )
+
+    def test_82_console_home_shows_platform_totals(self):
+        self.as_admin()
+        response = self.client.get(reverse('console-home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['students'], 1)
+        self.assertEqual(response.context['teachers'], 1)
+        self.assertEqual(response.context['courses'], 1)
+        self.assertEqual(response.context['paid_courses'], 1)
+
+    # -- user management ---------------------------------------------------
+    def test_83_user_list_filters_by_role_and_search(self):
+        self.as_admin()
+        response = self.client.get(reverse('console-user-list'), {'role': 'teacher'})
+        self.assertEqual(response.status_code, 200)
+        usernames = [u.username for u in response.context['page_obj'].object_list]
+        self.assertIn('p7teacher', usernames)
+        self.assertNotIn('p7student', usernames)
+
+        response = self.client.get(reverse('console-user-list'), {'q': 'p7stud'})
+        usernames = [u.username for u in response.context['page_obj'].object_list]
+        self.assertEqual(usernames, ['p7student'])
+
+        response = self.client.get(reverse('console-user-list'), {'status': 'inactive'})
+        self.assertEqual(list(response.context['page_obj'].object_list), [])
+
+    def test_84_admin_creates_a_teacher_account(self):
+        self.as_admin()
+        response = self.client.post(reverse('console-user-create'), {
+            'username': 'newteacher', 'first_name': 'New', 'last_name': 'Teacher',
+            'email': 'newt@mel.edu.mm', 'role': UserRole.TEACHER,
+            'password1': 'Str0ngPass!', 'password2': 'Str0ngPass!',
+        })
+        self.assertRedirects(
+            response, reverse('console-user-list'), fetch_redirect_response=False
+        )
+        created = User.objects.get(username='newteacher')
+        self.assertEqual(created.role, UserRole.TEACHER)
+        self.assertTrue(hasattr(created, 'teacher_profile'))
+        self.assertTrue(created.check_password('Str0ngPass!'))
+
+    def test_85_duplicate_email_is_rejected(self):
+        self.as_admin()
+        response = self.client.post(reverse('console-user-create'), {
+            'username': 'dupuser', 'email': 'P7S@MEL.EDU.MM', 'role': UserRole.STUDENT,
+            'password1': 'Str0ngPass!', 'password2': 'Str0ngPass!',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'already exists')
+        self.assertFalse(User.objects.filter(username='dupuser').exists())
+
+    def test_86_changing_a_role_creates_the_matching_profile(self):
+        self.as_admin()
+        self.assertFalse(hasattr(self.student, 'teacher_profile'))
+        response = self.client.post(
+            reverse('console-user-edit', kwargs={'user_id': self.student.pk}),
+            {
+                'username': self.student.username, 'first_name': '', 'last_name': '',
+                'email': self.student.email, 'role': UserRole.TEACHER,
+                'is_active': 'on',
+            },
+        )
+        self.assertRedirects(
+            response,
+            reverse('console-user-detail', kwargs={'user_id': self.student.pk}),
+            fetch_redirect_response=False,
+        )
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.role, UserRole.TEACHER)
+        self.assertTrue(hasattr(self.student, 'teacher_profile'))
+
+    def test_87_admin_cannot_demote_or_deactivate_themselves(self):
+        self.as_admin()
+        post = {
+            'username': self.admin.username, 'first_name': '', 'last_name': '',
+            'email': self.admin.email, 'role': UserRole.STUDENT, 'is_active': 'on',
+        }
+        response = self.client.post(
+            reverse('console-user-edit', kwargs={'user_id': self.admin.pk}), post
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'You cannot change your own role.')
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.role, UserRole.ADMIN)
+
+        post = dict(post, role=UserRole.ADMIN, is_active='')
+        response = self.client.post(
+            reverse('console-user-edit', kwargs={'user_id': self.admin.pk}), post
+        )
+        self.assertContains(response, 'You cannot deactivate your own account.')
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_active)
+
+    def test_88_deactivating_blocks_sign_in_without_deleting_data(self):
+        self.as_admin()
+        probe = Client()
+        self.assertTrue(probe.login(username='p7student', password='pw-Std1234'))
+
+        response = self.client.post(
+            reverse('console-user-toggle', kwargs={'user_id': self.student.pk})
+        )
+        self.assertRedirects(
+            response,
+            reverse('console-user-detail', kwargs={'user_id': self.student.pk}),
+            fetch_redirect_response=False,
+        )
+        self.student.refresh_from_db()
+        self.assertFalse(self.student.is_active)
+        self.assertTrue(User.objects.filter(username='p7student').exists())
+
+        fresh = Client()
+        self.assertFalse(fresh.login(username='p7student', password='pw-Std1234'))
+
+        # Reactivation restores access.
+        self.client.post(
+            reverse('console-user-toggle', kwargs={'user_id': self.student.pk})
+        )
+        fresh = Client()
+        self.assertTrue(fresh.login(username='p7student', password='pw-Std1234'))
+
+    def test_89_admin_can_reset_a_password(self):
+        self.as_admin()
+        response = self.client.post(
+            reverse('console-user-password', kwargs={'user_id': self.student.pk}),
+            {'new_password1': 'Br4ndNewPass!', 'new_password2': 'Br4ndNewPass!'},
+        )
+        self.assertRedirects(
+            response,
+            reverse('console-user-detail', kwargs={'user_id': self.student.pk}),
+            fetch_redirect_response=False,
+        )
+        fresh = Client()
+        self.assertTrue(fresh.login(username='p7student', password='Br4ndNewPass!'))
+        self.assertFalse(Client().login(username='p7student', password='pw-Std1234'))
+
+    def test_90_toggling_your_own_account_is_blocked(self):
+        self.as_admin()
+        self.client.post(reverse('console-user-toggle', kwargs={'user_id': self.admin.pk}))
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.is_active)
+
+    # -- courses & fees ----------------------------------------------------
+    def test_91_course_list_shows_pricing_and_owner(self):
+        self.as_admin()
+        response = self.client.get(reverse('console-course-list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Fee Course')
+        self.assertContains(response, 'p7teacher')
+        self.assertContains(response, '3000.0')
+        self.assertEqual(response.context['paid_count'], 1)
+        self.assertEqual(response.context['free_count'], 0)
+
+    def test_92_fee_overview_reports_the_revenue_split(self):
+        Enrollment.objects.create(course=self.course, student=self.student)
+        Payment.objects.create(
+            student=self.student, course=self.course,
+            amount=Decimal('3000.00'), platform_fee=Decimal('750.00'),
+            teacher_amount=Decimal('2250.00'),
+            status=Payment.Status.APPROVED,
+        )
+        Payment.objects.create(
+            student=self.student, course=self.course,
+            amount=Decimal('1500.00'), platform_fee=Decimal('375.00'),
+            teacher_amount=Decimal('1125.00'),
+            status=Payment.Status.PENDING,
+        )
+
+        self.as_admin()
+        response = self.client.get(reverse('console-fee-overview'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '3000.0')
+        totals = response.context['totals']
+        self.assertEqual(totals['sales'], 1)
+        self.assertEqual(totals['fee'], Decimal('750.00'))
+        self.assertEqual(totals['teacher'], Decimal('2250.00'))
+        self.assertEqual(response.context['counts']['pending'], 1)
+        self.assertEqual(response.context['commission_rate'], 25)
+
+    def test_93_refund_marks_an_approved_payment(self):
+        payment = Payment.objects.create(
+            student=self.student, course=self.course,
+            amount=Decimal('3000.00'), platform_fee=Decimal('750.00'),
+            teacher_amount=Decimal('2250.00'),
+            status=Payment.Status.APPROVED,
+        )
+        self.as_admin()
+        response = self.client.post(
+            reverse('console-payment-refund', kwargs={'payment_id': payment.pk})
+        )
+        self.assertRedirects(
+            response, reverse('console-fee-overview'), fetch_redirect_response=False
+        )
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, Payment.Status.REFUNDED)
+
+    def test_94_pending_payments_cannot_be_refunded(self):
+        payment = Payment.objects.create(
+            student=self.student, course=self.course,
+            amount=Decimal('3000.00'), platform_fee=Decimal('750.00'),
+            teacher_amount=Decimal('2250.00'),
+            status=Payment.Status.PENDING,
+        )
+        self.as_admin()
+        self.client.post(
+            reverse('console-payment-refund', kwargs={'payment_id': payment.pk})
+        )
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, Payment.Status.PENDING)
+
+    def test_95_user_detail_page_renders(self):
+        self.as_admin()
+        response = self.client.get(
+            reverse('console-user-detail', kwargs={'user_id': self.student.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'p7student')
+        self.assertContains(response, 'p7s@mel.edu.mm')

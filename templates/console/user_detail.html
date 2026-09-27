@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ subject_user.username }} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <a href="{% url 'console-user-list' %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to user management</a>
+
+    <!-- Identity -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 mt-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold uppercase">
+                {{ subject_user.username|slice:":2" }}
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl font-bold text-white">{{ subject_user.username }}</h1>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border
+                        {% if subject_user.role == 'admin' %}bg-purple-950 text-purple-300 border-purple-800
+                        {% elif subject_user.role == 'teacher' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                        {% else %}bg-cyan-950 text-cyan-300 border-cyan-800{% endif %}">
+                        {{ subject_user.get_role_display }}
+                    </span>
+                    {% if not subject_user.is_active %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-800 uppercase font-bold">Deactivated</span>
+                    {% endif %}
+                </div>
+                <p class="text-xs text-slate-400 mt-1">
+                    {{ subject_user.get_full_name|default:"No name set" }} · {{ subject_user.email }}
+                </p>
+                <p class="text-[11px] text-slate-600 mt-0.5 font-mono">{{ subject_user.pk }}</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs">
+            <a href="{% url 'console-user-edit' user_id=subject_user.pk %}"
+               class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Edit</a>
+            <a href="{% url 'console-user-password' user_id=subject_user.pk %}"
+               class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Reset password</a>
+            {% if subject_user.pk != user.pk %}
+            <form method="POST" action="{% url 'console-user-toggle' user_id=subject_user.pk %}" class="inline">
+                {% csrf_token %}
+                <button type="submit"
+                        class="px-3 py-2 rounded-lg font-semibold transition
+                        {% if subject_user.is_active %}bg-red-950 hover:bg-red-900 border border-red-800 text-red-300
+                        {% else %}bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300{% endif %}">
+                    {% if subject_user.is_active %}Deactivate{% else %}Reactivate{% endif %}
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Enrolments</div>
+            <div class="text-2xl font-bold text-white">{{ enrollments|length }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Completed</div>
+            <div class="text-2xl font-bold text-emerald-400">{{ completed_count }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Payments</div>
+            <div class="text-2xl font-bold text-amber-300 font-mono">{{ payment_totals.gross|default:0 }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Certificates</div>
+            <div class="text-2xl font-bold text-cyan-400">{{ certificates|length }}</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <!-- Enrolments -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Course enrolments</h3>
+            {% if enrollments %}
+            <div class="space-y-3">
+                {% for e in enrollments %}
+                <div class="flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-950 border border-slate-800">
+                    <div class="min-w-0">
+                        <a href="{% url 'course-detail' slug=e.course.slug %}" class="text-sm text-white hover:text-cyan-300 transition block truncate">{{ e.course.title }}</a>
+                        <div class="text-[11px] text-slate-500">Progress {{ e.progress_pct }}% · {{ e.enrolled_at|date:"d M Y" }}</div>
+                    </div>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border shrink-0
+                        {% if e.status == 'completed' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                        {% elif e.status == 'dropped' %}bg-red-950 text-red-300 border-red-800
+                        {% else %}bg-cyan-950 text-cyan-300 border-cyan-800{% endif %}">
+                        {{ e.get_status_display }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-500">No enrolments yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Payments -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Payments</h3>
+            {% if payments %}
+            <div class="space-y-3">
+                {% for p in payments %}
+                <div class="flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-950 border border-slate-800">
+                    <div class="min-w-0">
+                        <div class="text-sm text-white truncate">{{ p.course.title }}</div>
+                        <div class="text-[11px] text-slate-500">
+                            {{ p.amount }} {{ p.currency }} · {{ p.get_method_display }} · {{ p.created_at|date:"d M Y" }}
+                        </div>
+                    </div>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border shrink-0
+                        {% if p.status == 'approved' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                        {% elif p.status == 'rejected' %}bg-red-950 text-red-300 border-red-800
+                        {% elif p.status == 'refunded' %}bg-purple-950 text-purple-300 border-purple-800
+                        {% else %}bg-amber-950 text-amber-300 border-amber-800{% endif %}">
+                        {{ p.get_status_display }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-500">No payments submitted.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Certificates -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 mt-6">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Certificates</h3>
+        {% if certificates %}
+        <div class="flex flex-wrap gap-3">
+            {% for c in certificates %}
+            <a href="{% url 'certificate-verify' cert_id=c.id %}"
+               class="px-4 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 hover:border-cyan-600 transition">
+                {{ c.course.title }} · {{ c.grade }} · {{ c.certificate_code }}
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-500">No certificates issued.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

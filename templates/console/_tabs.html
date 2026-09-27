@@ -1,0 +1,30 @@
+<div class="flex flex-wrap gap-2 mb-8 text-xs">
+    <a href="{% url 'console-home' %}"
+       class="px-4 py-2 rounded-lg font-semibold transition border
+       {% if active == 'home' %}bg-cyan-600 border-cyan-500 text-white
+       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+        Overview
+    </a>
+    <a href="{% url 'console-user-list' %}"
+       class="px-4 py-2 rounded-lg font-semibold transition border
+       {% if active == 'users' %}bg-cyan-600 border-cyan-500 text-white
+       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+        Users
+    </a>
+    <a href="{% url 'console-course-list' %}"
+       class="px-4 py-2 rounded-lg font-semibold transition border
+       {% if active == 'courses' %}bg-cyan-600 border-cyan-500 text-white
+       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+        Courses &amp; fees
+    </a>
+    <a href="{% url 'console-fee-overview' %}"
+       class="px-4 py-2 rounded-lg font-semibold transition border
+       {% if active == 'fees' %}bg-cyan-600 border-cyan-500 text-white
+       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+        Revenue
+    </a>
+    <a href="{% url 'payment-list' %}"
+       class="px-4 py-2 rounded-lg font-semibold transition border bg-amber-950 border-amber-800 text-amber-300 hover:bg-amber-900">
+        Payment queue
+    </a>
+</div>

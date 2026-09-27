@@ -7,11 +7,13 @@ from django.db.models import Count, Q, Sum
 from django.contrib.auth import update_session_auth_hash
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.views.generic import CreateView, DetailView, TemplateView, UpdateView, View
 
 from apps.billing.models import Payment
 from apps.courses.models import Course, Enrollment
 from apps.common.permissions import RoleRequiredMixin
+from apps.portfolio.models import ExternalCertificate
 from apps.users.models import AdminProfile, StudentProfile, TeacherProfile, UserRole
 from .forms import AdminPasswordResetForm, AdminUserCreateForm, AdminUserUpdateForm
 
@@ -374,3 +376,81 @@ class PaymentRefundView(AdminRequiredMixin, View):
                 f'drop it from the course page if access must end.'
             )
         return redirect('console-fee-overview')
+
+
+
+# ----------------------------------------------------------------------
+# External credential review
+# ----------------------------------------------------------------------
+class CredentialReviewView(AdminRequiredMixin, TemplateView):
+    """Queue of student-submitted external certificates awaiting a verdict."""
+    template_name = 'console/credential_list.html'
+
+    STATUSES = ('pending', 'verified', 'rejected', 'all')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        status = self.request.GET.get('status', 'pending')
+        if status not in self.STATUSES:
+            status = 'pending'
+
+        credentials = ExternalCertificate.objects.select_related(
+            'owner', 'verified_by'
+        )
+        if status == 'pending':
+            credentials = credentials.filter(
+                is_verified=False
+            ).filter(Q(rejection_reason='') | Q(rejection_reason__isnull=True))
+        elif status == 'verified':
+            credentials = credentials.filter(is_verified=True)
+        elif status == 'rejected':
+            credentials = credentials.exclude(
+                Q(rejection_reason='') | Q(rejection_reason__isnull=True)
+            ).filter(is_verified=False)
+
+        context['active'] = 'credentials'
+        context['status'] = status
+        context['status_options'] = [
+            ('pending', 'Pending'),
+            ('verified', 'Verified'),
+            ('rejected', 'Rejected'),
+            ('all', 'All'),
+        ]
+        context['credentials'] = credentials
+        context['pending_count'] = ExternalCertificate.objects.filter(
+            is_verified=False
+        ).filter(Q(rejection_reason='') | Q(rejection_reason__isnull=True)).count()
+        return context
+
+
+class CredentialActionView(AdminRequiredMixin, View):
+    """POST-only approve / reject so a credential can reach the public portfolio."""
+
+    def post(self, request, *args, **kwargs):
+        credential = get_object_or_404(ExternalCertificate, pk=self.kwargs['cert_id'])
+        action = self.kwargs['action']
+
+        if action == 'verify':
+            credential.is_verified = True
+            credential.rejection_reason = ''
+            credential.verified_by = request.user
+            credential.verified_at = timezone.now()
+            credential.save()
+            messages.success(request, f'“{credential.title}” verified and published.')
+        elif action == 'reject':
+            reason = (request.POST.get('reason') or '').strip()
+            if not reason:
+                messages.error(request, 'Add a reason before rejecting a credential.')
+                return redirect('console-credential-list')
+            credential.is_verified = False
+            credential.rejection_reason = reason
+            credential.verified_by = request.user
+            credential.verified_at = timezone.now()
+            credential.save()
+            messages.warning(request, f'“{credential.title}” rejected.')
+        else:
+            messages.error(request, 'Unknown action — nothing was changed.')
+
+        return redirect(
+            reverse('console-credential-list') + f'?status={request.POST.get("status", "pending")}'
+        )

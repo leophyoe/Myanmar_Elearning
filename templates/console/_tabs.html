@@ -23,6 +23,12 @@
        {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
         Revenue
     </a>
+    <a href="{% url 'console-credential-list' %}"
+       class="px-4 py-2 rounded-lg font-semibold transition border
+       {% if active == 'credentials' %}bg-cyan-600 border-cyan-500 text-white
+       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+        Credentials
+    </a>
     <a href="{% url 'payment-list' %}"
        class="px-4 py-2 rounded-lg font-semibold transition border bg-amber-950 border-amber-800 text-amber-300 hover:bg-amber-900">
         Payment queue

@@ -313,6 +313,59 @@ One admin-only workspace for accounts, courses and money. Every route lives unde
 * A role's profile (`StudentProfile` / `TeacherProfile` / `AdminProfile`) is
   created by the console as well as by the `post_save` signal on self-registration.
 
+## Public Portfolios, QR/NFC & Credential Verification (Phase 8)
+
+Every account owns a shareable portfolio at `/portfolio/<username>/`, plus a
+public lookup for certificate IDs.
+
+**Routes**
+
+| Route | Access | Purpose |
+| :--- | :--- | :--- |
+| `/portfolio/<username>/` | public | Skills, profile links, platform & external certificates |
+| `/portfolio/edit/` | owner | Add / edit / delete skills, links and external credentials |
+| `/portfolio/<username>/qr.png` | public | PNG QR encoding the portfolio URL |
+| `/portfolio/<username>/nfc.txt` | public | Plain-text URL payload for writing an NFC tag |
+| `/portfolio/qr/`, `/portfolio/nfc/` | owner | The same for your own profile |
+| `/certificates/verify/` | public | Look up a certificate by serial or UUID |
+| `/certificates/verify/<uuid>/qr.png` | public | QR encoding the verification page |
+| `/console/credentials/` | admin | Review queue for student-submitted credentials |
+
+**Models (`apps.portfolio`)**
+
+* `Skill` — name, category, level 1–5, display order, unique per owner.
+* `PortfolioLink` — kind (GitHub / LinkedIn / Website / CV / …), label, URL.
+  The `StudentProfile.github_url` / `linkedin_url` fields are merged in
+  automatically so nothing has to be entered twice.
+* `ExternalCertificate` — credential earned elsewhere: title, issuer, credential
+  ID/URL, dates, uploaded document, note, and an admin `is_verified` stamp.
+
+**Rules**
+
+* An external credential is *pending* the moment it is saved or edited; an
+  administrator must approve it in `/console/credentials/` before it appears
+  publicly. Pending and rejected entries stay visible to their owner only.
+* Rejection requires a written reason, which the owner sees on their edit page.
+* Skills and links can only be edited by their owner — the editor resolves
+  every `pk` through `owner=request.user`, so another account yields a 404.
+* The skill level must be between 1 and 5; uploaded documents must be
+  PDF/PNG/JPG and ≤ 10 MB.
+
+**QR & NFC**
+
+QR codes are generated server-side with `qrcode` (+ Pillow) and returned as
+`image/png`. The NFC endpoint returns the absolute portfolio URL as
+`text/plain`, which any tag writer can paste into a URI/URL NDEF record —
+scanning the tag then opens the portfolio.
+
+**Certificate lookup**
+
+`/certificates/verify/?code=…` accepts either the printed serial
+(`MEL-CERT-2026-…`, case-insensitive) or the certificate UUID and redirects to
+the public verification page. The verification page itself now shows a QR code
+for the record, a VALID/REVOKED status badge with the revocation reason, and a
+link back to the lookup form.
+
 ## Local Development (Without Docker)
 
 You can also run Myanmar E-Learning locally with SQLite:

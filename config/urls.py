@@ -25,6 +25,7 @@ urlpatterns = [
     path('analytics/', include('apps.analytics.urls')),
     path('billing/', include('apps.billing.urls')),
     path('console/', include('apps.console.urls')),
+    path('portfolio/', include('apps.portfolio.urls')),
 ]
 
 if settings.DEBUG:

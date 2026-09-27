@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ portfolio_user.get_full_name|default:portfolio_user.username }} — Portfolio - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <!-- Identity -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col lg:flex-row lg:items-center gap-6">
+        <div class="w-20 h-20 shrink-0 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-2xl font-bold uppercase">
+            {{ portfolio_user.username|slice:":2" }}
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <h1 class="text-2xl font-bold text-white">
+                    {{ portfolio_user.get_full_name|default:portfolio_user.username }}
+                </h1>
+                <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border
+                    {% if portfolio_user.role == 'admin' %}bg-purple-950 text-purple-300 border-purple-800
+                    {% elif portfolio_user.role == 'teacher' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                    {% else %}bg-cyan-950 text-cyan-300 border-cyan-800{% endif %}">
+                    {{ portfolio_user.get_role_display }}
+                </span>
+                {% if profile and profile.student_id %}
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-mono">
+                    {{ profile.student_id }}
+                </span>
+                {% endif %}
+            </div>
+            <p class="text-xs text-slate-500 mt-1 font-mono">portfolio/{{ portfolio_user.username }}</p>
+            {% if profile and profile.bio %}
+            <p class="text-sm text-slate-400 mt-3 leading-relaxed max-w-3xl">{{ profile.bio }}</p>
+            {% endif %}
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs shrink-0">
+            <a href="#share" class="px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">QR / NFC</a>
+            {% if is_owner %}
+            <a href="{% url 'portfolio-edit' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Edit portfolio</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        <!-- Skills -->
+        <div class="lg:col-span-2 p-6 rounded-2xl bg-slate-900 border border-slate-800">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Skills</h2>
+            {% if skills %}
+            <div class="space-y-4">
+                {% regroup skills by get_category_display as skill_groups %}
+                {% for group in skill_groups %}
+                <div>
+                    <div class="text-[11px] uppercase tracking-wider text-cyan-400 mb-2">{{ group.grouper }}</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {% for skill in group.list %}
+                        <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs text-slate-200 font-medium">{{ skill.name }}</span>
+                                <span class="text-[10px] font-mono text-slate-500">{{ skill.level }}/5</span>
+                            </div>
+                            <div class="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                                <div class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
+                                     style="width: {{ skill.level_pct }}%"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-500">No skills listed yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Links -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Profiles</h2>
+            {% if links %}
+            <div class="space-y-2">
+                {% for link in links %}
+                <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer nofollow"
+                   class="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-600 transition text-xs">
+                    <span class="text-slate-200 font-medium">{{ link.label }}</span>
+                    <span class="text-slate-600">&rarr;</span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-500">No profile links yet.</p>
+            {% endif %}
+
+            <div id="share" class="mt-6 pt-5 border-t border-slate-800">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-3">QR &amp; NFC</h3>
+                <p class="text-[11px] text-slate-500 leading-relaxed mb-3">
+                    Scan to open this portfolio, or write the URL below onto an NFC tag.
+                </p>
+                <a href="{{ qr_url }}" target="_blank" rel="noopener"
+                   class="block w-full text-center text-xs px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition mb-2">
+                    Download QR code (PNG)
+                </a>
+                <a href="{{ nfc_url }}" download
+                   class="block w-full text-center text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                    NFC payload (URL text)
+                </a>
+                <p class="text-[10px] text-slate-600 font-mono mt-3 break-all">{{ portfolio_url }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform certificates -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Certificates from {{ PLATFORM_NAME }}</h2>
+            <span class="text-[11px] text-slate-500">{{ platform_certificates|length }} issued</span>
+        </div>
+        {% if platform_certificates %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {% for c in platform_certificates %}
+            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-sm text-white truncate">{{ c.course.title }}</div>
+                    <div class="text-[11px] text-slate-500 font-mono">{{ c.certificate_code }} · {{ c.grade }} · {{ c.issued_at|date:"d M Y" }}</div>
+                </div>
+                <div class="flex gap-2 shrink-0 text-[11px]">
+                    <a href="{% url 'certificate-verify' cert_id=c.id %}" target="_blank" rel="noopener"
+                       class="px-2.5 py-1.5 rounded bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 transition">Verify</a>
+                    <a href="{% url 'certificate-qr' cert_id=c.id %}" target="_blank" rel="noopener"
+                       class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">QR</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-500">No platform certificates yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- External certificates -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Other credentials</h2>
+            {% if is_owner %}
+            <a href="{% url 'portfolio-edit' %}?resource=cert" class="text-xs text-cyan-400 hover:underline">+ Add certificate</a>
+            {% endif %}
+        </div>
+        {% if external_certificates %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {% for cert in external_certificates %}
+            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="text-sm text-white truncate">{{ cert.title }}</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">{{ cert.issuer }}</div>
+                    </div>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border shrink-0
+                        {% if cert.status == 'verified' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                        {% elif cert.status == 'expired' %}bg-amber-950 text-amber-300 border-amber-800
+                        {% elif cert.status == 'rejected' %}bg-red-950 text-red-300 border-red-800
+                        {% else %}bg-slate-800 text-slate-400 border-slate-700{% endif %}">
+                        {{ cert.get_status_display|default:cert.status|title }}
+                    </span>
+                </div>
+                <div class="text-[11px] text-slate-600 font-mono mt-2">
+                    {% if cert.credential_id %}ID: {{ cert.credential_id }}{% endif %}
+                    {% if cert.issued_on %} · {{ cert.issued_on|date:"M Y" }}{% endif %}
+                    {% if cert.expires_on %} → {{ cert.expires_on|date:"M Y" }}{% endif %}
+                </div>
+                <div class="flex gap-2 mt-3 text-[11px]">
+                    {% if cert.credential_url %}
+                    <a href="{{ cert.credential_url }}" target="_blank" rel="noopener noreferrer nofollow"
+                       class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">Issuer link</a>
+                    {% endif %}
+                    {% if cert.document %}
+                    <a href="{{ cert.document.url }}" target="_blank" rel="noopener"
+                       class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">Document</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-500">
+            {% if is_owner %}You have not added any external credentials yet.{% else %}No verified external credentials.{% endif %}
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

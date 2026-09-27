@@ -13,6 +13,7 @@ from apps.ctf.services import FlagVerificationService
 from apps.scoring.models import Badge
 from apps.certificates.models import Certificate
 from apps.billing.models import Payment, active_payment_for
+from apps.portfolio.models import Skill, PortfolioLink, ExternalCertificate
 from apps.courses.views import can_access_course
 from decimal import Decimal
 from datetime import timedelta
@@ -1861,3 +1862,346 @@ class AdminConsoleTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'p7student')
         self.assertContains(response, 'p7s@mel.edu.mm')
+
+
+class PortfolioAndCredentialTests(TestCase):
+    """Phase 8: public portfolios, QR/NFC sharing and certificate lookup."""
+
+    def setUp(self):
+        self.client = Client()
+        self.student = User.objects.create_user(
+            username='p8student',
+            email='p8s@mel.edu.mm',
+            password='Passw0rd!23',
+            first_name='Su',
+            last_name='Nay',
+            role='student',
+        )
+        self.other = User.objects.create_user(
+            username='p8other',
+            email='p8o@mel.edu.mm',
+            password='Passw0rd!23',
+            first_name='Other',
+            last_name='User',
+            role='student',
+        )
+        self.admin = User.objects.create_user(
+            username='p8admin',
+            email='p8a@mel.edu.mm',
+            password='Passw0rd!23',
+            role='admin',
+        )
+        self.subject = Subject.objects.create(title='General Studies')
+        self.course = Course.objects.create(
+            title='Intro to Design', subject=self.subject,
+            owner=self.teacher_or_none(), price=0,
+        )
+        self.certificate = Certificate.objects.create(
+            student=self.student,
+            course=self.course,
+            certificate_code=Certificate.generate_code(),
+            student_name='Su Nay',
+            program_title='Intro to Design',
+            grade='Distinction',
+        )
+
+    def teacher_or_none(self):
+        return User.objects.create_user(
+            username='p8teacher',
+            email='p8t@mel.edu.mm',
+            password='Passw0rd!23',
+            role='teacher',
+        )
+
+    def as_student(self):
+        self.client.logout()
+        assert self.client.login(username='p8student', password='Passw0rd!23')
+
+    def as_admin(self):
+        self.client.logout()
+        assert self.client.login(username='p8admin', password='Passw0rd!23')
+
+    # -- public portfolio ------------------------------------------------
+    def test_96_public_portfolio_renders_skills_links_and_certificates(self):
+        Skill.objects.create(
+            owner=self.student, name='Typography', category='technical', level=4
+        )
+        PortfolioLink.objects.create(
+            owner=self.student,
+            kind=PortfolioLink.Kind.GITHUB,
+            url='https://github.com/p8student',
+        )
+        url = reverse('portfolio-detail', kwargs={'username': 'p8student'})
+
+        anon = self.client.get(url)
+        self.assertEqual(anon.status_code, 200)
+        self.assertContains(anon, 'Typography')
+        self.assertContains(anon, 'https://github.com/p8student')
+        self.assertContains(anon, self.certificate.certificate_code)
+        self.assertNotContains(anon, 'Edit portfolio')
+
+        self.as_student()
+        self.assertContains(self.client.get(url), 'Edit portfolio')
+
+    def test_97_portfolio_hides_pending_external_certificates_from_visitors(self):
+        ExternalCertificate.objects.create(
+            owner=self.student, title='AWS CCP', issuer='Amazon Web Services'
+        )
+        url = reverse('portfolio-detail', kwargs={'username': 'p8student'})
+        self.assertNotContains(self.client.get(url), 'AWS CCP')
+
+        self.as_admin()
+        self.assertContains(self.client.get(url), 'AWS CCP')
+
+        self.as_student()
+        self.assertContains(self.client.get(url), 'AWS CCP')
+
+    def test_98_unknown_portfolio_is_404(self):
+        response = self.client.get(
+            reverse('portfolio-detail', kwargs={'username': 'nobody_here'})
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_99_profile_github_and_linkedin_appear_as_links(self):
+        profile = self.student.student_profile
+        profile.github_url = 'https://github.com/legacy'
+        profile.linkedin_url = 'https://linkedin.com/in/legacy'
+        profile.save()
+
+        response = self.client.get(
+            reverse('portfolio-detail', kwargs={'username': 'p8student'})
+        )
+        self.assertContains(response, 'https://github.com/legacy')
+        self.assertContains(response, 'https://linkedin.com/in/legacy')
+
+    # -- editor ----------------------------------------------------------
+    def test_100_student_adds_a_skill(self):
+        self.as_student()
+        response = self.client.post(
+            reverse('portfolio-edit'),
+            {'resource': 'skill', 'pk': '', 'action': 'save',
+             'name': 'WireShark', 'category': 'security', 'level': 3, 'order': 0},
+        )
+        self.assertRedirects(response, reverse('portfolio-edit'))
+        self.assertTrue(
+            Skill.objects.filter(owner=self.student, name='WireShark').exists()
+        )
+
+    def test_101_skill_level_out_of_range_is_rejected(self):
+        self.as_student()
+        response = self.client.post(
+            reverse('portfolio-edit'),
+            {'resource': 'skill', 'pk': '', 'action': 'save',
+             'name': 'Bad level', 'category': 'other', 'level': 9, 'order': 0},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'between 1 and 5')
+        self.assertFalse(Skill.objects.filter(name='Bad level').exists())
+
+    def test_102_cannot_edit_or_delete_another_users_item(self):
+        victim = Skill.objects.create(owner=self.other, name='Their skill')
+        self.as_student()
+        self.assertEqual(
+            self.client.get(
+                reverse('portfolio-edit'), {'resource': 'skill', 'pk': victim.pk}
+            ).status_code,
+            404,
+        )
+        self.client.post(
+            reverse('portfolio-edit'),
+            {'resource': 'skill', 'pk': victim.pk, 'action': 'delete'},
+        )
+        self.assertTrue(Skill.objects.filter(pk=victim.pk).exists())
+
+    def test_103_deleting_uses_post_and_a_known_resource_only(self):
+        skill = Skill.objects.create(owner=self.student, name='Removable')
+        self.as_student()
+        # GET must never destroy anything.
+        self.client.get(
+            reverse('portfolio-edit'), {'resource': 'skill', 'pk': skill.pk}
+        )
+        self.assertTrue(Skill.objects.filter(pk=skill.pk).exists())
+
+        response = self.client.post(
+            reverse('portfolio-edit'), {'resource': 'nope', 'action': 'delete'}
+        )
+        self.assertRedirects(response, reverse('portfolio-edit'))
+        self.assertTrue(Skill.objects.filter(pk=skill.pk).exists())
+
+    def test_104_resubmitting_a_certificate_clears_a_previous_verification(self):
+        self.as_student()
+        cert = ExternalCertificate.objects.create(
+            owner=self.student, title='Old Badge', issuer='Someone', is_verified=True
+        )
+        response = self.client.post(
+            reverse('portfolio-edit'),
+            {'resource': 'cert', 'pk': cert.pk, 'action': 'save',
+             'title': 'Old Badge (edited)', 'issuer': 'Someone'},
+        )
+        self.assertRedirects(response, reverse('portfolio-edit'))
+        cert.refresh_from_db()
+        self.assertEqual(cert.title, 'Old Badge (edited)')
+        self.assertFalse(cert.is_verified)
+
+    def test_105_edit_page_renders_all_three_sections(self):
+        self.as_student()
+        response = self.client.get(reverse('portfolio-edit'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Skills')
+        self.assertContains(response, 'Profile links')
+        self.assertContains(response, 'Other credentials')
+
+    def test_106_editor_requires_login(self):
+        response = self.client.get(reverse('portfolio-edit'), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(reverse('login'), response.request['PATH_INFO'])
+
+    # -- QR / NFC --------------------------------------------------------
+    def test_107_portfolio_qr_is_a_png_encoding_the_profile_url(self):
+        response = self.client.get(
+            reverse('portfolio-user-qr', kwargs={'username': 'p8student'})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/png')
+        self.assertTrue(response.content.startswith(b'\x89PNG'))
+
+    def test_108_portfolio_nfc_payload_is_the_absolute_url(self):
+        response = self.client.get(
+            reverse('portfolio-user-nfc', kwargs={'username': 'p8student'})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response['Content-Type'].startswith('text/plain'))
+        self.assertEqual(
+            response.content.decode(),
+            'http://testserver' + reverse(
+                'portfolio-detail', kwargs={'username': 'p8student'}
+            ),
+        )
+
+    def test_109_certificate_qr_is_a_png(self):
+        response = self.client.get(
+            reverse('certificate-qr', kwargs={'cert_id': self.certificate.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'image/png')
+        self.assertTrue(response.content.startswith(b'\x89PNG'))
+
+    def test_110_logged_out_qr_for_your_own_profile_redirects(self):
+        response = self.client.get(reverse('portfolio-qr'), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(reverse('login'), response.request['PATH_INFO'])
+
+    # -- certificate lookup ---------------------------------------------
+    def test_111_lookup_by_serial_redirects_to_the_verify_page(self):
+        response = self.client.get(
+            reverse('certificate-lookup'),
+            {'code': self.certificate.certificate_code},
+        )
+        self.assertRedirects(
+            response,
+            reverse('certificate-verify', kwargs={'cert_id': self.certificate.pk}),
+        )
+
+    def test_112_lookup_by_uuid_redirects_to_the_verify_page(self):
+        response = self.client.get(
+            reverse('certificate-lookup'), {'code': str(self.certificate.pk)}
+        )
+        self.assertRedirects(
+            response,
+            reverse('certificate-verify', kwargs={'cert_id': self.certificate.pk}),
+        )
+
+    def test_113_lookup_is_case_insensitive_and_survives_a_miss(self):
+        response = self.client.get(
+            reverse('certificate-lookup'),
+            {'code': self.certificate.certificate_code.lower()},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        miss = self.client.get(
+            reverse('certificate-lookup'), {'code': 'MEL-CERT-2026-9999'}
+        )
+        self.assertEqual(miss.status_code, 200)
+        self.assertContains(miss, 'No certificate matches')
+
+    def test_114_lookup_form_renders_without_a_query(self):
+        response = self.client.get(reverse('certificate-lookup'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Look up a certificate')
+
+    def test_115_verify_page_offers_qr_and_lookup_links(self):
+        response = self.client.get(
+            reverse('certificate-verify', kwargs={'cert_id': self.certificate.pk})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('certificate-qr', kwargs={
+            'cert_id': self.certificate.pk}))
+        self.assertContains(response, reverse('certificate-lookup'))
+
+    # -- admin credential review ----------------------------------------
+    def test_116_credential_review_is_admin_only(self):
+        self.as_student()
+        response = self.client.get(reverse('console-credential-list'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_117_approving_publishes_the_credential_to_the_public_portfolio(self):
+        cert = ExternalCertificate.objects.create(
+            owner=self.student, title='Google UX', issuer='Google'
+        )
+        public = reverse('portfolio-detail', kwargs={'username': 'p8student'})
+        self.assertNotContains(self.client.get(public), 'Google UX')
+
+        self.as_admin()
+        response = self.client.post(
+            reverse('console-credential-action',
+                    kwargs={'cert_id': cert.pk, 'action': 'verify'})
+        )
+        self.assertEqual(response.status_code, 302)
+        cert.refresh_from_db()
+        self.assertTrue(cert.is_verified)
+        self.assertEqual(cert.verified_by_id, self.admin.pk)
+
+        self.client.logout()
+        self.assertContains(self.client.get(public), 'Google UX')
+
+    def test_118_rejecting_requires_a_reason_and_keeps_it_private(self):
+        cert = ExternalCertificate.objects.create(
+            owner=self.student, title='Doubtful Badge', issuer='Unknown'
+        )
+        self.as_admin()
+        missing = self.client.post(
+            reverse('console-credential-action',
+                    kwargs={'cert_id': cert.pk, 'action': 'reject'})
+        )
+        self.assertEqual(missing.status_code, 302)
+        cert.refresh_from_db()
+        self.assertFalse(cert.is_verified)
+        self.assertEqual(cert.rejection_reason, '')
+
+        self.client.post(
+            reverse('console-credential-action',
+                    kwargs={'cert_id': cert.pk, 'action': 'reject'}),
+            {'reason': 'Issuer link is dead'},
+        )
+        cert.refresh_from_db()
+        self.assertEqual(cert.rejection_reason, 'Issuer link is dead')
+
+        self.client.logout()
+        public = reverse('portfolio-detail', kwargs={'username': 'p8student'})
+        self.assertNotContains(self.client.get(public), 'Doubtful Badge')
+
+    def test_119_credential_review_tabs_and_pending_count_render(self):
+        ExternalCertificate.objects.create(
+            owner=self.student, title='Awaiting Me', issuer='Somebody'
+        )
+        self.as_admin()
+        response = self.client.get(reverse('console-credential-list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Awaiting Me')
+        self.assertEqual(response.context['pending_count'], 1)
+
+        verified = self.client.get(
+            reverse('console-credential-list'), {'status': 'verified'}
+        )
+        self.assertEqual(verified.status_code, 200)
+        self.assertNotContains(verified, 'Awaiting Me')

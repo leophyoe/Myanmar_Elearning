@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit portfolio - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-white">Edit your portfolio</h1>
+            <p class="text-sm text-slate-500 mt-1">
+                Skills, profile links and external credentials shown on
+                <a href="{% url 'portfolio-detail' username=request.user.username %}"
+                   class="text-cyan-400 hover:underline font-mono">portfolio/{{ request.user.username }}</a>.
+            </p>
+        </div>
+        <a href="{% url 'profile' %}" class="text-xs text-slate-400 hover:text-slate-200 transition">
+            Bio, GitHub &amp; LinkedIn live on your profile page &rarr;
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Item lists -->
+        <div class="lg:col-span-2 space-y-6">
+            <section class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Skills</h2>
+                    <a href="?resource=skill" class="text-xs text-cyan-400 hover:underline">+ Add</a>
+                </div>
+                {% if skills %}
+                <div class="space-y-2">
+                    {% for s in skills %}
+                    <div class="flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-950 border border-slate-800">
+                        <div class="min-w-0 text-xs">
+                            <span class="text-slate-200 font-medium">{{ s.name }}</span>
+                            <span class="text-slate-500 ml-2">{{ s.get_category_display }} · {{ s.level }}/5</span>
+                        </div>
+                        <div class="flex gap-2 text-[11px] shrink-0">
+                            <a href="?resource=skill&pk={{ s.pk }}" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">Edit</a>
+                            <form method="post" action="{% url 'portfolio-edit' %}" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="resource" value="skill">
+                                <input type="hidden" name="pk" value="{{ s.pk }}">
+                                <input type="hidden" name="action" value="delete">
+                                <button type="submit" class="px-2 py-1 rounded bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 transition">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}<p class="text-sm text-slate-500">No skills yet.</p>{% endif %}
+            </section>
+
+            <section class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Profile links</h2>
+                    <a href="?resource=link" class="text-xs text-cyan-400 hover:underline">+ Add</a>
+                </div>
+                {% if links %}
+                <div class="space-y-2">
+                    {% for l in links %}
+                    <div class="flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-950 border border-slate-800">
+                        <div class="min-w-0 text-xs">
+                            <span class="text-slate-200 font-medium">{{ l.display_label }}</span>
+                            <span class="text-slate-500 font-mono block truncate mt-0.5">{{ l.url }}</span>
+                        </div>
+                        <div class="flex gap-2 text-[11px] shrink-0">
+                            <a href="?resource=link&pk={{ l.pk }}" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">Edit</a>
+                            <form method="post" action="{% url 'portfolio-edit' %}" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="resource" value="link">
+                                <input type="hidden" name="pk" value="{{ l.pk }}">
+                                <input type="hidden" name="action" value="delete">
+                                <button type="submit" class="px-2 py-1 rounded bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 transition">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}<p class="text-sm text-slate-500">No links yet.</p>{% endif %}
+            </section>
+
+            <section class="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Other credentials</h2>
+                    <a href="?resource=cert" class="text-xs text-cyan-400 hover:underline">+ Add</a>
+                </div>
+                {% if external_certificates %}
+                <div class="space-y-2">
+                    {% for c in external_certificates %}
+                    <div class="flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-950 border border-slate-800">
+                        <div class="min-w-0 text-xs">
+                            <span class="text-slate-200 font-medium">{{ c.title }}</span>
+                            <span class="text-slate-500 block mt-0.5">{{ c.issuer }} ·
+                                <span class="uppercase text-[10px] px-1 rounded
+                                    {% if c.status == 'verified' %}bg-emerald-950 text-emerald-300
+                                    {% elif c.status == 'pending' %}bg-amber-950 text-amber-300
+                                    {% elif c.status == 'rejected' %}bg-red-950 text-red-300
+                                    {% else %}bg-slate-800 text-slate-400{% endif %}">{{ c.status }}</span>
+                            </span>
+                            {% if c.rejection_reason %}
+                            <span class="text-red-400 block mt-1">{{ c.rejection_reason }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex gap-2 text-[11px] shrink-0">
+                            <a href="?resource=cert&pk={{ c.pk }}" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">Edit</a>
+                            <form method="post" action="{% url 'portfolio-edit' %}" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="resource" value="cert">
+                                <input type="hidden" name="pk" value="{{ c.pk }}">
+                                <input type="hidden" name="action" value="delete">
+                                <button type="submit" class="px-2 py-1 rounded bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 transition">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}<p class="text-sm text-slate-500">No external credentials yet.</p>{% endif %}
+            </section>
+        </div>
+
+        <!-- Form panel -->
+        <div class="p-5 rounded-2xl bg-slate-900 border border-cyan-900 lg:sticky lg:top-24 h-fit">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-4">
+                {% if pk %}Edit{% else %}Add{% endif %}
+                {{ resource|default:'item'|title }}
+            </h2>
+
+            {% if form %}
+            <form method="post" action="{% url 'portfolio-edit' %}" enctype="multipart/form-data" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="resource" value="{{ resource }}">
+                <input type="hidden" name="pk" value="{{ pk }}">
+
+                {% if form.non_field_errors %}
+                <div class="text-xs text-red-400">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                {% for field in form %}
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wide mb-1">
+                        {{ field.label }}{% if field.field.required %} <span class="text-cyan-400">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="text-[11px] text-slate-500 mt-1">{{ field.help_text }}</p>{% endif %}
+                    {% for error in field.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                </div>
+                {% endfor %}
+
+                <div class="flex flex-col gap-2 pt-2">
+                    <button type="submit" name="action" value="save"
+                            class="w-full px-4 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition">
+                        {% if pk %}Save changes{% else %}Add{% endif %}
+                    </button>
+                    {% if pk %}
+                    <button type="submit" name="action" value="delete"
+                            class="w-full px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-red-950 border border-slate-700 hover:border-red-800 text-slate-300 hover:text-red-300 text-sm transition">
+                        Delete this item
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+            {% else %}
+            <p class="text-sm text-slate-500 leading-relaxed">
+                Pick a section on the left, or start with
+                <a href="?resource=skill" class="text-cyan-400 hover:underline">a skill</a>,
+                <a href="?resource=link" class="text-cyan-400 hover:underline">a link</a> or
+                <a href="?resource=cert" class="text-cyan-400 hover:underline">a certificate</a>.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

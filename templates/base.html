@@ -61,7 +61,9 @@
                         <a href="{% url 'manage-home' %}" class="hover:text-cyan-400 transition">Content Studio</a>
                         <a href="{% url 'submission-list' %}" class="hover:text-cyan-400 transition">Grading</a>
                     {% endif %}
+                    <a href="{% url 'portfolio-detail' username=request.user.username %}" class="hover:text-cyan-400 transition">Portfolio</a>
                 {% endif %}
+                <a href="{% url 'certificate-lookup' %}" class="hover:text-cyan-400 transition">Verify</a>
                 <a href="{% url 'lab-list' %}" class="hover:text-cyan-400 transition">Cyber Labs</a>
                 <a href="{% url 'ctf-board' %}" class="hover:text-cyan-400 transition">CTF Challenges</a>
                 <a href="{% url 'leaderboard' %}" class="hover:text-cyan-400 transition">Leaderboard</a>

@@ -16,7 +16,7 @@ from apps.billing.models import Payment, active_payment_for
 from apps.portfolio.models import Skill, PortfolioLink, ExternalCertificate
 from apps.courses.views import can_access_course
 from decimal import Decimal
-from datetime import timedelta
+from datetime import date, timedelta
 import hashlib
 
 User = get_user_model()
@@ -2043,13 +2043,15 @@ class PortfolioAndCredentialTests(TestCase):
         self.assertEqual(cert.title, 'Old Badge (edited)')
         self.assertFalse(cert.is_verified)
 
-    def test_105_edit_page_renders_all_three_sections(self):
+    def test_105_edit_page_renders_every_section(self):
         self.as_student()
         response = self.client.get(reverse('portfolio-edit'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Skills')
-        self.assertContains(response, 'Profile links')
-        self.assertContains(response, 'Other credentials')
+        for heading in ('Work samples', 'Credentials', 'Skills',
+                        'Education &amp; experience', 'Profile links'):
+            self.assertContains(response, heading)
+        for resource in ('project', 'cert', 'skill', 'entry', 'link'):
+            self.assertContains(response, f'?resource={resource}')
 
     def test_106_editor_requires_login(self):
         response = self.client.get(reverse('portfolio-edit'), follow=True)
@@ -2205,3 +2207,136 @@ class PortfolioAndCredentialTests(TestCase):
         )
         self.assertEqual(verified.status_code, 200)
         self.assertNotContains(verified, 'Awaiting Me')
+
+    # -- academicpages-style layout -------------------------------------
+    def test_120_work_sample_is_shown_on_the_public_portfolio(self):
+        from apps.portfolio.models import PortfolioProject
+        self.as_student()
+        self.client.post(
+            reverse('portfolio-edit'),
+            {'resource': 'project', 'pk': '', 'action': 'save',
+             'title': 'Booking system', 'category': 'development',
+             'excerpt': 'Staff scheduling for a clinic',
+             'description': 'Built with Django and HTMX.',
+             'client': 'Sithi Clinic', 'role': 'Full-stack',
+             'tools': 'Django, HTMX', 'external_url': '',
+             'is_published': 'on', 'order': 0},
+        )
+        project = PortfolioProject.objects.get(owner=self.student)
+        self.assertTrue(project.is_published)
+
+        self.client.logout()
+        response = self.client.get(
+            reverse('portfolio-detail', kwargs={'username': 'p8student'})
+        )
+        self.assertContains(response, 'Booking system')
+        self.assertContains(response, 'Staff scheduling for a clinic')
+        self.assertContains(response, 'Full-stack')
+        self.assertContains(response, '>Django</span>')
+        self.assertContains(response, '>HTMX</span>')
+        self.assertContains(response, 'Work samples')
+
+    def test_121_unpublished_work_sample_is_hidden_from_visitors(self):
+        from apps.portfolio.models import PortfolioProject
+        project = PortfolioProject.objects.create(
+            owner=self.student, title='Secret internal tool',
+            is_published=False,
+        )
+        url = reverse('portfolio-detail', kwargs={'username': 'p8student'})
+        self.assertNotContains(self.client.get(url), 'Secret internal tool')
+
+        self.as_student()
+        response = self.client.get(url)
+        self.assertNotContains(response, 'Secret internal tool')
+        self.assertFalse(
+            response.context['projects'].filter(pk=project.pk).exists()
+        )
+
+    def test_122_education_and_experience_render_as_timeline(self):
+        from apps.portfolio.models import PortfolioEntry
+        PortfolioEntry.objects.create(
+            owner=self.student,
+            kind=PortfolioEntry.Kind.EDUCATION,
+            institution='University of Yangon',
+            title='BSc Computer Science',
+            start_on=date(2019, 8, 1), end_on=date(2023, 6, 30),
+        )
+        PortfolioEntry.objects.create(
+            owner=self.student,
+            kind=PortfolioEntry.Kind.EXPERIENCE,
+            institution='Freelance',
+            title='Web developer',
+            start_on=date(2023, 7, 1), is_current=True,
+        )
+        response = self.client.get(
+            reverse('portfolio-detail', kwargs={'username': 'p8student'})
+        )
+        self.assertContains(response, 'Education')
+        self.assertContains(response, 'Experience')
+        self.assertContains(response, 'University of Yangon')
+        self.assertContains(response, 'BSc Computer Science')
+        self.assertContains(response, '2019 – 2023')
+        self.assertContains(response, '2023 – Present')
+        self.assertContains(response, 'Freelance')
+
+    def test_123_entry_end_date_cannot_precede_the_start(self):
+        from apps.portfolio.models import PortfolioEntry
+        self.as_student()
+        response = self.client.post(
+            reverse('portfolio-edit'),
+            {'resource': 'entry', 'pk': '', 'action': 'save',
+             'kind': 'education', 'institution': 'Bad Dates',
+             'title': 'X', 'location': '',
+             'start_on': '2024-01-01', 'end_on': '2020-01-01',
+             'is_current': '', 'details': '', 'order': 0},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'End date cannot be earlier')
+        self.assertFalse(
+            PortfolioEntry.objects.filter(institution='Bad Dates').exists()
+        )
+
+    def test_124_credentials_are_one_merged_section(self):
+        from apps.portfolio.models import ExternalCertificate
+        ExternalCertificate.objects.create(
+            owner=self.student, title='Google UX', issuer='Google',
+            is_verified=True,
+        )
+        response = self.client.get(
+            reverse('portfolio-detail', kwargs={'username': 'p8student'})
+        )
+        html = response.content.decode()
+        self.assertEqual(html.count('>Credentials</h2>'), 1)
+        self.assertEqual(html.count('id="credentials"'), 1)
+        self.assertNotContains(response, 'Certificates from')
+        self.assertNotContains(response, 'Other credentials')
+        # Both sources appear, each tagged with its own badge.
+        self.assertContains(response, 'Myanmar E-Learning')
+        self.assertContains(response, 'Google')
+        self.assertContains(response, self.certificate.certificate_code)
+
+    def test_125_freelance_link_kinds_are_available_and_tagged(self):
+        from apps.portfolio.models import PortfolioLink
+        for kind in ('upwork', 'fiverr', 'freelancer', 'toptal'):
+            self.assertIn(kind, PortfolioLink.Kind.values)
+
+        PortfolioLink.objects.create(
+            owner=self.student, kind=PortfolioLink.Kind.UPWORK,
+            url='https://www.upwork.com/freelancers/p8student',
+        )
+        response = self.client.get(
+            reverse('portfolio-detail', kwargs={'username': 'p8student'})
+        )
+        self.assertContains(response, 'https://www.upwork.com/freelancers/p8student')
+        self.assertContains(response, 'Freelance marketplace')
+        self.assertEqual(response.context['stats']['skills'], 0)
+
+    def test_126_owner_onboarding_checklist_only_for_the_owner(self):
+        url = reverse('portfolio-detail', kwargs={'username': 'p8student'})
+        anon = self.client.get(url)
+        self.assertContains(anon, 'No skills listed yet')
+
+        self.as_student()
+        mine = self.client.get(url)
+        self.assertContains(mine, 'Finish your portfolio')
+        self.assertContains(mine, 'List your top skills')

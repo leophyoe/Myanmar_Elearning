@@ -3,7 +3,9 @@ from datetime import date
 from django import forms
 
 from apps.courses.forms import INPUT, TEXTAREA
-from .models import ExternalCertificate, PortfolioLink, Skill
+from .models import (
+    ExternalCertificate, PortfolioEntry, PortfolioLink, PortfolioProject, Skill,
+)
 
 MAX_CERT_MB = 10
 ALLOWED_CERT_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg']
@@ -114,3 +116,88 @@ class ExternalCertificateForm(forms.ModelForm):
                     f'Upload a {", ".join(ALLOWED_CERT_EXTENSIONS)} file.'
                 )
         return upload
+
+
+class PortfolioProjectForm(forms.ModelForm):
+    class Meta:
+        model = PortfolioProject
+        fields = (
+            'title', 'category', 'excerpt', 'description', 'client', 'role',
+            'tools', 'cover', 'external_url', 'completed_on', 'is_published',
+            'order',
+        )
+        widgets = {
+            'title': forms.TextInput(
+                attrs={'class': INPUT, 'placeholder': 'Company website redesign'}
+            ),
+            'category': forms.Select(attrs={'class': INPUT}),
+            'excerpt': forms.TextInput(
+                attrs={'class': INPUT, 'placeholder': 'One-line summary for the card'}
+            ),
+            'description': forms.Textarea(attrs={'class': TEXTAREA, 'rows': 4}),
+            'client': forms.TextInput(
+                attrs={'class': INPUT, 'placeholder': 'Client or company'}
+            ),
+            'role': forms.TextInput(
+                attrs={'class': INPUT, 'placeholder': 'Frontend developer'}
+            ),
+            'tools': forms.TextInput(
+                attrs={'class': INPUT, 'placeholder': 'Django, Tailwind, Postgres'}
+            ),
+            'cover': forms.ClearableFileInput(attrs={'class': INPUT}),
+            'external_url': forms.URLInput(
+                attrs={'class': INPUT, 'placeholder': 'https://…'}
+            ),
+            'completed_on': forms.DateInput(attrs={'class': INPUT, 'type': 'date'}),
+            'is_published': forms.CheckboxInput(attrs={'class': 'mr-2'}),
+            'order': forms.NumberInput(attrs={'class': INPUT, 'min': '0'}),
+        }
+
+    def clean_external_url(self):
+        url = (self.cleaned_data.get('external_url') or '').strip()
+        if url and not url.startswith(('http://', 'https://')):
+            raise forms.ValidationError('Use a full URL starting with https://')
+        return url
+
+    def clean_cover(self):
+        cover = self.cleaned_data.get('cover')
+        if cover and hasattr(cover, 'size'):
+            limit = MAX_CERT_MB * 1024 * 1024
+            if cover.size > limit:
+                raise forms.ValidationError(
+                    f'Image is {cover.size // (1024 * 1024)} MB — the limit is '
+                    f'{MAX_CERT_MB} MB.'
+                )
+        return cover
+
+
+class PortfolioEntryForm(forms.ModelForm):
+    class Meta:
+        model = PortfolioEntry
+        fields = (
+            'kind', 'institution', 'title', 'location',
+            'start_on', 'end_on', 'is_current', 'details', 'order',
+        )
+        widgets = {
+            'kind': forms.Select(attrs={'class': INPUT}),
+            'institution': forms.TextInput(
+                attrs={'class': INPUT, 'placeholder': 'University of Yangon'}
+            ),
+            'title': forms.TextInput(
+                attrs={'class': INPUT, 'placeholder': 'BSc Computer Science'}
+            ),
+            'location': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'Yangon'}),
+            'start_on': forms.DateInput(attrs={'class': INPUT, 'type': 'date'}),
+            'end_on': forms.DateInput(attrs={'class': INPUT, 'type': 'date'}),
+            'is_current': forms.CheckboxInput(attrs={'class': 'mr-2'}),
+            'details': forms.Textarea(attrs={'class': TEXTAREA, 'rows': 3}),
+            'order': forms.NumberInput(attrs={'class': INPUT, 'min': '0'}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        start = cleaned.get('start_on')
+        end = cleaned.get('end_on')
+        if start and end and end < start:
+            self.add_error('end_on', 'End date cannot be earlier than the start date.')
+        return cleaned

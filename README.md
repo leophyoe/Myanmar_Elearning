@@ -315,15 +315,17 @@ One admin-only workspace for accounts, courses and money. Every route lives unde
 
 ## Public Portfolios, QR/NFC & Credential Verification (Phase 8)
 
-Every account owns a shareable portfolio at `/portfolio/<username>/`, plus a
-public lookup for certificate IDs.
+Every account owns a shareable portfolio at `/portfolio/<username>/`, laid out
+like the [academicpages](https://github.com/academicpages/academicpages.github.io)
+template: a sticky profile sidebar on the left and CV-style sections on the
+right. The same page doubles as a freelance profile (Upwork / Fiverr style).
 
 **Routes**
 
 | Route | Access | Purpose |
 | :--- | :--- | :--- |
-| `/portfolio/<username>/` | public | Skills, profile links, platform & external certificates |
-| `/portfolio/edit/` | owner | Add / edit / delete skills, links and external credentials |
+| `/portfolio/<username>/` | public | Full portfolio: sidebar + CV sections |
+| `/portfolio/edit/` | owner | Add / edit / delete every portfolio section |
 | `/portfolio/<username>/qr.png` | public | PNG QR encoding the portfolio URL |
 | `/portfolio/<username>/nfc.txt` | public | Plain-text URL payload for writing an NFC tag |
 | `/portfolio/qr/`, `/portfolio/nfc/` | owner | The same for your own profile |
@@ -331,14 +333,38 @@ public lookup for certificate IDs.
 | `/certificates/verify/<uuid>/qr.png` | public | QR encoding the verification page |
 | `/console/credentials/` | admin | Review queue for student-submitted credentials |
 
+**Sidebar** — avatar, name, role, bio, student ID / batch or job title, points &
+rank, e-mail, profile chips, QR and NFC buttons.
+
+**Sections** — stats strip, skills, work samples, credentials, education,
+experience, learning (enrolments + progress), profiles & links. Owners with an
+unfinished portfolio see a "Finish your portfolio" checklist linking straight to
+the right form.
+
 **Models (`apps.portfolio`)**
 
 * `Skill` — name, category, level 1–5, display order, unique per owner.
-* `PortfolioLink` — kind (GitHub / LinkedIn / Website / CV / …), label, URL.
-  The `StudentProfile.github_url` / `linkedin_url` fields are merged in
-  automatically so nothing has to be entered twice.
-* `ExternalCertificate` — credential earned elsewhere: title, issuer, credential
-  ID/URL, dates, uploaded document, note, and an admin `is_verified` stamp.
+* `PortfolioLink` — kind, label, URL. Kinds cover GitHub, LinkedIn, website,
+  CV, YouTube, blog, X, Stack Overflow, Kaggle, Behance, Dribbble, Medium and
+  the freelance marketplaces **Upwork, Fiverr, Freelancer.com, Toptal,
+  PeoplePerHour, Guru**. `StudentProfile.github_url` / `linkedin_url` are merged
+  in automatically so nothing has to be entered twice.
+* `PortfolioProject` — a work sample: title, category, excerpt, description,
+  client, role, tool tags, cover image, external URL, completion date and a
+  publish toggle. Unpublished samples stay visible only to their owner.
+* `PortfolioEntry` — an education or experience line: institution, title,
+  location, start/end dates, `is_current`, notes.
+* `ExternalCertificate` — a credential earned elsewhere: title, issuer,
+  credential ID/URL, dates, uploaded document, note, admin `is_verified` stamp.
+
+**Credentials are one merged list**
+
+"Myanmar E-Learning" certificates and uploaded external credentials are **not**
+split into two sections. They are combined, sorted by date, and each row carries
+its own source badge (`Myanmar E-Learning` vs. the issuer's name) plus a status
+badge (`verified` / `pending` / `expired` / `revoked` / `rejected`). Platform
+rows link to the public verification page and its QR; external rows link to the
+issuer's verification URL or the uploaded file.
 
 **Rules**
 
@@ -346,10 +372,10 @@ public lookup for certificate IDs.
   administrator must approve it in `/console/credentials/` before it appears
   publicly. Pending and rejected entries stay visible to their owner only.
 * Rejection requires a written reason, which the owner sees on their edit page.
-* Skills and links can only be edited by their owner — the editor resolves
-  every `pk` through `owner=request.user`, so another account yields a 404.
-* The skill level must be between 1 and 5; uploaded documents must be
-  PDF/PNG/JPG and ≤ 10 MB.
+* Every item is resolved through `owner=request.user` — another account's
+  `pk` yields a 404 for both the editor and the delete action (POST only).
+* Skill level must be 1–5; uploads must be PDF/PNG/JPG (credentials) or an image
+  (work sample cover) and ≤ 10 MB; entry end dates cannot precede the start date.
 
 **QR & NFC**
 
@@ -362,9 +388,10 @@ scanning the tag then opens the portfolio.
 
 `/certificates/verify/?code=…` accepts either the printed serial
 (`MEL-CERT-2026-…`, case-insensitive) or the certificate UUID and redirects to
-the public verification page. The verification page itself now shows a QR code
-for the record, a VALID/REVOKED status badge with the revocation reason, and a
-link back to the lookup form.
+the public verification page. The verification page shows a QR code for the
+record, a VALID/REVOKED badge with the revocation reason, and a link back to the
+lookup form.
+
 
 ## Local Development (Without Docker)
 

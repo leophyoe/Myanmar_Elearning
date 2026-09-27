@@ -49,9 +49,26 @@ class PortfolioLink(BaseModel):
         LINKEDIN = 'linkedin', 'LinkedIn'
         WEBSITE = 'website', 'Website'
         CV = 'cv', 'CV / Résumé'
+        UPWORK = 'upwork', 'Upwork'
+        FIVERR = 'fiverr', 'Fiverr'
+        FREELANCER = 'freelancer', 'Freelancer.com'
+        TOPTAL = 'toptal', 'Toptal'
+        PEOPLEPERHOUR = 'peopleperhour', 'PeoplePerHour'
+        GURU = 'guru', 'Guru'
+        BEHANCE = 'behance', 'Behance'
+        DRIBBBLE = 'dribbble', 'Dribbble'
+        MEDIUM = 'medium', 'Medium'
+        STACKOVERFLOW = 'stackoverflow', 'Stack Overflow'
+        KAGGLE = 'kaggle', 'Kaggle'
+        TWITTER = 'twitter', 'X / Twitter'
         YOUTUBE = 'youtube', 'YouTube'
         BLOG = 'blog', 'Blog'
         OTHER = 'other', 'Other'
+
+    FREELANCE_KINDS = (
+        Kind.UPWORK, Kind.FIVERR, Kind.FREELANCER, Kind.TOPTAL,
+        Kind.PEOPLEPERHOUR, Kind.GURU,
+    )
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='portfolio_links'
@@ -132,3 +149,99 @@ class ExternalCertificate(BaseModel):
         if self.is_verified:
             return 'expired' if self.is_expired else 'verified'
         return 'pending'
+
+
+class PortfolioProject(BaseModel):
+    """A published work sample — the freelance/portfolio gallery item."""
+
+    class Category(models.TextChoices):
+        DEVELOPMENT = 'development', 'Development'
+        DESIGN = 'design', 'Design'
+        SECURITY = 'security', 'Security & Testing'
+        DATA = 'data', 'Data & AI'
+        WRITING = 'writing', 'Writing'
+        VIDEO = 'video', 'Video'
+        OTHER = 'other', 'Other'
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='portfolio_projects',
+    )
+    title = models.CharField(max_length=160)
+    category = models.CharField(
+        max_length=16, choices=Category.choices, default=Category.DEVELOPMENT,
+        db_index=True,
+    )
+    excerpt = models.CharField(
+        max_length=300, blank=True,
+        help_text="One-line summary shown on the portfolio card.",
+    )
+    description = models.TextField(
+        blank=True, help_text="What you built, your contribution, the outcome."
+    )
+    client = models.CharField(max_length=160, blank=True)
+    role = models.CharField(max_length=160, blank=True)
+    tools = models.CharField(
+        max_length=200, blank=True,
+        help_text="Comma-separated stack, e.g. Django, Tailwind, Postgres",
+    )
+    cover = models.ImageField(upload_to='portfolio/projects/', null=True, blank=True)
+    external_url = models.URLField(blank=True)
+    completed_on = models.DateField(null=True, blank=True)
+    is_published = models.BooleanField(default=True, db_index=True)
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', '-completed_on', '-created_at']
+
+    def __str__(self):
+        return f'{self.title} ({self.owner.username})'
+
+    @property
+    def tool_list(self):
+        return [t.strip() for t in (self.tools or '').split(',') if t.strip()]
+
+
+class PortfolioEntry(BaseModel):
+    """Education or work history line, the way a CV / freelance profile lists it."""
+
+    class Kind(models.TextChoices):
+        EDUCATION = 'education', 'Education'
+        EXPERIENCE = 'experience', 'Experience'
+
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='portfolio_entries',
+    )
+    kind = models.CharField(
+        max_length=16, choices=Kind.choices, default=Kind.EDUCATION, db_index=True
+    )
+    institution = models.CharField(
+        max_length=160, help_text="School, university, company or client."
+    )
+    title = models.CharField(
+        max_length=160, blank=True,
+        help_text="Degree, diploma, job title or engagement.",
+    )
+    location = models.CharField(max_length=120, blank=True)
+    start_on = models.DateField(null=True, blank=True)
+    end_on = models.DateField(null=True, blank=True)
+    is_current = models.BooleanField(default=False)
+    details = models.TextField(blank=True)
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['kind', '-start_on', 'order']
+
+    def __str__(self):
+        return f'{self.get_kind_display()}: {self.institution} ({self.owner.username})'
+
+    @property
+    def period(self):
+        fmt = '%Y'
+        start = self.start_on.strftime(fmt) if self.start_on else '—'
+        if self.is_current:
+            end = 'Present'
+        else:
+            end = self.end_on.strftime(fmt) if self.end_on else '—'
+        return f'{start} – {end}'

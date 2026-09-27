@@ -9,8 +9,14 @@ from django.views.generic import DetailView, View
 
 from apps.common.services import absolute_uri, qr_response
 from apps.certificates.models import Certificate
-from .forms import ExternalCertificateForm, PortfolioLinkForm, SkillForm
-from .models import ExternalCertificate, PortfolioLink, Skill
+from apps.courses.models import Enrollment
+from .forms import (
+    ExternalCertificateForm, PortfolioEntryForm, PortfolioLinkForm,
+    PortfolioProjectForm, SkillForm,
+)
+from .models import (
+    ExternalCertificate, PortfolioEntry, PortfolioLink, PortfolioProject, Skill,
+)
 
 User = get_user_model()
 
@@ -18,6 +24,17 @@ RESOURCES = {
     'skill': (SkillForm, Skill),
     'link': (PortfolioLinkForm, PortfolioLink),
     'cert': (ExternalCertificateForm, ExternalCertificate),
+    'project': (PortfolioProjectForm, PortfolioProject),
+    'entry': (PortfolioEntryForm, PortfolioEntry),
+}
+
+RESOURCE_ORDER = ['project', 'cert', 'skill', 'entry', 'link']
+RESOURCE_LABELS = {
+    'project': 'Work sample',
+    'cert': 'Credential',
+    'skill': 'Skill',
+    'entry': 'Education / Experience',
+    'link': 'Profile link',
 }
 
 
@@ -28,11 +45,18 @@ def own_object(resource, pk, owner):
     return get_object_or_404(model, pk=pk, owner=owner)
 
 
+def _date_key(value, fallback='1970-01-01'):
+    return value.isoformat() if value else fallback
+
+
 # ----------------------------------------------------------------------
 # Public portfolio
 # ----------------------------------------------------------------------
 class PortfolioDetailView(DetailView):
-    """Public profile: skills, links and credentials for one account."""
+    """
+    Public CV-style portfolio, laid out like the academicpages template:
+    a sticky profile sidebar on the left and CV sections on the right.
+    """
     template_name = 'portfolio/detail.html'
     context_object_name = 'portfolio_user'
 
@@ -45,52 +69,147 @@ class PortfolioDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         target = self.object
         viewer = self.request.user
+        request = self.request
         is_owner = bool(
             viewer.is_authenticated and (viewer.pk == target.pk or viewer.is_admin)
         )
 
-        platform_certs = Certificate.objects.filter(
-            student=target, is_revoked=False
-        ).select_related('course')
-
-        external_qs = ExternalCertificate.objects.filter(owner=target)
-        if not is_owner:
-            # Pending / rejected submissions stay private until an admin checks them.
-            external_qs = external_qs.filter(is_verified=True)
-
-        explicit = list(target.portfolio_links.all())
-        links = [
-            {'label': link.display_label, 'url': link.url, 'kind': link.kind}
-            for link in explicit
-        ]
-        # The bio form's GitHub / LinkedIn fields feed the same list.
+        # -- profile sidebar facts -------------------------------------
         profile = getattr(target, 'student_profile', None)
-        if profile:
-            legacy = {
-                PortfolioLink.Kind.GITHUB: (profile.github_url, 'GitHub'),
-                PortfolioLink.Kind.LINKEDIN: (profile.linkedin_url, 'LinkedIn'),
+        teacher_profile = getattr(target, 'teacher_profile', None)
+
+        explicit_links = list(target.portfolio_links.all())
+        links = [
+            {
+                'label': link.display_label,
+                'url': link.url,
+                'kind': link.kind,
+                'is_freelance': link.kind in PortfolioLink.FREELANCE_KINDS,
             }
-            for kind, (url, label) in legacy.items():
-                if url and not any(link.kind == kind for link in explicit):
-                    links.append({'label': label, 'url': url, 'kind': kind})
+            for link in explicit_links
+        ]
+        if profile:
+            for kind, url, label in (
+                (PortfolioLink.Kind.GITHUB, profile.github_url, 'GitHub'),
+                (PortfolioLink.Kind.LINKEDIN, profile.linkedin_url, 'LinkedIn'),
+            ):
+                if url and not any(link['kind'] == kind for link in links):
+                    links.append({
+                        'label': label, 'url': url, 'kind': kind,
+                        'is_freelance': False,
+                    })
+        links.sort(key=lambda link: (
+            0 if link['kind'] == PortfolioLink.Kind.GITHUB else 1,
+            link['label'].lower(),
+        ))
+
+        # -- credentials: one merged list, platform first by date -------
+        platform_qs = Certificate.objects.filter(student=target)
+        if not is_owner:
+            platform_qs = platform_qs.filter(is_revoked=False)
+
+        credentials = []
+        for cert in platform_qs.select_related('course'):
+            verify_path = reverse('certificate-verify', kwargs={'cert_id': cert.pk})
+            credentials.append({
+                'source_kind': 'platform',
+                'source': 'Myanmar E-Learning',
+                'title': cert.program_title or cert.course.title,
+                'subtitle': f'{cert.grade} · {cert.certificate_code}',
+                'issued': cert.issued_at,
+                'sort_date': _date_key(cert.issued_at.date()),
+                'url': verify_path,
+                'qr_url': reverse('certificate-qr', kwargs={'cert_id': cert.pk}),
+                'status': 'revoked' if cert.is_revoked else 'verified',
+                'note': cert.revocation_reason if cert.is_revoked else '',
+                'document': None,
+            })
+
+        external_qs = target.external_certificates.all()
+        if not is_owner:
+            external_qs = external_qs.filter(is_verified=True)
+        for cert in external_qs:
+            credentials.append({
+                'source_kind': 'external',
+                'source': cert.issuer,
+                'title': cert.title,
+                'subtitle': (
+                    f'ID: {cert.credential_id}' if cert.credential_id else ''
+                ),
+                'issued': cert.issued_on,
+                'sort_date': _date_key(cert.issued_on),
+                'url': cert.credential_url,
+                'qr_url': '',
+                'status': cert.status,
+                'note': cert.note,
+                'document': cert.document.url if cert.document else '',
+            })
+        credentials.sort(key=lambda item: item['sort_date'], reverse=True)
+
+        # -- learning ---------------------------------------------------
+        enrollments = list(
+            Enrollment.objects.filter(student=target)
+            .exclude(status=Enrollment.Status.DROPPED)
+            .select_related('course')
+        )
+        completed = [e for e in enrollments if e.status == Enrollment.Status.COMPLETED]
+
+        stats = {
+            'credentials': len(credentials),
+            'projects': target.portfolio_projects.filter(is_published=True).count(),
+            'skills': target.skills.count(),
+            'courses': len(enrollments),
+            'completed': len(completed),
+            'points': profile.points if profile else 0,
+            'rank': profile.rank if profile else None,
+        }
+
+        # -- empty-state checklist --------------------------------------
+        missing = [
+            (bool((profile and profile.bio) or teacher_profile), 'Add a short bio',
+             reverse('profile')),
+            (bool(target.skills.exists()), 'List your top skills',
+             reverse('portfolio-edit') + '?resource=skill'),
+            (bool(target.portfolio_projects.filter(is_published=True).exists()),
+             'Show a work sample', reverse('portfolio-edit') + '?resource=project'),
+            (bool(links), 'Add a GitHub, Upwork or LinkedIn link',
+             reverse('portfolio-edit') + '?resource=link'),
+            (bool(credentials), 'Upload an external credential',
+             reverse('portfolio-edit') + '?resource=cert'),
+        ]
 
         context.update({
             'is_owner': is_owner,
-            'platform_certificates': platform_certs,
-            'external_certificates': external_qs,
-            'skills': list(target.skills.all()),
-            'links': links,
             'profile': profile,
+            'teacher_profile': teacher_profile,
+            'links': links,
+            'freelance_links': [l for l in links if l['is_freelance']],
+            'credentials': credentials,
+            'platform_credentials': [c for c in credentials
+                                     if c['source_kind'] == 'platform'],
+            'external_credentials': [c for c in credentials
+                                     if c['source_kind'] == 'external'],
+            'projects': target.portfolio_projects.filter(is_published=True),
+            'education': target.portfolio_entries.filter(
+                kind=PortfolioEntry.Kind.EDUCATION
+            ),
+            'experience': target.portfolio_entries.filter(
+                kind=PortfolioEntry.Kind.EXPERIENCE
+            ),
+            'skills': list(target.skills.all()),
+            'enrollments': enrollments,
+            'stats': stats,
+            'missing': [m for m in missing if not m[0]],
             'portfolio_url': absolute_uri(
-                self.request,
+                request,
                 reverse('portfolio-detail', kwargs={'username': target.username}),
             ),
             'qr_url': absolute_uri(
-                self.request,
+                request,
                 reverse('portfolio-user-qr', kwargs={'username': target.username}),
             ),
             'nfc_url': absolute_uri(
-                self.request,
+                request,
                 reverse('portfolio-user-nfc', kwargs={'username': target.username}),
             ),
         })
@@ -101,7 +220,7 @@ class PortfolioDetailView(DetailView):
 # Owner editor
 # ----------------------------------------------------------------------
 class PortfolioEditView(LoginRequiredMixin, View):
-    """One page that creates, edits and deletes skills, links and certificates."""
+    """One page that creates, edits and deletes every portfolio section."""
     template_name = 'portfolio/edit.html'
 
     def _context(self, form=None, resource='', pk=''):
@@ -111,13 +230,15 @@ class PortfolioEditView(LoginRequiredMixin, View):
             'resource': resource,
             'pk': pk,
             'resource_choices': [
-                ('skill', 'Skill', SkillForm),
-                ('link', 'Link', PortfolioLinkForm),
-                ('cert', 'External certificate', ExternalCertificateForm),
+                (key, RESOURCE_LABELS[key], RESOURCES[key][0])
+                for key in RESOURCE_ORDER
             ],
+            'resource_label': RESOURCE_LABELS.get(resource, 'item'),
             'skills': list(user.skills.all()),
             'links': list(user.portfolio_links.all()),
             'external_certificates': list(user.external_certificates.all()),
+            'projects': list(user.portfolio_projects.all()),
+            'entries': list(user.portfolio_entries.all()),
         }
 
     def get(self, request, *args, **kwargs):
@@ -144,8 +265,8 @@ class PortfolioEditView(LoginRequiredMixin, View):
             if instance is None:
                 messages.info(request, 'That item is already gone.')
             else:
-                label = getattr(instance, 'name', None) or getattr(
-                    instance, 'title', None
+                label = getattr(instance, 'title', None) or getattr(
+                    instance, 'name', None
                 ) or str(instance)
                 instance.delete()
                 messages.success(request, f'“{label}” removed from your portfolio.')
@@ -175,27 +296,32 @@ class PortfolioEditView(LoginRequiredMixin, View):
             return redirect('portfolio-edit')
 
         verb = 'Updated' if instance else 'Added'
-        messages.success(
-            request,
-            f'{verb} '
-            f'{getattr(obj, "name", None) or getattr(obj, "title", None) or obj}.'
+        label = (
+            getattr(obj, 'title', None) or getattr(obj, 'name', None)
+            or getattr(obj, 'institution', None) or str(obj)
         )
+        messages.success(request, f'{verb} {label}.')
         return redirect('portfolio-edit')
 
 
 # ----------------------------------------------------------------------
 # QR + NFC payloads
 # ----------------------------------------------------------------------
+def _target_for(request, username):
+    if username is None:
+        if not request.user.is_authenticated:
+            return None
+        return request.user
+    return get_object_or_404(User, username=username, is_active=True)
+
+
 class PortfolioQRView(View):
     """PNG QR code encoding the public portfolio URL (for printing / NFC tags)."""
 
     def get(self, request, username=None):
-        if username is None:
-            if not request.user.is_authenticated:
-                return redirect('login')
-            target = request.user
-        else:
-            target = get_object_or_404(User, username=username, is_active=True)
+        target = _target_for(request, username)
+        if target is None:
+            return redirect('login')
         url = absolute_uri(
             request,
             reverse('portfolio-detail', kwargs={'username': target.username}),
@@ -212,12 +338,9 @@ class PortfolioNFCView(View):
     """
 
     def get(self, request, username=None):
-        if username is None:
-            if not request.user.is_authenticated:
-                return redirect('login')
-            target = request.user
-        else:
-            target = get_object_or_404(User, username=username, is_active=True)
+        target = _target_for(request, username)
+        if target is None:
+            return redirect('login')
         url = absolute_uri(
             request,
             reverse('portfolio-detail', kwargs={'username': target.username}),

@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from apps.users.models import UserRole, StudentProfile, TeacherProfile, AdminProfile
 from apps.courses.models import (
     Subject, Course, Module, Lesson, LessonType, Quiz, Question, Choice, Enrollment,
-    Assignment, AssignmentSubmission, UserProgress,
+    Assignment, AssignmentSubmission, UserProgress, LiveSession,
 )
 from apps.labs.models import Lab, LabTemplate, LabInstance, LabCategory, LabDifficulty
 from apps.ctf.models import Challenge, ChallengeCategory, FlagSubmission, SolvedChallenge
@@ -15,6 +15,7 @@ from apps.certificates.models import Certificate
 from apps.billing.models import Payment, active_payment_for
 from apps.courses.views import can_access_course
 from decimal import Decimal
+from datetime import timedelta
 import hashlib
 
 User = get_user_model()
@@ -1367,3 +1368,227 @@ class PaymentAndCheckoutTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Paid Course')
         self.assertEqual(len(response.context['payments']), 1)
+
+
+class LiveSessionTests(TestCase):
+    """Phase 5b: scheduled real-time classes (Zoom / Google Meet / Teams)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.teacher = User.objects.create_user(
+            username='p6teacher', password='pw', email='p6t@mel.edu.mm',
+            role=UserRole.TEACHER,
+        )
+        self.other_teacher = User.objects.create_user(
+            username='p6other', password='pw', email='p6o@mel.edu.mm',
+            role=UserRole.TEACHER,
+        )
+        self.student = User.objects.create_user(
+            username='p6student', password='pw', email='p6s@mel.edu.mm',
+            role=UserRole.STUDENT,
+        )
+        self.admin = User.objects.create_user(
+            username='p6admin', password='pw', email='p6a@mel.edu.mm',
+            role=UserRole.ADMIN,
+        )
+        self.course = Course.objects.create(
+            title='Live Course', slug='live-course', description='x',
+            owner=self.teacher, price=0,
+        )
+        self.session = LiveSession.objects.create(
+            course=self.course, title='Kickoff',
+            provider=LiveSession.Provider.ZOOM,
+            join_url='https://zoom.us/j/123456789',
+            starts_at=timezone.now() + timedelta(hours=3),
+            duration_minutes=45,
+        )
+        self.other_session = LiveSession.objects.create(
+            course=self.course, title='Other teacher class',
+            provider=LiveSession.Provider.TEAMS,
+            join_url='https://teams.microsoft.com/l/meetup-join/secret',
+            starts_at=timezone.now() + timedelta(hours=6),
+            duration_minutes=60,
+        )
+
+    def session_data(self, **overrides):
+        data = {
+            'course': self.course.id,
+            'title': 'Revision session',
+            'provider': LiveSession.Provider.GOOGLE_MEET,
+            'join_url': 'https://meet.google.com/abc-defg-hij',
+            'starts_at': (timezone.now() + timedelta(days=1)).strftime('%Y-%m-%dT%H:%M'),
+            'duration_minutes': 30,
+            'notes': 'Bring your notes',
+            'is_published': 'on',
+        }
+        data.update(overrides)
+        return data
+
+    # -- authoring ---------------------------------------------------------
+    def test_70_teacher_schedules_a_live_session(self):
+        self.client.force_login(self.teacher)
+        response = self.client.post(
+            reverse('live-session-create'), self.session_data()
+        )
+        self.assertRedirects(
+            response, reverse('live-session-list'), fetch_redirect_response=False
+        )
+        created = LiveSession.objects.get(title='Revision session')
+        self.assertEqual(created.course, self.course)
+        self.assertEqual(created.provider, LiveSession.Provider.GOOGLE_MEET)
+
+    def test_71_students_cannot_reach_the_live_session_studio(self):
+        routes = (
+            ('live-session-list', {}),
+            ('live-session-create', {}),
+            ('live-session-edit', {'session_id': self.session.id}),
+            ('live-session-delete', {'session_id': self.session.id}),
+        )
+        for name, kwargs in routes:
+            self.client.force_login(self.student)
+            self.assertEqual(
+                self.client.get(reverse(name, kwargs=kwargs)).status_code, 403,
+                f'{name} must be teacher-only',
+            )
+
+    def test_72_a_teacher_cannot_manage_another_teachers_session(self):
+        # The session lives on a course owned by self.teacher.
+        for name in ('live-session-edit', 'live-session-delete'):
+            self.client.force_login(self.other_teacher)
+            self.assertEqual(
+                self.client.get(
+                    reverse(name, kwargs={'session_id': self.other_session.id})
+                ).status_code,
+                404,
+            )
+            self.client.force_login(self.teacher)
+            self.assertEqual(
+                self.client.get(
+                    reverse(name, kwargs={'session_id': self.other_session.id})
+                ).status_code,
+                200,
+            )
+            self.client.force_login(self.admin)
+            self.assertEqual(
+                self.client.get(
+                    reverse(name, kwargs={'session_id': self.other_session.id})
+                ).status_code,
+                200,
+            )
+
+    def test_73_teacher_cannot_schedule_on_a_course_they_do_not_own(self):
+        foreign = Course.objects.create(
+            title='Not mine', slug='not-mine', description='x',
+            owner=self.other_teacher, price=0,
+        )
+        self.client.force_login(self.teacher)
+        response = self.client.post(
+            reverse('live-session-create'), self.session_data(course=foreign.id)
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(LiveSession.objects.filter(course=foreign).exists())
+
+    def test_74_a_session_cannot_be_scheduled_in_the_past(self):
+        self.client.force_login(self.teacher)
+        response = self.client.post(
+            reverse('live-session-create'),
+            self.session_data(
+                starts_at=(timezone.now() - timedelta(hours=1)).strftime('%Y-%m-%dT%H:%M')
+            ),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Schedule the session in the future.')
+        self.assertFalse(LiveSession.objects.filter(title='Revision session').exists())
+
+    # -- visibility for students ------------------------------------------
+    def test_75_enrolled_student_sees_the_join_link(self):
+        Enrollment.objects.create(course=self.course, student=self.student)
+        self.client.force_login(self.student)
+        response = self.client.get(
+            reverse('course-detail', kwargs={'slug': self.course.slug})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'https://zoom.us/j/123456789')
+        self.assertContains(response, 'Kickoff')
+        self.assertEqual(len(response.context['live_sessions']), 2)
+
+    def test_76_a_visitor_without_access_never_sees_the_join_link(self):
+        self.client.force_login(self.student)
+        response = self.client.get(
+            reverse('course-detail', kwargs={'slug': self.course.slug})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'https://zoom.us/j/123456789')
+        self.assertEqual(response.context['live_sessions'], [])
+
+        self.client.force_login(self.other_teacher)
+        response = self.client.get(
+            reverse('course-detail', kwargs={'slug': self.course.slug})
+        )
+        # Staff always have access
+        self.assertContains(response, 'https://zoom.us/j/123456789')
+
+    def test_77_unpublished_and_past_sessions_are_hidden(self):
+        self.session.is_published = False
+        self.session.save(update_fields=['is_published'])
+        self.other_session.starts_at = timezone.now() - timedelta(minutes=5)
+        self.other_session.save(update_fields=['starts_at'])
+
+        Enrollment.objects.create(course=self.course, student=self.student)
+        self.client.force_login(self.student)
+        response = self.client.get(
+            reverse('course-detail', kwargs={'slug': self.course.slug})
+        )
+        self.assertEqual(response.context['live_sessions'], [])
+        self.assertNotContains(response, 'zoom.us')
+
+    def test_78_paid_course_sessions_stay_hidden_without_a_payment(self):
+        paid = Course.objects.create(
+            title='Paid Live', slug='paid-live', description='x',
+            owner=self.teacher, price=Decimal('1000.00'),
+        )
+        LiveSession.objects.create(
+            course=paid, title='Paid only',
+            join_url='https://zoom.us/j/999',
+            starts_at=timezone.now() + timedelta(days=1),
+        )
+        Enrollment.objects.create(course=paid, student=self.student)
+
+        self.client.force_login(self.student)
+        response = self.client.get(
+            reverse('course-detail', kwargs={'slug': paid.slug})
+        )
+        self.assertEqual(response.context['live_sessions'], [])
+        self.assertNotContains(response, 'https://zoom.us/j/999')
+
+    # -- student dashboard -------------------------------------------------
+    def test_79_dashboard_lists_sessions_for_enrolled_courses_only(self):
+        Enrollment.objects.create(course=self.course, student=self.student)
+        self.client.force_login(self.student)
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['upcoming_live_sessions']), 2)
+        self.assertContains(response, 'Kickoff')
+
+        # Another course the student never joined must not leak in.
+        elsewhere = Course.objects.create(
+            title='Elsewhere', slug='elsewhere', description='x',
+            owner=self.teacher, price=0,
+        )
+        LiveSession.objects.create(
+            course=elsewhere, title='Secret class',
+            join_url='https://zoom.us/j/000000',
+            starts_at=timezone.now() + timedelta(days=2),
+        )
+        response = self.client.get(reverse('dashboard'))
+        self.assertNotContains(response, 'https://zoom.us/j/000000')
+        self.assertEqual(len(response.context['upcoming_live_sessions']), 2)
+
+    # -- studio surface ----------------------------------------------------
+    def test_80_content_studio_and_list_pages_render(self):
+        self.client.force_login(self.teacher)
+        for name in ('manage-home', 'live-session-list', 'live-session-create'):
+            response = self.client.get(reverse(name))
+            self.assertEqual(response.status_code, 200, name)
+        response = self.client.get(reverse('live-session-edit', kwargs={'session_id': self.session.id}))
+        self.assertEqual(response.status_code, 200)

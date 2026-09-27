@@ -117,10 +117,24 @@ class StudentDashboardView(LoginRequiredMixin, TemplateView):
         badges = UserBadge.objects.filter(user=user).select_related('badge')
         certificates = Certificate.objects.filter(student=user, is_revoked=False)
 
+        # 4. Upcoming live classes (Zoom / Google Meet / Microsoft Teams)
+        from django.utils import timezone
+        from apps.courses.models import LiveSession
+        upcoming_live_sessions = []
+        if enrolled_ids:
+            upcoming_live_sessions = list(
+                LiveSession.objects.filter(
+                    course_id__in=enrolled_ids,
+                    is_published=True,
+                    starts_at__gte=timezone.now(),
+                ).select_related('course').order_by('starts_at')[:5]
+            )
+
         context.update({
             'profile': profile,
             'enrollments': enrollments,
             'next_lesson': next_lesson,
+            'upcoming_live_sessions': upcoming_live_sessions,
             'total_modules': total_lessons,
             'completed_modules': completed_lessons,
             'total_lessons': total_lessons,

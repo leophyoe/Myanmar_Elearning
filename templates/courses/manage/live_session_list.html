@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Live Sessions - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-800">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-wide">Live Sessions</h1>
+            <p class="text-xs text-slate-400 mt-1">
+                Scheduled real-time classes. Students see the joining link only once they can access the course.
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs">
+            <a href="{% url 'manage-home' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Content Studio</a>
+            <a href="{% url 'live-session-create' %}" class="px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">+ Schedule session</a>
+        </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2 mb-6">
+        <a href="{% url 'live-session-list' %}"
+           class="text-xs px-3 py-1.5 rounded-lg border transition
+           {% if not active_course %}bg-cyan-600 border-cyan-500 text-white
+           {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+            All courses
+        </a>
+        {% for course in courses %}
+        <a href="{% url 'live-session-list' %}?course={{ course.id }}"
+           class="text-xs px-3 py-1.5 rounded-lg border transition
+           {% if active_course == course.id|stringformat:'s' %}bg-cyan-600 border-cyan-500 text-white
+           {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+            {{ course.title }}
+        </a>
+        {% endfor %}
+    </div>
+
+    {% if sessions %}
+    <div class="overflow-x-auto rounded-2xl bg-slate-900 border border-slate-800">
+        <table class="w-full text-sm text-left">
+            <thead class="text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-800">
+                <tr>
+                    <th class="px-5 py-3">When</th>
+                    <th class="px-5 py-3">Session</th>
+                    <th class="px-5 py-3">Course</th>
+                    <th class="px-5 py-3">Platform</th>
+                    <th class="px-5 py-3">Length</th>
+                    <th class="px-5 py-3">Visibility</th>
+                    <th class="px-5 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for session in sessions %}
+                <tr>
+                    <td class="px-5 py-3 text-slate-300 whitespace-nowrap text-xs">
+                        {{ session.starts_at|date:"D, d M Y" }}<br>
+                        <span class="text-slate-500">{{ session.starts_at|date:"H:i" }}</span>
+                    </td>
+                    <td class="px-5 py-3">
+                        <div class="text-white font-medium">{{ session.title }}</div>
+                        {% if session.notes %}<div class="text-[11px] text-slate-500 mt-0.5">{{ session.notes|truncatechars:80 }}</div>{% endif %}
+                    </td>
+                    <td class="px-5 py-3 text-slate-400 text-xs">{{ session.course.title }}</td>
+                    <td class="px-5 py-3 text-xs">
+                        <span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
+                            {{ session.get_provider_display }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3 text-xs text-slate-400 whitespace-nowrap">{{ session.duration_minutes }} min</td>
+                    <td class="px-5 py-3">
+                        {% if session.is_published %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 uppercase font-bold">Published</span>
+                        {% else %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 uppercase font-bold">Hidden</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3 text-right whitespace-nowrap">
+                        <a href="{% url 'live-session-edit' session_id=session.id %}"
+                           class="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Edit</a>
+                        <a href="{% url 'live-session-delete' session_id=session.id %}"
+                           class="text-xs px-3 py-1.5 rounded bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 transition">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-12 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+        <p class="text-sm text-slate-400 mb-4">No live sessions scheduled yet.</p>
+        <a href="{% url 'live-session-create' %}" class="inline-block text-xs px-5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
+            Schedule the first one &rarr;
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

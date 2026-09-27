@@ -11,12 +11,12 @@ from apps.common.permissions import RoleRequiredMixin
 from apps.billing.models import active_payment_for, Payment
 from .models import (
     Subject, Course, Module, Lesson, LessonType, Quiz, Question, Choice,
-    UserProgress, Enrollment, Assignment, AssignmentSubmission,
+    UserProgress, Enrollment, Assignment, AssignmentSubmission, LiveSession,
 )
 from .forms import (
     SubjectForm, CourseForm, ModuleForm, LessonForm,
     QuizForm, QuestionFormSet, AssignmentForm, AssignmentSubmitForm,
-    SubmissionGradeForm,
+    SubmissionGradeForm, LiveSessionForm,
 )
 
 
@@ -51,6 +51,15 @@ def course_progress_pct(user, course):
         user=user, course=course, is_completed=True, lesson__isnull=False
     ).count()
     return int((done / total) * 100)
+
+
+def upcoming_live_sessions(course):
+    """Published real-time sessions for `course` that have not started yet."""
+    return list(
+        course.live_sessions.filter(
+            is_published=True, starts_at__gte=timezone.now()
+        ).order_by('starts_at')
+    )
 
 
 def sync_enrollment_progress(user, course):
@@ -120,6 +129,11 @@ class CourseDetailView(DetailView):
                 context['pending_payment'] = Payment.objects.filter(
                     student=user, course=course, status=Payment.Status.PENDING
                 ).first()
+            context['live_sessions'] = (
+                upcoming_live_sessions(course)
+                if (user.is_teacher or user.is_admin or context['has_access'])
+                else []
+            )
         return context
 
 
@@ -773,3 +787,95 @@ class LessonCompleteView(LoginRequiredMixin, View):
 
         sync_enrollment_progress(request.user, course)
         return redirect('lesson-detail', lesson_id=lesson.id)
+
+
+# ----------------------------------------------------------------------
+# Live sessions (Zoom / Google Meet / Teams)
+# ----------------------------------------------------------------------
+class LiveSessionMixin(TeacherRequiredMixin):
+    """Teacher/admin-only live session management with course ownership checks."""
+
+    def owned_courses(self):
+        if self.request.user.is_admin:
+            return Course.objects.all()
+        return Course.objects.filter(owner=self.request.user) | Course.objects.filter(
+            owner__isnull=True
+        )
+
+    def get_initial(self):
+        initial = super().get_initial()
+        course_id = self.request.GET.get('course')
+        if course_id:
+            initial['course'] = course_id
+        return initial
+
+
+class LiveSessionEditorMixin(LiveSessionMixin):
+    """Only the ModelForm views need the request (to scope the course queryset)."""
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
+
+class LiveSessionListView(LiveSessionMixin, TemplateView):
+    template_name = 'courses/manage/live_session_list.html'
+
+    def get_queryset(self):
+        qs = LiveSession.objects.filter(course__in=self.owned_courses()).select_related(
+            'course'
+        )
+        course_id = self.request.GET.get('course')
+        if course_id:
+            qs = qs.filter(course_id=course_id)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['sessions'] = self.get_queryset()
+        context['courses'] = self.owned_courses().order_by('title')
+        context['active_course'] = self.request.GET.get('course', '')
+        return context
+
+
+class LiveSessionCreateView(LiveSessionEditorMixin, CreateView):
+    model = LiveSession
+    form_class = LiveSessionForm
+    template_name = 'courses/manage/live_session_form.html'
+    success_url = reverse_lazy('live-session-list')
+
+    def form_valid(self, form):
+        if not form.instance.course_id:
+            form.instance.course = self.owned_courses().first()
+        messages.success(self.request, f"Live session “{form.instance.title}” scheduled.")
+        return super().form_valid(form)
+
+
+class LiveSessionUpdateView(LiveSessionEditorMixin, UpdateView):
+    model = LiveSession
+    form_class = LiveSessionForm
+    template_name = 'courses/manage/live_session_form.html'
+    success_url = reverse_lazy('live-session-list')
+    pk_url_kwarg = 'session_id'
+
+    def get_queryset(self):
+        return LiveSession.objects.filter(course__in=self.owned_courses())
+
+    def form_valid(self, form):
+        messages.success(self.request, "Live session updated.")
+        return super().form_valid(form)
+
+
+class LiveSessionDeleteView(LiveSessionMixin, DeleteView):
+    model = LiveSession
+    template_name = 'courses/manage/live_session_confirm_delete.html'
+    success_url = reverse_lazy('live-session-list')
+    pk_url_kwarg = 'session_id'
+
+    def get_queryset(self):
+        return LiveSession.objects.filter(course__in=self.owned_courses())
+
+    def form_valid(self, form):
+        messages.success(self.request, "Live session removed.")
+        return super().form_valid(form)

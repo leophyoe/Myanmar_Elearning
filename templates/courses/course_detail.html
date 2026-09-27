@@ -107,6 +107,40 @@
         </div>
     </div>
 
+    <!-- Live sessions (only rendered when the viewer may see the course) -->
+    {% if live_sessions %}
+    <div class="mb-8 p-6 rounded-2xl bg-slate-900 border border-cyan-900/60">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-white">Upcoming live sessions</h2>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 uppercase font-bold">
+                Zoom / Meet / Teams
+            </span>
+        </div>
+        <div class="space-y-3">
+            {% for session in live_sessions %}
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-slate-950 border border-slate-800">
+                <div class="shrink-0 w-24 text-center">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500">{{ session.starts_at|date:"M" }}</div>
+                    <div class="text-xl font-bold text-cyan-300 font-mono">{{ session.starts_at|date:"d" }}</div>
+                    <div class="text-[10px] text-slate-500 font-mono">{{ session.starts_at|date:"H:i" }}</div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold text-white">{{ session.title }}</div>
+                    <div class="text-[11px] text-slate-500 mt-0.5">
+                        {{ session.get_provider_display }} · {{ session.duration_minutes }} minutes
+                        {% if session.notes %} · {{ session.notes|truncatechars:70 }}{% endif %}
+                    </div>
+                </div>
+                <a href="{{ session.join_url }}" target="_blank" rel="noopener noreferrer"
+                   class="shrink-0 text-xs px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition text-center">
+                    Join session
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Modules Accordion / List -->
     <div class="space-y-6">
         {% for module in modules %}

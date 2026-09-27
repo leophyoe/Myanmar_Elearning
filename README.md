@@ -256,6 +256,31 @@ every approved payment and pays the rest to the course owner.
    an approved, unexpired payment for paid courses, so lessons, quizzes and
    assignments stay locked until an admin approves the payment.
 
+---
+
+## Live Sessions (Phase 5b)
+
+Teachers schedule real-time classes on Zoom, Google Meet, Microsoft Teams or any
+custom link. The joining URL is treated as private course content.
+
+| Route | Access | Purpose |
+| :--- | :--- | :--- |
+| `/courses/manage/live/` | teacher, admin | Schedule with an optional `?course=` filter |
+| `/courses/manage/live/new/` | teacher, admin | Create a session (future start times only) |
+| `/courses/manage/live/<uuid>/edit/` | owner, admin | Reschedule or republish |
+| `/courses/manage/live/<uuid>/delete/` | owner, admin | Remove a session |
+
+**Visibility rules**
+
+* `CourseDetailView` only publishes `upcoming_live_sessions()` when the viewer
+  may see the course content — staff, or a student with an active enrolment
+  *and* an approved payment on paid courses. Anonymous visitors and
+  non-enrolled students never receive the link.
+* Unpublished (`is_published=False`) and already-started sessions are filtered
+  out.
+* The student dashboard lists the next five sessions across enrolled courses.
+* Teachers only schedule on courses they own (`Course.owner`); admins on any.
+
 ## Local Development (Without Docker)
 
 You can also run Myanmar E-Learning locally with SQLite:

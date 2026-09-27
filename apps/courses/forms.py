@@ -1,6 +1,7 @@
 from django import forms
 from django.core.validators import FileExtensionValidator
-from .models import Subject, Course, Module, Lesson
+from django.utils import timezone
+from .models import Subject, Course, Module, Lesson, LiveSession
 
 INPUT = 'w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500'
 TEXTAREA = INPUT + ' min-h-[160px]'
@@ -364,3 +365,53 @@ class SubmissionGradeForm(forms.ModelForm):
         if score > self.max_score:
             raise forms.ValidationError(f'Score cannot exceed {self.max_score}.')
         return score
+
+
+class LiveSessionForm(forms.ModelForm):
+    """Teacher-facing scheduling of a real-time class (Zoom / Meet / Teams)."""
+
+    class Meta:
+        model = LiveSession
+        fields = ('course', 'title', 'provider', 'join_url', 'starts_at',
+                  'duration_minutes', 'notes', 'is_published')
+        widgets = {
+            'course': forms.Select(attrs={'class': INPUT}),
+            'title': forms.TextInput(
+                attrs={'class': INPUT, 'placeholder': 'Module 3 review session'}
+            ),
+            'provider': forms.Select(attrs={'class': INPUT}),
+            'join_url': forms.URLInput(
+                attrs={'class': INPUT, 'placeholder': 'https://zoom.us/j/...'}
+            ),
+            'starts_at': forms.DateTimeInput(
+                attrs={'class': INPUT, 'type': 'datetime-local'}
+            ),
+            'duration_minutes': forms.NumberInput(attrs={'class': INPUT, 'min': '5'}),
+            'notes': forms.Textarea(
+                attrs={'class': TEXTAREA, 'rows': 3, 'placeholder': 'Optional agenda or prerequisites'}
+            ),
+            'is_published': forms.CheckboxInput(attrs={'class': 'accent-cyan-500'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
+        if request is not None and not request.user.is_admin:
+            # Teachers only schedule sessions on courses they own.
+            self.fields['course'].queryset = Course.objects.filter(
+                owner=request.user
+            ) | Course.objects.filter(owner__isnull=True)
+
+    def clean_starts_at(self):
+        starts_at = self.cleaned_data.get('starts_at')
+        # NB: BaseModel assigns the UUID eagerly, so _state.adding is the only
+        # reliable "this is a new record" test.
+        if starts_at and self.instance._state.adding and starts_at <= timezone.now():
+            raise forms.ValidationError('Schedule the session in the future.')
+        return starts_at
+
+    def clean_duration_minutes(self):
+        minutes = self.cleaned_data.get('duration_minutes')
+        if minutes is not None and minutes > 24 * 60:
+            raise forms.ValidationError('A session cannot last longer than 24 hours.')
+        return minutes

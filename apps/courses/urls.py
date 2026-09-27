@@ -12,6 +12,8 @@ from .views import (
     AssignmentCreateView, AssignmentUpdateView, AssignmentDeleteView,
     AssignmentDetailView, AssignmentSubmitView,
     SubmissionListView, SubmissionGradeView,
+    LiveSessionListView, LiveSessionCreateView,
+    LiveSessionUpdateView, LiveSessionDeleteView,
 )
 from apps.billing.views import CheckoutView
 
@@ -52,6 +54,12 @@ urlpatterns = [
     path('manage/assignments/<uuid:assignment_id>/delete/', AssignmentDeleteView.as_view(), name='assignment-delete'),
     path('manage/submissions/', SubmissionListView.as_view(), name='submission-list'),
     path('manage/submissions/<uuid:submission_id>/grade/', SubmissionGradeView.as_view(), name='submission-grade'),
+
+    # Live sessions (teacher / admin)
+    path('manage/live/', LiveSessionListView.as_view(), name='live-session-list'),
+    path('manage/live/new/', LiveSessionCreateView.as_view(), name='live-session-create'),
+    path('manage/live/<uuid:session_id>/edit/', LiveSessionUpdateView.as_view(), name='live-session-edit'),
+    path('manage/live/<uuid:session_id>/delete/', LiveSessionDeleteView.as_view(), name='live-session-delete'),
 
     # Single-segment catch-all must stay last
     path('<slug:slug>/', CourseDetailView.as_view(), name='course-detail'),

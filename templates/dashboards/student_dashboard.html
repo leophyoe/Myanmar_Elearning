@@ -124,6 +124,40 @@
         {% endif %}
     </div>
 
+    <!-- Upcoming live classes -->
+    {% if upcoming_live_sessions %}
+    <div class="mb-10">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-bold text-white">Upcoming Live Sessions</h2>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 uppercase font-bold">
+                Zoom / Meet / Teams
+            </span>
+        </div>
+        <div class="space-y-3">
+            {% for session in upcoming_live_sessions %}
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-slate-900 border border-slate-800">
+                <div class="shrink-0 w-20 text-center">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500">{{ session.starts_at|date:"M" }}</div>
+                    <div class="text-xl font-bold text-cyan-300 font-mono">{{ session.starts_at|date:"d" }}</div>
+                    <div class="text-[10px] text-slate-500 font-mono">{{ session.starts_at|date:"H:i" }}</div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <a href="{% url 'course-detail' slug=session.course.slug %}"
+                       class="text-sm font-semibold text-white hover:text-cyan-300 transition">{{ session.title }}</a>
+                    <div class="text-[11px] text-slate-500 mt-0.5">
+                        {{ session.course.title }} · {{ session.get_provider_display }} · {{ session.duration_minutes }} min
+                    </div>
+                </div>
+                <a href="{{ session.join_url }}" target="_blank" rel="noopener noreferrer"
+                   class="shrink-0 text-xs px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition text-center">
+                    Join session
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Active Sandbox Machine Container (TryHackMe / HTB Style) -->
     <div class="mb-10">
         <h2 class="text-base font-bold text-white mb-3 flex items-center space-x-2">

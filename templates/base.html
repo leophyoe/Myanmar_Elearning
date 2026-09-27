@@ -28,6 +28,7 @@
         }
     </script>
     <link rel="stylesheet" href="/static/css/cyberrange.css">
+    {% include 'includes/theme_head.html' %}
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-[#0a0f1d] text-slate-200 min-h-screen flex flex-col font-mono selection:bg-cyan-500 selection:text-black">
@@ -72,6 +73,7 @@
 
             <!-- User Auth Controls -->
             <div class="flex items-center space-x-4">
+                {% include 'includes/theme_toggle.html' %}
                 {% if user.is_authenticated %}
                     <div class="hidden sm:flex flex-col text-right">
                         <span class="text-xs text-white font-semibold">{{ user.username }}</span>
@@ -149,6 +151,7 @@
         </div>
     </footer>
 
+    {% include 'includes/theme_script.html' %}
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

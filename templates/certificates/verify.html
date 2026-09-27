@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificate Verification - {{ PLATFORM_NAME }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    {% include 'includes/theme_head.html' %}
 </head>
 <body class="bg-[#080d19] text-slate-200 min-h-screen flex items-center justify-center p-4 font-mono">
 
@@ -87,6 +88,7 @@
         </p>
 
         <div class="flex items-center justify-center gap-4 text-xs">
+            {% include 'includes/theme_toggle.html' %}
             <a href="{% url 'certificate-lookup' %}" class="text-cyan-400 hover:underline">
                 Verify another certificate
             </a>
@@ -97,6 +99,7 @@
         </div>
     </div>
 
+    {% include 'includes/theme_script.html' %}
 </body>
 </html>
 

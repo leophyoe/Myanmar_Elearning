@@ -1,0 +1,13 @@
+<!-- Theme: read the stored preference before first paint so there is no flash -->
+<script>
+    (function () {
+        var theme;
+        try { theme = localStorage.getItem('mel-theme'); } catch (e) {}
+        if (theme !== 'light' && theme !== 'dark') { theme = 'dark'; }
+        var el = document.documentElement;
+        el.setAttribute('data-theme', theme);
+        el.classList.toggle('dark', theme === 'dark');
+        el.classList.toggle('light', theme === 'light');
+    })();
+</script>
+<link rel="stylesheet" href="/static/css/theme.css">

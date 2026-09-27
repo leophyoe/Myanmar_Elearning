@@ -2473,3 +2473,81 @@ class RegistrationAndRoleTests(TestCase):
         )
         self.assertContains(listing, 'Awaiting approval')
         self.assertContains(listing, 'waiting')
+
+
+class ThemeToggleTests(TestCase):
+    """Dark ⇄ Light switch, persisted in localStorage and applied before paint."""
+
+    def setUp(self):
+        self.client = Client()
+
+    def theme_css(self):
+        from django.contrib.staticfiles import finders
+        path = finders.find('css/theme.css')
+        self.assertIsNotNone(path, 'static/css/theme.css is not discoverable')
+        with open(path, encoding='utf-8') as handle:
+            return handle.read()
+
+    def test_136_pages_expose_the_theme_script_toggle_and_stylesheet(self):
+        for url in (reverse('landing-page'), reverse('course-list')):
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200, url)
+            self.assertContains(response, 'data-theme-toggle')
+            self.assertContains(response, "localStorage.getItem('mel-theme')")
+            self.assertContains(response, '/static/css/theme.css')
+            self.assertContains(response, 'theme-to-light')
+            # Nothing stored yet must still fall back to the dark design.
+            self.assertContains(
+                response, "theme !== 'light' && theme !== 'dark'"
+            )
+
+    def test_137_light_theme_repoints_the_dark_utilities(self):
+        css = self.theme_css()
+        self.assertIn('[data-theme="light"]', css)
+        for selector in ('.bg-slate-900', '.bg-slate-950', '.border-slate-800',
+                         '.text-white', '.text-slate-400', '.bg-cyan-950',
+                         '.text-cyan-400'):
+            self.assertIn(selector, css, selector)
+        # Accent text must darken or it disappears on white.
+        self.assertIn('color: #0e7490', css)
+
+    def test_138_buttons_keep_white_text_on_coloured_backgrounds(self):
+        css = self.theme_css()
+        self.assertIn('.bg-cyan-600, .bg-cyan-500', css.replace('\n', ' ').replace('    ', ' '))
+        self.assertIn('color: #ffffff', css)
+        self.assertIn('.bg-gradient-to-br', css)
+
+    def test_139_standalone_certificate_pages_follow_the_theme(self):
+        for url in (reverse('certificate-lookup'), reverse('certificate-verify',
+                     kwargs={'cert_id': self._certificate().pk})):
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, 200, url)
+            self.assertContains(response, 'data-theme-toggle')
+            self.assertContains(response, '/static/css/theme.css')
+
+    def test_140_terminal_stays_dark_on_purpose(self):
+        """A console reads best on a dark surface, so it opts out of theming."""
+        from django.template.loader import render_to_string
+        rendered = render_to_string('terminal/terminal.html', {})
+        self.assertNotIn('includes/theme_head.html', rendered)
+        self.assertNotIn('data-theme-toggle', rendered)
+
+    def _certificate(self):
+        subject = Subject.objects.create(title='Theme subject')
+        teacher = User.objects.create_user(
+            username='thteacher', email='tht@mel.edu.mm',
+            password='Passw0rd!23', role='teacher',
+        )
+        course = Course.objects.create(
+            title='Theme course', subject=subject, owner=teacher, price=0,
+        )
+        student = User.objects.create_user(
+            username='thstudent', email='ths@mel.edu.mm',
+            password='Passw0rd!23', role='student',
+        )
+        return Certificate.objects.create(
+            student=student, course=course,
+            certificate_code=Certificate.generate_code(),
+            student_name='Theme Student', program_title='Theme course',
+            grade='Pass',
+        )

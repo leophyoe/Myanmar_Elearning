@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificate Lookup - {{ PLATFORM_NAME }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    {% include 'includes/theme_head.html' %}
 </head>
 <body class="bg-[#080d19] text-slate-200 min-h-screen flex items-center justify-center p-4 font-mono">
 
@@ -51,10 +52,14 @@
             so scanners skip this page entirely.
         </div>
 
-        <a href="/" class="inline-block text-xs text-cyan-400 hover:underline mt-5">
-            &larr; Return to {{ PLATFORM_NAME }}
-        </a>
+        <div class="flex items-center justify-between mt-5">
+            <a href="/" class="inline-block text-xs text-cyan-400 hover:underline">
+                &larr; Return to {{ PLATFORM_NAME }}
+            </a>
+            {% include 'includes/theme_toggle.html' %}
+        </div>
     </div>
 
+    {% include 'includes/theme_script.html' %}
 </body>
 </html>

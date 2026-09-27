@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}Course Report - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-800">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-wide">Course Report</h1>
+            <p class="text-xs text-slate-400 mt-1">Enrolment, progress, grading and credentials — one row per course.</p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs">
+            <a href="{% url 'report-students' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Student report</a>
+            <a href="{% url 'manage-home' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Content Studio</a>
+            <a href="{% url 'submission-list' %}" class="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition">Grading queue</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Courses</div>
+            <div class="text-2xl font-bold text-white">{{ totals.courses }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Enrolments</div>
+            <div class="text-2xl font-bold text-cyan-400">{{ totals.enrolled }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Completions</div>
+            <div class="text-2xl font-bold text-emerald-400">{{ totals.completed }}</div>
+        </div>
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Certificates</div>
+            <div class="text-2xl font-bold text-amber-400">{{ totals.certificates }}</div>
+        </div>
+    </div>
+
+    <div class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden">
+        <table class="w-full text-xs">
+            <thead class="bg-slate-950 text-slate-500 uppercase tracking-wider text-[10px]">
+                <tr>
+                    <th class="text-left px-5 py-3 font-semibold">Course</th>
+                    <th class="text-right px-5 py-3 font-semibold">Lessons</th>
+                    <th class="text-right px-5 py-3 font-semibold">Enrolled</th>
+                    <th class="text-right px-5 py-3 font-semibold">Active</th>
+                    <th class="text-right px-5 py-3 font-semibold">Completed</th>
+                    <th class="text-left px-5 py-3 font-semibold w-48">Avg progress</th>
+                    <th class="text-right px-5 py-3 font-semibold">Avg score</th>
+                    <th class="text-right px-5 py-3 font-semibold">Certs</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for row in rows %}
+                <tr class="hover:bg-slate-950/60 transition">
+                    <td class="px-5 py-3">
+                        <a href="{% url 'course-detail' slug=row.course.slug %}" class="text-slate-200 font-medium hover:text-cyan-300">{{ row.course.title }}</a>
+                        <div class="text-[10px] text-slate-500">{{ row.course.subject.title|default:"Unassigned" }}{% if not row.course.is_published %} · unpublished{% endif %}</div>
+                    </td>
+                    <td class="px-5 py-3 text-right font-mono text-slate-400">{{ row.lessons }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-slate-300">{{ row.enrolled }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-cyan-400">{{ row.active }}</td>
+                    <td class="px-5 py-3 text-right font-mono text-emerald-400">{{ row.completed }}</td>
+                    <td class="px-5 py-3">
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                                <div class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500" style="width: {{ row.avg_progress }}%"></div>
+                            </div>
+                            <span class="font-mono text-slate-400 w-9 text-right">{{ row.avg_progress }}%</span>
+                        </div>
+                    </td>
+                    <td class="px-5 py-3 text-right font-mono {% if row.avg_score is None %}text-slate-600{% else %}text-amber-400{% endif %}">
+                        {% if row.avg_score is None %}—{% else %}{{ row.avg_score }}%{% endif %}
+                    </td>
+                    <td class="px-5 py-3 text-right font-mono text-amber-400">{{ row.certificates }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="px-5 py-10 text-center text-slate-500">No courses yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

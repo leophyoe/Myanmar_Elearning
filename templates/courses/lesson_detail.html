@@ -31,7 +31,22 @@
                 <h1 class="text-2xl sm:text-3xl font-bold text-white mt-2">{{ lesson.title }}</h1>
                 <p class="text-xs text-slate-400 mt-1">Estimated duration: {{ lesson.estimated_minutes }} minutes</p>
             </div>
-            {% if progress.is_completed %}
+            {% if not can_manage %}
+            <form method="POST" action="{% url 'lesson-complete' lesson_id=lesson.id %}" class="flex items-center gap-3 shrink-0">
+                {% csrf_token %}
+                {% if progress.is_completed %}
+                <span class="px-3 py-1 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300 text-xs font-semibold">
+                    ✓ Completed
+                </span>
+                <button type="submit" class="text-[11px] text-slate-500 hover:text-slate-300 underline">Undo</button>
+                {% else %}
+                <button type="submit"
+                        class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950 border border-slate-700 hover:border-emerald-700 text-slate-200 hover:text-emerald-300 text-xs font-semibold transition">
+                    ✓ Mark complete
+                </button>
+                {% endif %}
+            </form>
+            {% elif progress.is_completed %}
                 <span class="px-3 py-1 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300 text-xs font-semibold">
                     ✓ Completed
                 </span>

@@ -53,8 +53,12 @@ def sync_enrollment_progress(user, course):
     enrollment.progress_pct = course_progress_pct(user, course)
     if enrollment.progress_pct >= 100:
         enrollment.status = Enrollment.Status.COMPLETED
-        enrollment.completed_at = timezone.now()
+        enrollment.completed_at = enrollment.completed_at or timezone.now()
     enrollment.save(update_fields=['progress_pct', 'status', 'completed_at'])
+
+    if enrollment.status == Enrollment.Status.COMPLETED:
+        from apps.certificates.services import issue_certificate_for_enrollment
+        issue_certificate_for_enrollment(enrollment)
     return enrollment
 
 
@@ -676,3 +680,54 @@ class AssignmentSubmitView(LoginRequiredMixin, View):
                 error for errors in form.errors.values() for error in errors
             ))
         return redirect('assignment-detail', assignment_id=assignment.id)
+
+
+# ----------------------------------------------------------------------
+# Phase 4 - lesson completion, progress and reporting
+# ----------------------------------------------------------------------
+class LessonCompleteView(LoginRequiredMixin, View):
+    """POST-only toggle that marks a lesson complete and resyncs progress."""
+
+    def post(self, request, lesson_id):
+        lesson = get_object_or_404(Lesson, id=lesson_id)
+        course = lesson.module.course
+
+        if not can_access_course(request.user, course):
+            messages.info(request, 'Please enrol in this course before tracking progress.')
+            return redirect('course-detail', slug=course.slug)
+
+        quiz = getattr(lesson, 'quiz', None)
+        if lesson.has_quiz and quiz and quiz.questions.exists():
+            messages.info(
+                request, 'Pass the checkpoint quiz to complete this lesson.'
+            )
+            return redirect('lesson-detail', lesson_id=lesson.id)
+
+        if lesson.lesson_type == LessonType.ASSIGNMENT and lesson.module.assignments.exists():
+            messages.info(
+                request,
+                'Submit the assignment for this module — it is completed once your '
+                'teacher grades it.'
+            )
+            return redirect('lesson-detail', lesson_id=lesson.id)
+
+        progress, _ = UserProgress.objects.get_or_create(
+            user=request.user,
+            course=course,
+            module=lesson.module,
+            lesson=lesson,
+        )
+
+        if progress.is_completed:
+            progress.is_completed = False
+            progress.completed_at = None
+            progress.save(update_fields=['is_completed', 'completed_at'])
+            messages.info(request, f'“{lesson.title}” marked as not completed.')
+        else:
+            progress.is_completed = True
+            progress.completed_at = timezone.now()
+            progress.save(update_fields=['is_completed', 'completed_at'])
+            messages.success(request, f'“{lesson.title}” completed. Nice work!')
+
+        sync_enrollment_progress(request.user, course)
+        return redirect('lesson-detail', lesson_id=lesson.id)

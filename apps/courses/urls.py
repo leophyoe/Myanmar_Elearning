@@ -7,6 +7,7 @@ from .views import (
     CourseCreateView, CourseUpdateView,
     ModuleCreateView, ModuleUpdateView,
     LessonCreateView, LessonUpdateView, LessonDeleteView,
+    LessonCompleteView,
     QuizBuilderView,
     AssignmentCreateView, AssignmentUpdateView, AssignmentDeleteView,
     AssignmentDetailView, AssignmentSubmitView,
@@ -23,6 +24,7 @@ urlpatterns = [
     # Content
     path('modules/<uuid:module_id>/', ModuleDetailView.as_view(), name='module-detail'),
     path('lessons/<uuid:lesson_id>/', LessonDetailView.as_view(), name='lesson-detail'),
+    path('lessons/<uuid:lesson_id>/complete/', LessonCompleteView.as_view(), name='lesson-complete'),
     path('lessons/<uuid:lesson_id>/quiz/submit/', QuizSubmitView.as_view(), name='quiz-submit'),
 
     # Assessment (students)

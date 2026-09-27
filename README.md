@@ -185,6 +185,37 @@ single grading queue.
 
 ---
 
+## Progress, Certificates & Reports (Phase 4)
+
+| Route | Access | Purpose |
+| :--- | :--- | :--- |
+| `POST /courses/lessons/<id>/complete/` | enrolled student | Toggle "lesson complete" and resync enrolment progress |
+| `/certificates/` | student | Credentials earned so far |
+| `/certificates/verify/<uuid>/` | public | Standalone verification page (no PII) |
+| `/analytics/reports/courses/` | teacher, admin | Enrolment / progress / grading / credentials per course |
+| `/analytics/reports/students/` | teacher, admin | Progress, grades, pending work and credentials per student |
+
+**Completion rules**
+
+* Reading lessons complete via the **Mark complete** button (undo is allowed).
+* Lessons with a real checkpoint quiz are only completed by **passing** it.
+* Lessons of type `assignment` are only completed once a submission scores
+  **≥ 60 %** and the teacher grades it.
+* Every completion calls `sync_enrollment_progress`, which stores
+  `Enrollment.progress_pct` and flips the enrolment to `completed` at 100 %.
+
+**Certificates** — issued automatically the first time an enrolment reaches
+100 % (`apps/certificates/services.py`). Issuance is idempotent per
+(student, course), retries on serial collisions inside a savepoint, and derives
+the classification from the student's graded assignments in that course:
+**Distinction ≥ 85 %**, **Merit ≥ 70 %**, otherwise **Pass**.
+
+**Student dashboard** — metrics are now scoped to enrolled courses (lessons
+completed / total lessons, live per-course progress bars) and revoked
+certificates are hidden everywhere.
+
+---
+
 ## Local Development (Without Docker)
 
 You can also run Myanmar E-Learning locally with SQLite:

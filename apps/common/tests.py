@@ -1,5 +1,6 @@
 from django.test import TestCase, Client
 from django.urls import reverse
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 from apps.users.models import UserRole, StudentProfile, TeacherProfile, AdminProfile
 from apps.courses.models import (
@@ -782,4 +783,274 @@ class AssessmentAndGradingTests(TestCase):
         # Re-read: the view saved a separate StudentProfile instance.
         self.assertEqual(
             StudentProfile.objects.get(user=self.student).points, question.points
+        )
+
+
+class ProgressAndCertificateTests(TestCase):
+    """Phase 4: lesson completion, automatic certificates and reports."""
+
+    def setUp(self):
+        self.client = Client()
+        self.subject = Subject.objects.create(title='General Studies', slug='general-studies', kind=Subject.Kind.GENERAL)
+
+        # Course completed through plain reading lessons
+        self.course = Course.objects.create(
+            title='Grad Course', slug='grad-course', subject=self.subject, description='Read and go.'
+        )
+        self.module = Module.objects.create(
+            course=self.course, order=1, code='GC-01', title='Part one', summary='s',
+            learning_objectives=['Learn'],
+        )
+        self.lesson_a = Lesson.objects.create(
+            module=self.module, order=1, title='Chapter A', content_markdown='a',
+            lesson_type=LessonType.TEXT,
+        )
+        self.lesson_b = Lesson.objects.create(
+            module=self.module, order=2, title='Chapter B', content_markdown='b',
+            lesson_type=LessonType.TEXT,
+        )
+
+        # Course gated behind a quiz
+        self.quiz_course = Course.objects.create(
+            title='Quiz Course', slug='quiz-course', subject=self.subject, description='q'
+        )
+        self.quiz_module = Module.objects.create(
+            course=self.quiz_course, order=1, code='QC-01', title='Part one', summary='s',
+            learning_objectives=['Learn'],
+        )
+        self.quiz_lesson = Lesson.objects.create(
+            module=self.quiz_module, order=1, title='Quiz lesson', content_markdown='q',
+            lesson_type=LessonType.QUIZ, has_quiz=True,
+        )
+        self.quiz = Quiz.objects.create(
+            lesson=self.quiz_lesson, title='Check', passing_percentage=50, max_attempts=3
+        )
+        question = Question.objects.create(quiz=self.quiz, order=1, prompt='True or false?', points=10)
+        Choice.objects.create(question=question, text='True', is_correct=True)
+        Choice.objects.create(question=question, text='False', is_correct=False)
+
+        # Course gated behind a graded assignment
+        self.assign_course = Course.objects.create(
+            title='Assign Course', slug='assign-course', subject=self.subject, description='a'
+        )
+        self.assign_module = Module.objects.create(
+            course=self.assign_course, order=1, code='AC-01', title='Part one', summary='s',
+            learning_objectives=['Deliver'],
+        )
+        self.assign_lesson = Lesson.objects.create(
+            module=self.assign_module, order=1, title='Deliverable', content_markdown='do it',
+            lesson_type=LessonType.ASSIGNMENT,
+        )
+        self.assignment = Assignment.objects.create(
+            module=self.assign_module, title='Project', description='Build it.', max_score=100
+        )
+
+        self.student = User.objects.create_user(
+            username='p4_student', email='p4s@mel.edu.mm',
+            first_name='Su', last_name='Mya',
+            role=UserRole.STUDENT, password='StrongCyberPass2026!'
+        )
+        self.teacher = User.objects.create_user(
+            username='p4_teacher', email='p4t@mel.edu.mm',
+            role=UserRole.TEACHER, password='StrongCyberPass2026!'
+        )
+        self.admin = User.objects.create_user(
+            username='p4_admin', email='p4a@mel.edu.mm',
+            role=UserRole.ADMIN, password='StrongCyberPass2026!'
+        )
+
+    def enroll(self, course):
+        self.client.post(reverse('enroll', kwargs={'slug': course.slug}))
+        return Enrollment.objects.get(course=course, student=self.student)
+
+    def complete(self, lesson):
+        return self.client.post(
+            reverse('lesson-complete', kwargs={'lesson_id': lesson.id})
+        )
+
+    # -- lesson completion --------------------------------------------
+    def test_38_marking_a_lesson_complete_tracks_progress(self):
+        self.client.force_login(self.student)
+        enrollment = self.enroll(self.course)
+
+        self.complete(self.lesson_a)
+        progress = UserProgress.objects.get(user=self.student, lesson=self.lesson_a)
+        self.assertTrue(progress.is_completed)
+        self.assertIsNotNone(progress.completed_at)
+
+        enrollment.refresh_from_db()
+        self.assertEqual(enrollment.progress_pct, 50)
+        self.assertEqual(enrollment.status, Enrollment.Status.ACTIVE)
+
+    def test_39_completing_every_lesson_graduates_and_issues_a_certificate(self):
+        from apps.certificates.models import Certificate
+
+        self.client.force_login(self.student)
+        enrollment = self.enroll(self.course)
+        self.complete(self.lesson_a)
+        self.complete(self.lesson_b)
+
+        enrollment.refresh_from_db()
+        self.assertEqual(enrollment.progress_pct, 100)
+        self.assertEqual(enrollment.status, Enrollment.Status.COMPLETED)
+        self.assertIsNotNone(enrollment.completed_at)
+
+        certificate = Certificate.objects.get(student=self.student, course=self.course)
+        self.assertEqual(certificate.program_title, 'Grad Course')
+        self.assertEqual(certificate.student_name, 'Su Mya')
+        self.assertEqual(certificate.grade, 'Pass')
+        self.assertTrue(certificate.certificate_code.startswith('MEL-CERT-2026-'))
+
+    def test_40_quiz_lesson_cannot_be_tick_off_manually(self):
+        self.client.force_login(self.student)
+        self.enroll(self.quiz_course)
+        self.complete(self.quiz_lesson)
+
+        progress = UserProgress.objects.filter(
+            user=self.student, lesson=self.quiz_lesson, is_completed=True
+        ).exists()
+        self.assertFalse(progress)
+
+    def test_41_assignment_lesson_waits_for_the_grade(self):
+        self.client.force_login(self.student)
+        self.enroll(self.assign_course)
+        self.complete(self.assign_lesson)
+
+        self.assertFalse(
+            UserProgress.objects.filter(
+                user=self.student, lesson=self.assign_lesson, is_completed=True
+            ).exists()
+        )
+
+    def test_42_unenrolled_student_cannot_track_progress(self):
+        self.client.force_login(self.student)
+        response = self.complete(self.lesson_a)
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(UserProgress.objects.filter(user=self.student).exists())
+
+    def test_43_completion_toggles_back_off(self):
+        self.client.force_login(self.student)
+        self.enroll(self.course)
+        self.complete(self.lesson_a)
+        self.complete(self.lesson_a)
+
+        self.assertFalse(
+            UserProgress.objects.get(user=self.student, lesson=self.lesson_a).is_completed
+        )
+
+    # -- certificates ---------------------------------------------------
+    def test_44_issuance_is_idempotent(self):
+        from apps.certificates.models import Certificate
+        from apps.certificates.services import issue_certificate_for_enrollment
+
+        enrollment = Enrollment.objects.create(
+            course=self.course, student=self.student, status=Enrollment.Status.ACTIVE
+        )
+        first = issue_certificate_for_enrollment(enrollment)
+        second = issue_certificate_for_enrollment(enrollment)
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(Certificate.objects.filter(student=self.student).count(), 1)
+
+    def test_45_certificate_code_collisions_do_not_fail(self):
+        from apps.certificates.models import Certificate
+        from apps.certificates.services import issue_certificate_for_enrollment
+
+        other = User.objects.create_user(
+            username='p4_other', email='p4o@mel.edu.mm',
+            role=UserRole.STUDENT, password='StrongCyberPass2026!'
+        )
+        e1 = Enrollment.objects.create(course=self.course, student=self.student, status=Enrollment.Status.ACTIVE)
+        e2 = Enrollment.objects.create(course=self.course, student=other, status=Enrollment.Status.ACTIVE)
+
+        generated = Certificate.generate_code()
+        from unittest import mock
+        with mock.patch.object(Certificate, 'generate_code', side_effect=[generated, generated, 'MEL-CERT-2026-FINAL']):
+            c1 = issue_certificate_for_enrollment(e1)
+            c2 = issue_certificate_for_enrollment(e2)
+        self.assertNotEqual(c1.certificate_code, c2.certificate_code)
+
+    def test_46_grade_thresholds(self):
+        from apps.certificates.services import compute_grade
+
+        self.assertEqual(compute_grade(self.student, self.course), 'Pass')
+
+        module = Module.objects.create(
+            course=self.course, order=2, code='GC-02', title='Part two', summary='s',
+            learning_objectives=['Grade'],
+        )
+        assignment = Assignment.objects.create(
+            module=module, title='Report', description='Write it.', max_score=100
+        )
+        grade_cases = [(90, 'Distinction'), (75, 'Merit'), (60, 'Pass')]
+        for score, expected in grade_cases:
+            AssignmentSubmission.objects.create(
+                assignment=assignment, student=self.student, submission_text='x',
+                score=score, graded_by=self.teacher, graded_at=timezone.now(),
+            )
+            self.assertEqual(compute_grade(self.student, self.course), expected,
+                             f'{score} pts should be {expected}')
+            AssignmentSubmission.objects.all().delete()
+
+    # -- reports ---------------------------------------------------------
+    def test_47_reports_are_role_restricted(self):
+        for name in ('report-courses', 'report-students'):
+            self.client.force_login(self.student)
+            self.assertEqual(
+                self.client.get(reverse(name)).status_code, 403, f'{name} must block students'
+            )
+            for user in (self.teacher, self.admin):
+                self.client.force_login(user)
+                self.assertEqual(
+                    self.client.get(reverse(name)).status_code, 200,
+                    f'{name} must render for {user.username}'
+                )
+
+    def test_48_course_report_shows_enrolment_and_certificates(self):
+        self.client.force_login(self.student)
+        self.enroll(self.course)
+        self.complete(self.lesson_a)
+        self.complete(self.lesson_b)
+
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse('report-courses'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Grad Course')
+        self.assertContains(response, '100%')
+
+    def test_49_student_report_shows_the_learner(self):
+        self.client.force_login(self.teacher)
+        response = self.client.get(reverse('report-students'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'p4s@mel.edu.mm')
+
+    # -- student dashboard ------------------------------------------------
+    def test_50_dashboard_counts_enrolled_lessons_and_lists_courses(self):
+        self.client.force_login(self.student)
+        self.enroll(self.course)
+        self.complete(self.lesson_a)
+
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Grad Course')
+        self.assertEqual(response.context['total_lessons'], 2)
+        self.assertEqual(response.context['completed_lessons'], 1)
+        self.assertEqual(response.context['progress_percentage'], 50)
+        self.assertEqual(response.context['next_lesson'], self.lesson_b)
+
+    def test_51_revoked_certificates_are_hidden_everywhere(self):
+        from apps.certificates.models import Certificate
+        self.client.force_login(self.student)
+        enrollment = self.enroll(self.course)
+        self.complete(self.lesson_a)
+        self.complete(self.lesson_b)
+
+        certificate = Certificate.objects.get(student=self.student)
+        certificate.is_revoked = True
+        certificate.save(update_fields=['is_revoked'])
+
+        self.assertFalse(
+            self.client.get(reverse('dashboard')).context['certificates'].exists()
+        )
+        self.assertFalse(
+            self.client.get(reverse('certificate-list')).context['certificates'].exists()
         )

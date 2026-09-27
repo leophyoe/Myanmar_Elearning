@@ -55,16 +55,57 @@ class StudentDashboardView(LoginRequiredMixin, TemplateView):
         user = self.request.user
         profile, _ = StudentProfile.objects.get_or_create(user=user)
 
-        from apps.courses.models import Module, UserProgress
+        from apps.courses.models import Lesson, UserProgress, Enrollment
         from apps.labs.models import LabInstance, Lab
         from apps.ctf.models import SolvedChallenge
         from apps.scoring.models import UserBadge
         from apps.certificates.models import Certificate
 
-        # 1. Academic Metrics
-        total_modules = Module.objects.count() or 14
-        completed_modules = UserProgress.objects.filter(user=user, is_completed=True).count()
-        progress_percentage = int((completed_modules / total_modules) * 100) if total_modules > 0 else 0
+        # 1. Academic metrics — scoped to the courses the student actually took
+        enrollments = list(
+            Enrollment.objects.filter(student=user)
+            .select_related('course', 'course__subject')
+            .order_by('enrolled_at')
+        )
+        enrolled_ids = [e.course_id for e in enrollments]
+
+        completed_rows = UserProgress.objects.filter(
+            user=user, is_completed=True, lesson__isnull=False
+        )
+        if enrolled_ids:
+            total_lessons = Lesson.objects.filter(
+                module__course_id__in=enrolled_ids
+            ).count()
+            completed_lessons = completed_rows.filter(
+                course_id__in=enrolled_ids
+            ).count()
+        else:
+            total_lessons = Lesson.objects.count()
+            completed_lessons = completed_rows.count()
+
+        progress_percentage = (
+            int((completed_lessons / total_lessons) * 100) if total_lessons else 0
+        )
+
+        done_lesson_ids = set(
+            UserProgress.objects.filter(user=user, is_completed=True)
+            .values_list('lesson_id', flat=True)
+        )
+        next_lesson = None
+        if enrolled_ids:
+            for lesson in Lesson.objects.filter(
+                module__course_id__in=enrolled_ids
+            ).select_related('module').order_by('module__course', 'module__order', 'order'):
+                if lesson.id not in done_lesson_ids:
+                    next_lesson = lesson
+                    break
+
+        from apps.courses.views import course_progress_pct
+        for enrollment in enrollments:
+            enrollment.live_progress = (
+                100 if enrollment.status == Enrollment.Status.COMPLETED
+                else course_progress_pct(user, enrollment.course)
+            )
 
         # 2. Lab Activity
         active_instances = LabInstance.objects.filter(user=user, status='running')
@@ -74,12 +115,16 @@ class StudentDashboardView(LoginRequiredMixin, TemplateView):
         # 3. CTF & Badges
         solved_challenges = SolvedChallenge.objects.filter(user=user).select_related('challenge')
         badges = UserBadge.objects.filter(user=user).select_related('badge')
-        certificates = Certificate.objects.filter(student=user)
+        certificates = Certificate.objects.filter(student=user, is_revoked=False)
 
         context.update({
             'profile': profile,
-            'total_modules': total_modules,
-            'completed_modules': completed_modules,
+            'enrollments': enrollments,
+            'next_lesson': next_lesson,
+            'total_modules': total_lessons,
+            'completed_modules': completed_lessons,
+            'total_lessons': total_lessons,
+            'completed_lessons': completed_lessons,
             'progress_percentage': progress_percentage,
             'active_instances': active_instances,
             'total_labs_count': total_labs_count,

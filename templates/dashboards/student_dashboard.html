@@ -45,9 +45,9 @@
 
         <!-- Modules Metric -->
         <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Completed Modules</div>
-            <div class="text-2xl font-bold text-cyan-400 mb-1">{{ completed_modules }} <span class="text-xs text-slate-500 font-normal">/ {{ total_modules }}</span></div>
-            <div class="text-[11px] text-slate-400">14 Module Curriculum</div>
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Lessons Completed</div>
+            <div class="text-2xl font-bold text-cyan-400 mb-1">{{ completed_lessons }} <span class="text-xs text-slate-500 font-normal">/ {{ total_lessons }}</span></div>
+            <div class="text-[11px] text-slate-400">{{ enrollments|length }} enrolled course{{ enrollments|length|pluralize }}</div>
         </div>
 
         <!-- Labs Metric -->
@@ -70,6 +70,58 @@
             <div class="text-2xl font-bold text-purple-400 mb-1">#{{ profile.rank }}</div>
             <a href="{% url 'leaderboard' %}" class="text-[11px] text-cyan-400 hover:underline">View Leaderboard &rarr;</a>
         </div>
+    </div>
+
+    <!-- Enrolled courses / resume learning -->
+    <div class="mb-10">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-bold text-white">Continue Learning</h2>
+            {% if next_lesson %}
+            <a href="{% url 'lesson-detail' lesson_id=next_lesson.id %}"
+               class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                Resume: {{ next_lesson.title|truncatechars:40 }}
+            </a>
+            {% endif %}
+        </div>
+
+        {% if enrollments %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for enrollment in enrollments %}
+            <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] px-1.5 py-0.5 rounded uppercase font-bold
+                            {% if enrollment.status == 'completed' %}bg-emerald-950 text-emerald-300 border border-emerald-800
+                            {% elif enrollment.status == 'dropped' %}bg-red-950 text-red-300 border border-red-800
+                            {% else %}bg-cyan-950 text-cyan-300 border border-cyan-800{% endif %}">
+                            {{ enrollment.get_status_display }}
+                        </span>
+                        <span class="text-[11px] font-mono text-slate-400">{{ enrollment.live_progress }}%</span>
+                    </div>
+                    <a href="{% url 'course-detail' slug=enrollment.course.slug %}"
+                       class="block text-sm font-semibold text-slate-200 hover:text-cyan-300 transition mt-2">
+                        {{ enrollment.course.title }}
+                    </a>
+                    <p class="text-[11px] text-slate-500 mt-0.5">{{ enrollment.course.subject.title|default:"General" }}</p>
+                </div>
+                <div class="mt-4">
+                    <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-gradient-to-r from-cyan-500 to-blue-500 h-1.5 rounded-full"
+                             style="width: {{ enrollment.live_progress }}%"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-8 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+            <p class="text-sm text-slate-300 font-semibold mb-1">You are not enrolled in a course yet</p>
+            <p class="text-xs text-slate-500 mb-4">Pick a course to start tracking lessons, quizzes and certificates.</p>
+            <a href="{% url 'course-list' %}" class="px-4 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                Browse Courses
+            </a>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Active Sandbox Machine Container (TryHackMe / HTB Style) -->

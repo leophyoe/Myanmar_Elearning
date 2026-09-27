@@ -80,3 +80,122 @@ class AdminDashboardView(RoleRequiredMixin, TemplateView):
 # Legacy aliases (kept for imports that still use the old names)
 InstructorDashboardView = TeacherDashboardView
 SystemTelemetryView = AdminDashboardView
+
+
+# ----------------------------------------------------------------------
+# Phase 4 - operational reports for teachers and administrators
+# ----------------------------------------------------------------------
+def _score_pct(aggregation):
+    """Turn a Sum('score') / Sum('max_score') pair into a percentage."""
+    total = aggregation.get('total') or 0
+    possible = aggregation.get('possible') or 0
+    if not possible:
+        return None
+    return round(total * 100 / possible)
+
+
+class CourseReportView(RoleRequiredMixin, TemplateView):
+    """Per-course enrolment, progress, grading and certificate report."""
+    template_name = 'dashboards/report_courses.html'
+    allowed_roles = ['teacher']
+
+    def get_context_data(self, **kwargs):
+        from django.db.models import Avg, Count, Sum, Q
+        from apps.courses.models import Course, Lesson, Enrollment
+        from apps.certificates.models import Certificate
+
+        context = super().get_context_data(**kwargs)
+        rows = []
+        for course in Course.objects.all().select_related('subject'):
+            summary = Enrollment.objects.filter(course=course).aggregate(
+                enrolled=Count('id'),
+                active=Count('id', filter=Q(status=Enrollment.Status.ACTIVE)),
+                completed=Count('id', filter=Q(status=Enrollment.Status.COMPLETED)),
+                avg_progress=Avg('progress_pct'),
+            )
+            score = AssignmentSubmission.objects.filter(
+                score__isnull=False,
+                assignment__module__course=course,
+            ).aggregate(total=Sum('score'), possible=Sum('assignment__max_score'))
+
+            rows.append({
+                'course': course,
+                'lessons': Lesson.objects.filter(module__course=course).count(),
+                'enrolled': summary['enrolled'],
+                'active': summary['active'],
+                'completed': summary['completed'],
+                'avg_progress': round(summary['avg_progress'] or 0),
+                'avg_score': _score_pct(score),
+                'certificates': Certificate.objects.filter(course=course, is_revoked=False).count(),
+            })
+
+        context['rows'] = rows
+        context['totals'] = {
+            'courses': len(rows),
+            'enrolled': sum(r['enrolled'] for r in rows),
+            'completed': sum(r['completed'] for r in rows),
+            'certificates': sum(r['certificates'] for r in rows),
+        }
+        return context
+
+
+class StudentReportView(RoleRequiredMixin, TemplateView):
+    """Per-student progress, grading and credential report."""
+    template_name = 'dashboards/report_students.html'
+    allowed_roles = ['teacher']
+
+    def get_context_data(self, **kwargs):
+        from django.db.models import Avg, Count, Sum, Q
+        from apps.courses.models import Enrollment
+        from apps.certificates.models import Certificate
+
+        context = super().get_context_data(**kwargs)
+
+        grade_rows = (AssignmentSubmission.objects.filter(score__isnull=False)
+                      .values('student_id')
+                      .annotate(total=Sum('score'), possible=Sum('assignment__max_score')))
+        grade_map = {row['student_id']: row for row in grade_rows}
+
+        cert_map = dict(
+            Certificate.objects.filter(is_revoked=False)
+            .values_list('student_id')
+            .annotate(n=Count('id'))
+        )
+
+        students = (
+            User.objects.filter(role='student')
+            .select_related('student_profile')
+            .order_by('username')
+        )
+
+        rows = []
+        for student in students:
+            summary = Enrollment.objects.filter(student=student).aggregate(
+                enrolled=Count('id'),
+                completed=Count('id', filter=Q(status=Enrollment.Status.COMPLETED)),
+                avg_progress=Avg('progress_pct'),
+            )
+            pending = AssignmentSubmission.objects.filter(
+                student=student, score__isnull=True
+            ).count()
+            profile = getattr(student, 'student_profile', None)
+            rows.append({
+                'student': student,
+                'profile': profile,
+                'enrolled': summary['enrolled'],
+                'completed': summary['completed'],
+                'avg_progress': round(summary['avg_progress'] or 0),
+                'points': profile.points if profile else 0,
+                'avg_score': _score_pct(grade_map.get(student.pk, {})),
+                'pending': pending,
+                'certificates': cert_map.get(student.pk, 0),
+            })
+
+        context['rows'] = rows
+        context['totals'] = {
+            'students': len(rows),
+            'enrolled': sum(r['enrolled'] for r in rows),
+            'completed': sum(r['completed'] for r in rows),
+            'pending': sum(r['pending'] for r in rows),
+        }
+        return context

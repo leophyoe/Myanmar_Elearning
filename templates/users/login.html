@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-blue-600"></div>
+
+        <div class="text-center mb-8">
+            <div class="inline-flex p-3 rounded-xl bg-cyan-950/60 border border-cyan-800/60 text-cyan-400 mb-3">
+                🛡️
+            </div>
+            <h2 class="text-2xl font-bold text-white tracking-wide">Sign In to Range</h2>
+            <p class="text-xs text-slate-400 mt-1">Access your secure cybersecurity lab environment</p>
+        </div>
+
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="p-3 rounded bg-red-950 border border-red-800 text-red-200 text-xs">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <div>
+                <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Username / Student ID</label>
+                {{ form.username }}
+            </div>
+
+            <div>
+                <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Password</label>
+                {{ form.password }}
+            </div>
+
+            <button type="submit" class="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm shadow-lg shadow-cyan-600/30 transition mt-2">
+                Authenticate & Access Range
+            </button>
+        </form>
+
+        <div class="mt-6 pt-6 border-t border-slate-800 text-center text-xs text-slate-400">
+            Need an account?
+            <a href="{% url 'register' %}" class="text-cyan-400 hover:underline font-semibold ml-1">Enroll as a Student</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Myanmar E-Learning - Online Courses, Labs & Certificates{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="relative overflow-hidden py-20 lg:py-28 border-b border-slate-800 bg-gradient-to-b from-[#0c1326] to-[#0a0f1d]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-700/60 text-cyan-400 text-xs font-semibold uppercase tracking-widest mb-6">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+            <span>10-Month Professional Diploma Program</span>
+        </div>
+        <h1 class="text-4xl sm:text-6xl font-extrabold text-white tracking-tight leading-tight mb-6">
+            MYANMAR <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500">E-LEARNING</span>
+        </h1>
+        <p class="max-w-3xl mx-auto text-lg text-slate-400 mb-10 leading-relaxed">
+            Myanmar's online learning platform for schools, colleges and training institutes. Video and PDF lessons,
+            quizzes with instant grading, assignments, progress tracking and verifiable certificates - plus hands-on
+            cyber security labs, live CTF challenges and isolated Docker sandboxes.
+        </p>
+
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <a href="{% url 'course-list' %}" class="px-8 py-3.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-lg shadow-cyan-600/30 transition text-sm">
+                Explore 14-Module Curriculum
+            </a>
+            <a href="{% url 'lab-list' %}" class="px-8 py-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-slate-700 font-bold transition text-sm">
+                Hands-on Lab Sandboxes
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Metrics & Capability Highlights -->
+<section class="py-12 border-b border-slate-800/80 bg-[#0d1527]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            <div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div class="text-3xl font-bold text-cyan-400 mb-1">14</div>
+                <div class="text-xs text-slate-400 uppercase tracking-wider">Comprehensive Modules</div>
+            </div>
+            <div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div class="text-3xl font-bold text-emerald-400 mb-1">70+</div>
+                <div class="text-xs text-slate-400 uppercase tracking-wider">Hands-on Cyber Labs</div>
+            </div>
+            <div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div class="text-3xl font-bold text-blue-400 mb-1">100%</div>
+                <div class="text-xs text-slate-400 uppercase tracking-wider">Isolated Docker Sandboxes</div>
+            </div>
+            <div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800">
+                <div class="text-3xl font-bold text-purple-400 mb-1">QR-Verified</div>
+                <div class="text-xs text-slate-400 uppercase tracking-wider">Digital Certificates</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Curriculum Modules Grid Preview -->
+<section class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+        <h2 class="text-2xl sm:text-3xl font-bold text-white mb-3">Professional 10-Month Curriculum</h2>
+        <p class="text-slate-400 text-sm max-w-2xl mx-auto">
+            From fundamentals and operating systems security to offensive penetration testing, Wazuh SIEM triage, and capstone cyber range defense.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="p-6 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition">
+            <span class="text-xs font-bold text-cyan-400">MOD-01</span>
+            <h3 class="text-lg font-bold text-white mt-1 mb-2">Introduction to Cyber Security</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">CIA Triad, threats, vulnerabilities, attack surfaces, phishing, and legal ethics.</p>
+            <span class="text-[11px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">3 Hands-on Labs</span>
+        </div>
+
+        <div class="p-6 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition">
+            <span class="text-xs font-bold text-cyan-400">MOD-04</span>
+            <h3 class="text-lg font-bold text-white mt-1 mb-2">Linux for Cyber Security</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">CLI mastery, SUID privilege escalation, SSH cryptographic hardening, and syslog triage.</p>
+            <span class="text-[11px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">4 Hands-on Labs</span>
+        </div>
+
+        <div class="p-6 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition">
+            <span class="text-xs font-bold text-cyan-400">MOD-06</span>
+            <h3 class="text-lg font-bold text-white mt-1 mb-2">Ethical Hacking Fundamentals</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">Penetration testing, reconnaissance, scanning with Nmap, enumeration, and exploit concepts.</p>
+            <span class="text-[11px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">4 Hands-on Labs</span>
+        </div>
+
+        <div class="p-6 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition">
+            <span class="text-xs font-bold text-cyan-400">MOD-07</span>
+            <h3 class="text-lg font-bold text-white mt-1 mb-2">Web Application Security</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">OWASP Top 10, SQL Injection, XSS, Broken Access Control, File Uploads, and CTF challenges.</p>
+            <span class="text-[11px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">7 Hands-on Labs</span>
+        </div>
+
+        <div class="p-6 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition">
+            <span class="text-xs font-bold text-cyan-400">MOD-10</span>
+            <h3 class="text-lg font-bold text-white mt-1 mb-2">SOC, SIEM & Incident Response</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">Wazuh SIEM operations, log correlation, MITRE ATT&CK, alert triage, and containment workflows.</p>
+            <span class="text-[11px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">5 Hands-on Labs</span>
+        </div>
+
+        <div class="p-6 rounded-xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition">
+            <span class="text-xs font-bold text-cyan-400">MOD-14</span>
+            <h3 class="text-lg font-bold text-white mt-1 mb-2">Integrated Cyber Range Capstone</h3>
+            <p class="text-xs text-slate-400 leading-relaxed mb-4">Complete enterprise attack/defend scenario, remediation reporting, and live Viva examination.</p>
+            <span class="text-[11px] px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">Capstone & Viva</span>
+        </div>
+    </div>
+</section>
+{% endblock %}
+

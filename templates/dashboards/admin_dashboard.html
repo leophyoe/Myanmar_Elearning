@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}System Telemetry & Lab Infrastructure - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex justify-between items-center pb-6 mb-8 border-b border-slate-800">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-wide">System & Lab Infrastructure Telemetry</h1>
+            <p class="text-xs text-slate-400 mt-1">Docker daemon orchestration health, Redis broker, database status, and reaper metrics.</p>
+        </div>
+        <span class="text-xs px-3 py-1 rounded bg-purple-950 border border-purple-700 text-purple-300 font-bold uppercase">
+            Lab Administrator
+        </span>
+    </div>
+
+    <!-- Health Diagnostics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Relational Database</div>
+            <div class="text-lg font-bold text-emerald-400 mb-1">PostgreSQL 16</div>
+            <div class="text-xs text-slate-300 font-mono">{{ db_status }}</div>
+        </div>
+
+        <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Message Broker & Cache</div>
+            <div class="text-lg font-bold text-cyan-400 mb-1">Redis 7 Alpine</div>
+            <div class="text-xs text-slate-300 font-mono">{{ redis_status }}</div>
+        </div>
+
+        <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Container Orchestrator</div>
+            <div class="text-lg font-bold text-purple-400 mb-1">Docker Engine API</div>
+            <div class="text-xs text-slate-300 font-mono">{{ docker_status }}</div>
+        </div>
+    </div>
+
+    <!-- Active Docker Sandboxes Table -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mb-10">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">
+            🐳 Live Student Lab Sandboxes
+        </h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
+                        <th class="py-2.5 px-3">Instance ID</th>
+                        <th class="py-2.5 px-3">Student</th>
+                        <th class="py-2.5 px-3">Lab Name</th>
+                        <th class="py-2.5 px-3">Target IP</th>
+                        <th class="py-2.5 px-3">Status</th>
+                        <th class="py-2.5 px-3">Expires In</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 font-mono">
+                    {% for inst in active_instances %}
+                    <tr>
+                        <td class="py-3 px-3 text-cyan-400">{{ inst.id|stringformat:".8s" }}...</td>
+                        <td class="py-3 px-3 text-white">{{ inst.user.username }}</td>
+                        <td class="py-3 px-3 text-slate-300">{{ inst.lab.title }}</td>
+                        <td class="py-3 px-3 text-emerald-400">{{ inst.target_ip }}</td>
+                        <td class="py-3 px-3 uppercase text-emerald-400">{{ inst.status }}</td>
+                        <td class="py-3 px-3 text-amber-400">{{ inst.remaining_seconds }}s</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-6 text-slate-500 font-sans">
+                            No student lab containers currently active on the host.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- System Logs Table -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">
+            📋 Internal System & Engine Logs
+        </h3>
+        <div class="space-y-2 font-mono text-xs">
+            {% for log in system_logs %}
+            <div class="p-2.5 rounded bg-slate-950 border border-slate-800/80 flex justify-between items-center">
+                <div>
+                    <span class="text-cyan-400 font-bold mr-2">[{{ log.component }}]</span>
+                    <span class="text-slate-300">{{ log.message }}</span>
+                </div>
+                <span class="text-slate-500 text-[10px]">{{ log.created_at|date:"H:i:s" }}</span>
+            </div>
+            {% empty %}
+            <div class="text-center py-6 text-slate-500 font-sans">
+                All services operational. No system error events reported.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

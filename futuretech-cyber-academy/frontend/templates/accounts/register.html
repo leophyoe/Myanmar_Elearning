@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Enrollment - {{ ACADEMY_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[75vh] flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-lg p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
+
+        <div class="text-center mb-8">
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Student Enrollment</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Register for institutional access to cybersecurity coursework</p>
+        </div>
+
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            {% if form.errors %}
+                <div class="p-3 rounded-lg bg-red-100 dark:bg-red-950 border border-red-300 dark:border-red-800 text-red-800 dark:text-red-200 text-xs">
+                    Please correct the errors indicated below.
+                    {{ form.errors }}
+                </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">First Name</label>
+                    {{ form.first_name }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Last Name</label>
+                    {{ form.last_name }}
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Email Address (Login ID)</label>
+                {{ form.email }}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Username</label>
+                    {{ form.username }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Phone Number</label>
+                    {{ form.phone }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Password</label>
+                    {{ form.password }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Confirm Password</label>
+                    {{ form.password_confirm }}
+                </div>
+            </div>
+
+            <button type="submit" class="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md transition mt-2">
+                Complete Enrollment & Create Student ID
+            </button>
+        </form>
+
+        <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500">
+            Already have an account?
+            <a href="{% url 'login' %}" class="text-cyan-600 dark:text-cyan-400 hover:underline font-semibold ml-1">
+                Sign In
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

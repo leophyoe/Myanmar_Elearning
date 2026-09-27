@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}OWASP Juice Shop — Web Security Range | Future Tech Academy{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="juiceShopApp({{ time_remaining_seconds|default:3600 }})">
+    <!-- Top Cyber Range Navigation & Session Control Bar -->
+    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'labs:lab-detail' lab.slug %}" class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-white text-xs font-mono transition">
+                &larr; Lab Briefing
+            </a>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="text-base font-bold text-slate-900 dark:text-white font-mono flex items-center space-x-2">
+                        <span>OWASP Juice Shop</span>
+                    </h1>
+                    {% if is_running and not is_expired %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+                        ONLINE
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                        OFFLINE
+                    </span>
+                    {% endif %}
+                </div>
+                <p class="text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                    Target: <span class="text-cyan-400 font-bold">{{ instance.assigned_ip|default:"10.10.x.x" }}:3000</span>
+                    &bull; Token: <span class="text-slate-300 font-mono text-[10px]">{{ instance.uuid|stringformat:"s"|slice:":8" }}...</span>
+                    &bull; Progress: <span class="text-emerald-400 font-bold">{{ solved_count }}/{{ total_challenges }} Solved</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Timer & Container Controls -->
+        <div class="flex items-center space-x-3 text-xs font-mono">
+            <div class="px-3 py-1.5 bg-slate-900 rounded-xl border border-slate-800 text-amber-400 font-bold flex items-center space-x-1.5 shadow-inner">
+                <span>⏱️</span>
+                <span x-text="formatTime(timeRemaining)">--:--</span>
+            </div>
+
+            <!-- Extend Button -->
+            <form method="POST" action="{% url 'labs:lab-extend' lab.slug %}">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold rounded-xl border border-slate-700 transition">
+                    +30m
+                </button>
+            </form>
+
+            <!-- Reset Button -->
+            <form method="POST" action="{% url 'labs:lab-reset' lab.slug %}" onsubmit="return confirm('Resetting will recreate a fresh, isolated target sandbox. Proceed?')">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded-xl border border-slate-700 transition">
+                    🔄 Reset Target
+                </button>
+            </form>
+
+            <!-- Terminate Button -->
+            <form method="POST" action="{% url 'labs:lab-stop' lab.slug %}" onsubmit="return confirm('Stop and decommission this sandbox container?')">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-1.5 bg-red-950/60 hover:bg-red-900 text-red-400 font-bold rounded-xl border border-red-800/80 transition">
+                    Stop Target
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Workspace 2-Column Grid -->
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+
+        <!-- Left Pane (7 cols): Web Application Gateway Target -->
+        <div class="xl:col-span-7 space-y-6">
+            <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+                <!-- Browser-like Header Bar -->
+                <div class="bg-slate-100 dark:bg-slate-900 px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+                        <span class="text-xs font-mono text-slate-500 dark:text-slate-400 ml-2">Isolated Web Gateway</span>
+                    </div>
+
+                    <!-- Target URL Address Bar Display -->
+                    <div class="flex-1 max-w-md mx-4">
+                        <div class="bg-slate-200 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-3 py-1 text-xs font-mono text-cyan-400 flex items-center justify-between">
+                            <span class="truncate">http://{{ instance.assigned_ip|default:"10.10.x.x" }}:3000/#/</span>
+                            <span class="text-slate-500 text-[10px]">🔒 Isolated Sandbox</span>
+                        </div>
+                    </div>
+
+                    <a href="http://{{ instance.assigned_ip|default:'127.0.0.1' }}:3000" target="_blank" rel="noopener noreferrer"
+                       class="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-mono font-semibold transition flex items-center space-x-1">
+                        <span>Open App</span>
+                        <span>&nearr;</span>
+                    </a>
+                </div>
+
+                <!-- Target Frame / Interactive Gateway Screen -->
+                <div class="p-6 bg-slate-950/70 min-h-[460px] flex flex-col justify-between">
+                    {% if is_running and not is_expired %}
+                    <div class="space-y-4">
+                        <div class="p-4 bg-slate-900/90 border border-cyan-500/30 rounded-xl">
+                            <div class="flex items-start space-x-3">
+                                <div class="p-2 bg-cyan-500/10 rounded-lg text-cyan-400 text-lg">🎯</div>
+                                <div>
+                                    <h3 class="text-sm font-bold text-white font-mono">Dedicated Juice Shop Target Online</h3>
+                                    <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+                                        Your private container instance is running on isolated subnet IP <code class="text-cyan-300">{{ instance.assigned_ip }}</code>.
+                                        All HTTP transactions, user sessions, and database injections are strictly confined to this container session.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Target Quick Launch & Testing Tools -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
+                                <div class="text-xs font-bold font-mono text-slate-300 flex items-center space-x-2">
+                                    <span>🌐</span>
+                                    <span>Web Target Access</span>
+                                </div>
+                                <p class="text-xs text-slate-400">
+                                    Access the single-page application directly in your browser or through an interception proxy like Burp Suite or OWASP ZAP.
+                                </p>
+                                <a href="http://{{ instance.assigned_ip|default:'127.0.0.1' }}:3000" target="_blank"
+                                   class="inline-flex items-center space-x-1 text-xs font-mono text-cyan-400 hover:text-cyan-300 font-semibold pt-1">
+                                    <span>Launch Web Interface &rarr;</span>
+                                </a>
+                            </div>
+
+                            <div class="p-4 bg-slate-900/60 border border-slate-800 rounded-xl space-y-2">
+                                <div class="text-xs font-bold font-mono text-slate-300 flex items-center space-x-2">
+                                    <span>🛡️</span>
+                                    <span>Instance Isolation Token</span>
+                                </div>
+                                <p class="text-xs text-slate-400">
+                                    Dynamic flags generated inside this lab target are keyed to token prefix <code class="text-amber-300 font-mono">{{ instance.uuid|stringformat:"s"|slice:":8" }}</code>.
+                                </p>
+                                <div class="text-[11px] font-mono text-slate-400 pt-1">
+                                    Flag Pattern: <span class="text-emerald-400">FTACK{js_&lt;id&gt;_{{ instance.uuid|stringformat:"s"|slice:":8" }}}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Vulnerability Overview Guidance -->
+                        <div class="p-4 bg-slate-900/40 border border-slate-800 rounded-xl space-y-2">
+                            <h4 class="text-xs font-bold font-mono text-slate-300 uppercase tracking-wider">Suggested Exploration Flow:</h4>
+                            <ol class="list-decimal list-inside text-xs text-slate-400 space-y-1 leading-relaxed">
+                                <li><strong>Score Board Discovery:</strong> Inspect the bundled Angular SPA JavaScript files to discover hidden administration paths.</li>
+                                <li><strong>SQL Injection:</strong> Exploit the customer login endpoint using classic boolean/auth-bypass payloads.</li>
+                                <li><strong>DOM-based XSS:</strong> Inject client-side execution payloads into the search bar input.</li>
+                                <li><strong>Path Traversal:</strong> Traverse the exposed public file server directory to locate confidential business files.</li>
+                                <li><strong>IDOR / Broken Auth:</strong> Tamper with REST API parameter IDs to inspect unprivileged basket states.</li>
+                            </ol>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="my-auto text-center space-y-4 py-12">
+                        <div class="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto text-2xl font-mono">
+                            ⚠️
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-white font-mono">Target Container Offline or Expired</h3>
+                            <p class="text-xs text-slate-400 max-w-md mx-auto mt-1">
+                                Your isolated sandbox instance has reached its TTL expiration or was halted. Launch or reset the sandbox target to begin hacking.
+                            </p>
+                        </div>
+                        <form method="POST" action="{% url 'labs:lab-reset' lab.slug %}">
+                            {% csrf_token %}
+                            <button type="submit" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-bold rounded-xl transition shadow-lg shadow-cyan-600/20">
+                                Launch Fresh Sandbox
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                    <!-- Open Source Attribution Notice -->
+                    <div class="mt-6 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between text-[11px] text-slate-500 font-mono gap-2">
+                        <span>Target: OWASP Juice Shop by Bjoern Kimminich</span>
+                        <span>Open Source under AGPL-3.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Pane (5 cols): Challenge Checklist & Flag Submission Deck -->
+        <div class="xl:col-span-5 space-y-4">
+            <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-900 dark:text-white font-mono uppercase tracking-wider">
+                            Target Challenge Deck
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            Solve objectives to capture dynamic per-instance flags.
+                        </p>
+                    </div>
+                    <span class="px-2.5 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 rounded-lg text-xs font-mono font-bold">
+                        {{ solved_count }} / {{ total_challenges }} Solved
+                    </span>
+                </div>
+
+                <!-- List of Challenges -->
+                <div class="space-y-3">
+                    {% for ch in challenges %}
+                    <div class="p-4 rounded-xl border transition {% if ch.is_solved %}bg-emerald-500/5 border-emerald-500/30{% else %}bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800{% endif %}">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs font-mono font-bold {% if ch.is_solved %}text-emerald-400{% else %}text-white{% endif %}">
+                                        {{ ch.name }}
+                                    </span>
+                                    {% if ch.is_solved %}
+                                    <span class="text-xs font-bold text-emerald-400">✓ SOLVED</span>
+                                    {% endif %}
+                                </div>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                        {{ ch.difficulty }}
+                                    </span>
+                                    <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                                        {{ ch.points }} pts
+                                    </span>
+                                    <span class="text-[10px] font-mono text-slate-500">
+                                        {{ ch.owasp_category }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- AI Tutor Hint Trigger Button -->
+                            <button type="button"
+                                    @click="openAiHint('{{ ch.id }}', '{{ ch.name|escapejs }}')"
+                                    class="px-2.5 py-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-mono font-semibold transition flex items-center space-x-1 shrink-0">
+                                <span>🤖</span>
+                                <span>Hint</span>
+                            </button>
+                        </div>
+
+                        <p class="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+                            {{ ch.description }}
+                        </p>
+
+                        <!-- Flag Submission Form -->
+                        {% if not ch.is_solved %}
+                        <form method="POST" action="{% url 'labs:lab-gateway' instance.uuid %}" class="mt-3 flex items-center space-x-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="challenge_id" value="{{ ch.id }}">
+                            <input type="text"
+                                   name="flag"
+                                   placeholder="FTACK{js_{{ ch.id }}_...}"
+                                   required
+                                   class="flex-1 px-3 py-1.5 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-xs font-mono text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                            <button type="submit"
+                                    class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-mono text-xs font-bold rounded-lg transition shadow-sm">
+                                Submit
+                            </button>
+                        </form>
+                        {% else %}
+                        <div class="mt-2 text-xs font-mono text-emerald-400/90 flex items-center space-x-1">
+                            <span>🎉 Flag submitted & points credited to your CTF scorecard!</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Socratic Tutor Modal -->
+    <div x-show="showAiModal"
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div @click.away="showAiModal = false"
+             class="bg-[#111827] border border-purple-500/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">🤖</span>
+                    <div>
+                        <h3 class="text-sm font-bold text-white font-mono">Cyber Range AI Security Tutor</h3>
+                        <p class="text-xs text-purple-400 font-mono" x-text="activeChallengeName"></p>
+                    </div>
+                </div>
+                <button @click="showAiModal = false" class="text-slate-400 hover:text-white font-mono text-sm">&times;</button>
+            </div>
+
+            <!-- Hint Progression Tabs -->
+            <div class="flex items-center space-x-2 text-xs font-mono">
+                <button type="button" @click="fetchHint(1)"
+                        :class="hintLevel === 1 ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'"
+                        class="px-3 py-1 rounded-lg transition">
+                    Level 1: Concept
+                </button>
+                <button type="button" @click="fetchHint(2)"
+                        :class="hintLevel === 2 ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'"
+                        class="px-3 py-1 rounded-lg transition">
+                    Level 2: Methodology (-10%)
+                </button>
+                <button type="button" @click="fetchHint(3)"
+                        :class="hintLevel === 3 ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'"
+                        class="px-3 py-1 rounded-lg transition">
+                    Level 3: Guidance (-25%)
+                </button>
+            </div>
+
+            <!-- Hint Content Box -->
+            <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl min-h-[110px] flex items-center">
+                <template x-if="isLoadingHint">
+                    <div class="text-xs text-slate-400 font-mono animate-pulse">Consulting AI Security Tutor knowledge base...</div>
+                </template>
+                <template x-if="!isLoadingHint">
+                    <div class="space-y-2">
+                        <div class="text-xs font-mono text-purple-300 font-bold uppercase tracking-wider" x-text="hintCategory"></div>
+                        <p class="text-xs text-slate-300 font-mono leading-relaxed" x-text="hintText"></p>
+                    </div>
+                </template>
+            </div>
+
+            <div class="flex items-center justify-between text-xs font-mono text-slate-500 pt-2">
+                <span>Socratic guidance mode: Direct flags are never disclosed.</span>
+                <button @click="showAiModal = false" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function juiceShopApp(initialTime) {
+    return {
+        timeRemaining: initialTime,
+        showAiModal: false,
+        activeChallengeId: '',
+        activeChallengeName: '',
+        hintLevel: 1,
+        hintText: '',
+        hintCategory: '',
+        isLoadingHint: false,
+
+        init() {
+            if (this.timeRemaining > 0) {
+                setInterval(() => {
+                    if (this.timeRemaining > 0) this.timeRemaining--;
+                }, 1000);
+            }
+        },
+
+        formatTime(seconds) {
+            if (seconds <= 0) return '00:00';
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        },
+
+        openAiHint(challengeId, challengeName) {
+            this.activeChallengeId = challengeId;
+            this.activeChallengeName = challengeName;
+            this.showAiModal = true;
+            this.fetchHint(1);
+        },
+
+        async fetchHint(level) {
+            this.hintLevel = level;
+            this.isLoadingHint = true;
+            try {
+                const url = `{% url 'labs:lab-ai-hint' instance.uuid %}?challenge_id=${encodeURIComponent(this.activeChallengeId)}&level=${level}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                this.hintText = data.hint || 'No hint available.';
+                this.hintCategory = data.owasp_category || 'Web Security';
+            } catch (err) {
+                this.hintText = 'Unable to connect to AI Security Tutor. Check your network or refresh.';
+            } finally {
+                this.isLoadingHint = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}
+

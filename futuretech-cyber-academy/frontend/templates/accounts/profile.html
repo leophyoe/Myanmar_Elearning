@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - {{ ACADEMY_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Student Profile Settings</h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Manage your academic bio, avatar, and personal details.</p>
+    </div>
+
+    <div class="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl">
+        <div class="flex items-center space-x-4 mb-6 pb-6 border-b border-slate-200 dark:border-slate-800">
+            <div class="w-16 h-16 rounded-full bg-cyan-100 dark:bg-cyan-950 border border-cyan-300 dark:border-cyan-800 flex items-center justify-center text-xl text-cyan-700 dark:text-cyan-400 font-bold font-mono">
+                {{ user.username|slice:":2"|upper }}
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">{{ user.get_full_name }}</h2>
+                <div class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <span class="font-mono text-cyan-600 dark:text-cyan-400 font-semibold">{{ profile.student_id|default:"ACADEMY-MEMBER" }}</span>
+                    <span>•</span>
+                    <span>{{ user.email }}</span>
+                    <span>•</span>
+                    <span class="uppercase text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800">{{ user_role_label }}</span>
+                </div>
+            </div>
+        </div>
+
+        {% if form %}
+        <form method="POST" enctype="multipart/form-data" class="space-y-4 text-xs">
+            {% csrf_token %}
+            <div>
+                <label class="block text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">Student Biography</label>
+                {{ form.bio }}
+            </div>
+
+            <div>
+                <label class="block text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">Date of Birth</label>
+                {{ form.date_of_birth }}
+            </div>
+
+            <div>
+                <label class="block text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">Profile Photo</label>
+                {{ form.profile_photo }}
+            </div>
+
+            <button type="submit" class="px-6 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition mt-4">
+                Save Profile Changes
+            </button>
+        </form>
+        {% else %}
+        <p class="text-xs text-slate-500">Instructor / Administrator profiles are managed by institution systems.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

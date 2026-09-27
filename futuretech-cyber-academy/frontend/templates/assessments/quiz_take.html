@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Taking Quiz: {{ quiz.title }} — Future Tech Academy{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8"
+     x-data="{
+         timeLeft: {{ time_limit_seconds }},
+         timerActive: {{ quiz.time_limit_minutes }} > 0,
+         init() {
+             if (this.timerActive) {
+                 const interval = setInterval(() => {
+                     if (this.timeLeft > 0) {
+                         this.timeLeft--;
+                     } else {
+                         clearInterval(interval);
+                         alert('Time limit reached! Your quiz will now be submitted.');
+                         document.getElementById('quiz-form').submit();
+                     }
+                 }, 1000);
+             }
+         },
+         formatTime(sec) {
+             const m = Math.floor(sec / 60);
+             const s = sec % 60;
+             return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+         }
+     }">
+
+    <!-- Sticky Quiz Top Bar with Countdown -->
+    <div class="bg-white/90 dark:bg-[#111827]/90 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-4 mb-8 sticky top-20 z-30 shadow-md flex items-center justify-between">
+        <div>
+            <h1 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">{{ quiz.title }}</h1>
+            <span class="text-xs text-slate-500">Attempt #{{ attempt.attempt_number }} &bull; {{ questions|length }} Questions</span>
+        </div>
+
+        <template x-if="timerActive">
+            <div class="flex items-center space-x-2 px-3 py-1.5 rounded-xl border"
+                 :class="timeLeft < 180 ? 'bg-red-950/50 border-red-800 text-red-400 animate-pulse' : 'bg-slate-900 border-slate-700 text-cyan-400'">
+                <span>⏱️</span>
+                <span class="font-mono text-sm sm:text-base font-bold" x-text="formatTime(timeLeft)"></span>
+            </div>
+        </template>
+    </div>
+
+    <!-- Quiz Question Form -->
+    <form id="quiz-form" method="POST" action="{% url 'assessments:quiz-submit' attempt.pk %}">
+        {% csrf_token %}
+
+        <div class="space-y-6">
+            {% for q in questions %}
+            <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                <!-- Question Number & Points -->
+                <div class="flex items-center justify-between mb-3 text-xs">
+                    <span class="font-bold text-cyan-500 uppercase tracking-wider">Question {{ forloop.counter }} of {{ questions|length }}</span>
+                    <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-mono">{{ q.points }} pts</span>
+                </div>
+
+                <!-- Question Text -->
+                <p class="text-base font-semibold text-slate-900 dark:text-white leading-relaxed mb-6">
+                    {{ q.question_text }}
+                </p>
+
+                <!-- Options -->
+                <div class="space-y-3">
+                    {% for opt in q.options %}
+                    <label class="flex items-start space-x-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-500/50 hover:bg-slate-50 dark:hover:bg-slate-900/60 cursor-pointer transition">
+                        {% if q.question_type == 'MULTIPLE_SELECT' %}
+                            <input type="checkbox"
+                                   name="question_{{ q.id }}"
+                                   value="{{ opt.id }}"
+                                   class="mt-1 w-4 h-4 rounded border-slate-700 text-cyan-600 focus:ring-cyan-500 bg-slate-900">
+                        {% else %}
+                            <input type="radio"
+                                   name="question_{{ q.id }}"
+                                   value="{{ opt.id }}"
+                                   class="mt-1 w-4 h-4 border-slate-700 text-cyan-600 focus:ring-cyan-500 bg-slate-900">
+                        {% endif %}
+                        <span class="text-sm text-slate-700 dark:text-slate-300 select-none">{{ opt.text }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Submit Button Card -->
+        <div class="mt-8 p-6 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
+            <p class="text-xs text-slate-500">
+                Please double check all answers before submitting. Once submitted, your score and detailed answer explanations will be rendered.
+            </p>
+            <button type="submit"
+                    onclick="return confirm('Are you ready to finalize and submit your quiz attempt?');"
+                    class="px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold shadow-lg shadow-cyan-600/30 transition">
+                Submit Quiz Attempt &rarr;
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

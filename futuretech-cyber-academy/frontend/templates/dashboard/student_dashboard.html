@@ -1,0 +1,411 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Learning Dashboard - {{ ACADEMY_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <!-- Welcome Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-100 dark:bg-cyan-950/70 border border-cyan-300 dark:border-cyan-800 text-cyan-800 dark:text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-2">
+                <span>🎓 Student Portal</span>
+                <span>•</span>
+                <span>{{ user.email }}</span>
+            </div>
+            <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                Welcome back, {{ user.get_full_name|default:user.username }}
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Certificate in Cyber Security Program &bull; Professional Track
+            </p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'course-list' %}" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition">
+                Browse Catalog
+            </a>
+            <a href="{% url 'profile' %}" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold transition">
+                Edit Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- Student Stats Overview -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+        <!-- Courses Enrolled -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                Enrolled Modules
+            </div>
+            <div class="text-3xl font-extrabold text-cyan-600 dark:text-cyan-400">
+                {{ courses_enrolled_count }}
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">
+                {{ active_enrollments.count }} in progress
+            </div>
+        </div>
+
+        <!-- Lessons Completed -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                Lessons Finished
+            </div>
+            <div class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                {{ lessons_completed_count }}
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">
+                Total practical units
+            </div>
+        </div>
+
+        <!-- Courses Completed -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                Completed Modules
+            </div>
+            <div class="text-3xl font-extrabold text-blue-600 dark:text-blue-400">
+                {{ courses_completed_count }}
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">
+                100% finished
+            </div>
+        </div>
+
+        <!-- Overall Progress Percentage -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                Overall Progress
+            </div>
+            <div class="text-3xl font-extrabold text-purple-600 dark:text-purple-400">
+                {{ overall_progress }}%
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">
+                Across enrolled curriculum
+            </div>
+        </div>
+    </div>
+
+    <!-- Continue Learning Section -->
+    {% if continue_enrollment %}
+        <div class="p-6 rounded-2xl bg-gradient-to-r from-slate-900 to-[#0d1c38] text-white border border-slate-800 mb-10 shadow-lg relative overflow-hidden">
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div class="max-w-2xl">
+                    <span class="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400 block mb-1">
+                        ▶ Resume Learning
+                    </span>
+                    <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">
+                        {{ continue_enrollment.course.title }}
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-300 mb-4 line-clamp-2">
+                        {% if next_lesson %}
+                            Next up: <span class="font-semibold text-cyan-300">{{ next_lesson.title }}</span>
+                        {% else %}
+                            All current lessons completed! Review curriculum or explore other modules.
+                        {% endif %}
+                    </p>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full max-w-md">
+                        <div class="flex justify-between text-xs text-slate-400 mb-1">
+                            <span>Module Completion</span>
+                            <span class="font-semibold text-cyan-300">{{ continue_enrollment.progress_percentage|floatformat:0 }}%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 rounded-full h-2">
+                            <div class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-2 rounded-full transition-all" style="width: {{ continue_enrollment.progress_percentage }}%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-shrink-0">
+                    {% if next_lesson %}
+                        <a href="{% url 'lesson-learn' continue_enrollment.course.slug next_lesson.slug %}"
+                           class="inline-block px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-sm shadow-md transition">
+                            Resume Lesson &rarr;
+                        </a>
+                    {% else %}
+                        <a href="{% url 'course-detail' continue_enrollment.course.slug %}"
+                           class="inline-block px-6 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm shadow-md transition">
+                            View Syllabus
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if continue_course_summary %}
+            <!-- Academic Breakdown Matrix -->
+            <div class="mt-6 pt-5 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-400 font-semibold block">📖 Lessons</span>
+                    <span class="text-base font-bold text-white">{{ continue_course_summary.lessons_completed }}/{{ continue_course_summary.lessons_total }}</span>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-400 font-semibold block">❓ Quizzes</span>
+                    <span class="text-base font-bold text-cyan-400">{{ continue_course_summary.quizzes_completed }}/{{ continue_course_summary.quizzes_total }}</span>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-400 font-semibold block">📝 Assignments</span>
+                    <span class="text-base font-bold text-blue-400">{{ continue_course_summary.assignments_submitted }}/{{ continue_course_summary.assignments_total }}</span>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-400 font-semibold block">🛡️ Module Exams</span>
+                    <span class="text-base font-bold text-amber-400">{{ continue_course_summary.exams_completed }}/{{ continue_course_summary.exams_total }}</span>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-400 font-semibold block">📊 Academic Grade</span>
+                    <span class="text-base font-bold {% if continue_course_summary.grade_summary.passed %}text-emerald-400{% else %}text-slate-300{% endif %}">
+                        {{ continue_course_summary.grade_summary.final_letter_grade }} ({{ continue_course_summary.grade_summary.weighted_percentage|floatformat:1 }}%)
+                    </span>
+                </div>
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-400 font-semibold block">📜 Certificate</span>
+                    <span class="text-xs font-bold {% if continue_course_summary.certificate_eligible %}text-emerald-400{% else %}text-amber-400{% endif %}">
+                        {% if continue_course_summary.certificate_eligible %}Eligible 🎓{% else %}In Progress{% endif %}
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- Enrolled Courses Grid -->
+    <div class="mb-12">
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-5">
+            My Enrolled Modules ({{ enrollments.count }})
+        </h2>
+
+        {% if enrollments %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for enrollment in enrollments %}
+                    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col justify-between">
+                        <div class="p-5">
+                            <div class="flex items-center justify-between text-xs mb-2">
+                                <span class="px-2 py-0.5 rounded font-mono uppercase text-[10px] font-bold
+                                    {% if enrollment.status == 'COMPLETED' %} bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300
+                                    {% else %} bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 {% endif %}">
+                                    {{ enrollment.get_status_display }}
+                                </span>
+                                <span class="text-slate-400 font-semibold">{{ enrollment.progress_percentage|floatformat:0 }}%</span>
+                            </div>
+
+                            <h3 class="text-base font-bold text-slate-900 dark:text-white line-clamp-2 mb-2">
+                                <a href="{% url 'course-detail' enrollment.course.slug %}" class="hover:text-cyan-500 transition">
+                                    {{ enrollment.course.title }}
+                                </a>
+                            </h3>
+
+                            <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-4">
+                                {{ enrollment.course.short_description }}
+                            </p>
+
+                            <!-- Progress Track -->
+                            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden mb-2">
+                                <div class="bg-cyan-500 h-1.5 rounded-full" style="width: {{ enrollment.progress_percentage }}%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-slate-50/70 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <span class="text-[11px] text-slate-500">
+                                {{ enrollment.course.total_lessons_count }} Total Lessons
+                            </span>
+                            <a href="{% url 'course-detail' enrollment.course.slug %}"
+                               class="text-xs font-semibold text-cyan-600 dark:text-cyan-400 hover:underline">
+                                Go to Module &rarr;
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="p-8 text-center bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl">
+                <div class="text-3xl mb-2">📚</div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">You are not enrolled in any modules yet</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4">
+                    Explore our 14-module Certificate curriculum and start learning today.
+                </p>
+                <a href="{% url 'course-list' %}" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition">
+                    Explore Course Catalog
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Activity & Phase 2 Integration Roadmaps -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Recently Completed Lessons (2 Cols) -->
+        <div class="lg:col-span-2">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">
+                Recent Completed Lessons
+            </h3>
+            <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl divide-y divide-slate-100 dark:divide-slate-800 shadow-sm">
+                {% for record in recently_completed_lessons %}
+                    <div class="p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-3 truncate">
+                            <span class="text-emerald-500 text-sm font-bold">✓</span>
+                            <div class="truncate">
+                                <div class="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                                    {{ record.lesson.title }}
+                                </div>
+                                <div class="text-[10px] text-slate-400">
+                                    {{ record.lesson.module.course.title }} &bull; Completed {{ record.completed_at|date:"M d, Y" }}
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{% url 'lesson-learn' record.lesson.module.course.slug record.lesson.slug %}"
+                           class="text-xs text-cyan-600 dark:text-cyan-400 hover:underline flex-shrink-0 ml-3">
+                            Review &rarr;
+                        </a>
+                    </div>
+                {% empty %}
+                    <div class="p-6 text-center text-xs text-slate-500">
+                        No completed lessons recorded yet. Start any module above to track your progress!
+                    </div>
+                {% endfor %}
+    <!-- Phase 2 Advanced Learning Subsystems -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+        <!-- Enrolled Learning Paths (2 Cols) -->
+        <div class="lg:col-span-2">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                    <span>🗺️</span>
+                    <span>Enrolled Learning Paths</span>
+                </h3>
+                <a href="{% url 'learning_paths:path-list' %}" class="text-xs text-cyan-500 hover:underline">Browse Paths &rarr;</a>
+            </div>
+
+            <div class="space-y-4">
+                {% for ep in enrolled_paths %}
+                <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-cyan-950 text-cyan-300 border border-cyan-800">
+                            {{ ep.learning_path.get_level_display }}
+                        </span>
+                        <h4 class="text-base font-bold text-white mt-1">{{ ep.learning_path.title }}</h4>
+                        <span class="text-xs text-slate-500">{{ ep.learning_path.total_courses }} Courses &bull; Status: {{ ep.status }}</span>
+                    </div>
+
+                    <div class="min-w-[160px] text-right">
+                        <span class="text-sm font-mono font-bold text-cyan-400">{{ ep.progress_percentage }}%</span>
+                        <div class="w-full bg-slate-800 rounded-full h-2 mt-1.5 overflow-hidden">
+                            <div class="bg-cyan-500 h-2 rounded-full" style="width: {{ ep.progress_percentage }}%"></div>
+                        </div>
+                        <a href="{% url 'learning_paths:path-detail' ep.learning_path.slug %}" class="text-xs text-cyan-400 hover:text-cyan-300 font-medium inline-block mt-2">
+                            Resume Roadmap &rarr;
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="p-6 text-center text-xs text-slate-500 bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl">
+                    No active learning path enrolled. <a href="{% url 'learning_paths:path-list' %}" class="text-cyan-400 font-bold hover:underline">Choose a career track &rarr;</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Earned Badges & Achievements (1 Col) -->
+        <div class="lg:col-span-1">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center space-x-2">
+                <span>🏆</span>
+                <span>Earned Achievements</span>
+            </h3>
+
+            <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                {% for sa in achievements %}
+                <div class="flex items-center space-x-3 p-2.5 rounded-xl bg-slate-900/40 border border-slate-800">
+                    <span class="text-2xl">🎖️</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-white truncate">{{ sa.achievement.title }}</span>
+                            <span class="text-[10px] font-mono text-amber-400 font-bold">+{{ sa.achievement.points }} XP</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 truncate">{{ sa.achievement.description }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-xs text-slate-500 text-center py-4">
+                    Take quizzes and complete assignments to unlock student badges!
+                </p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessments & Certificates Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        <!-- Pending Assignments & Recent Quizzes -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                    <span>📁</span>
+                    <span>Pending Assignments & Quizzes</span>
+                </h3>
+                <a href="{% url 'assessments:student-gradebook' %}" class="text-xs text-cyan-500 hover:underline">Gradebook &rarr;</a>
+            </div>
+
+            <div class="space-y-3">
+                {% for asgn in pending_assignments %}
+                <div class="p-3.5 rounded-2xl bg-slate-900/40 border border-slate-800 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-white block">{{ asgn.title }}</span>
+                        <span class="text-[10px] text-cyan-400">{{ asgn.course.title }} &bull; Max {{ asgn.max_score }} pts</span>
+                    </div>
+                    <a href="{% url 'assessments:assignment-detail' asgn.pk %}" class="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition">
+                        Submit &rarr;
+                    </a>
+                </div>
+                {% empty %}
+                <p class="text-xs text-slate-500 py-2">✓ No pending assignments needing submission.</p>
+                {% endfor %}
+
+                {% if recent_quiz_attempts %}
+                <div class="mt-4 pt-4 border-t border-slate-800">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block mb-2">Recent Quiz Scores</span>
+                    <div class="space-y-2">
+                        {% for qa in recent_quiz_attempts %}
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-300 truncate">{{ qa.quiz.title }}</span>
+                            <span class="font-mono font-bold {% if qa.passed %}text-emerald-400{% else %}text-red-400{% endif %}">
+                                {{ qa.percentage }}%
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Issued Certificates -->
+        <div class="p-6 rounded-3xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                    <span>📜</span>
+                    <span>Issued Digital Certificates</span>
+                </h3>
+                <a href="{% url 'certificates:certificate-list' %}" class="text-xs text-cyan-500 hover:underline">All Certificates &rarr;</a>
+            </div>
+
+            <div class="space-y-3">
+                {% for cert in certificates %}
+                <div class="p-4 rounded-2xl bg-cyan-950/20 border border-cyan-800/40 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-white block">{{ cert.course.title }}</span>
+                        <span class="text-[10px] font-mono text-cyan-400">{{ cert.certificate_number }} &bull; Issued {{ cert.issued_date|date:"M d, Y" }}</span>
+                    </div>
+                    <a href="{% url 'certificates:certificate-detail' cert.certificate_number %}" class="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition">
+                        View Certificate
+                    </a>
+                </div>
+                {% empty %}
+                <div class="py-6 text-center text-xs text-slate-500">
+                    Complete all enrolled course modules, quizzes, and exams to earn professional verified certificates.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+
+{% block title %}Instructor Management Panel - {{ ACADEMY_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <!-- Header & Action -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-2">
+                <span>👨‍🏫 Instructor Management Console</span>
+            </div>
+            <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                Curriculum Management Dashboard
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Author courses, structure modular syllabi, upload lab guides, and control publishing.
+            </p>
+        </div>
+
+        <div>
+            <a href="{% url 'instructor-course-step1' %}"
+               class="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md shadow-cyan-600/30 transition">
+                <span>➕</span>
+                <span>Create New Course (6-Step Wizard)</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Banner -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                Total Modules Managed
+            </div>
+            <div class="text-3xl font-extrabold text-cyan-600 dark:text-cyan-400">
+                {{ total_courses }}
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">
+                {{ published_courses }} live to students
+            </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                Published & Active
+            </div>
+            <div class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                {{ published_courses }}
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">
+                Accessible in catalog
+            </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                Enrolled Students
+            </div>
+            <div class="text-3xl font-extrabold text-blue-600 dark:text-blue-400">
+                {{ total_students_enrolled }}
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">
+                Distinct student registrations
+            </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                Average Completion
+            </div>
+            <div class="text-3xl font-extrabold text-purple-600 dark:text-purple-400">
+                {{ avg_completion }}%
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1">
+                Student progress rate
+            </div>
+        </div>
+    </div>
+
+    <!-- Course List Table -->
+    <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">
+                My Managed Curriculum Courses ({{ courses.count }})
+            </h2>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 dark:bg-slate-900/60 text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+                    <tr>
+                        <th class="px-6 py-3.5 font-semibold">Course Title</th>
+                        <th class="px-6 py-3.5 font-semibold">Status</th>
+                        <th class="px-6 py-3.5 font-semibold">Curriculum</th>
+                        <th class="px-6 py-3.5 font-semibold">Students</th>
+                        <th class="px-6 py-3.5 font-semibold">Publishing</th>
+                        <th class="px-6 py-3.5 font-semibold text-right">Wizard Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for c in courses %}
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-sm text-slate-900 dark:text-white">
+                                    {{ c.title }}
+                                </div>
+                                <div class="text-[11px] text-slate-400 font-mono mt-0.5">
+                                    /courses/{{ c.slug }}/ &bull; {{ c.get_level_display }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2.5 py-1 rounded-full font-mono text-[10px] font-bold uppercase
+                                    {% if c.status == 'PUBLISHED' %} bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800
+                                    {% elif c.status == 'DRAFT' %} bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800
+                                    {% else %} bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700 {% endif %}">
+                                    {{ c.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-400">
+                                <div><strong>{{ c.modules.count }}</strong> Modules</div>
+                                <div class="text-[11px] text-slate-400">{{ c.total_lessons_count }} Lessons</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-400">
+                                <span class="font-bold text-slate-900 dark:text-white">{{ c.enrollments.count }}</span> enrolled
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <form method="POST" action="{% url 'instructor-course-publish' c.slug %}" class="inline">
+                                    {% csrf_token %}
+                                    {% if c.status == 'PUBLISHED' %}
+                                        <button type="submit"
+                                                onclick="return confirm('Revert course to DRAFT? Students will no longer see it in the public catalog.')"
+                                                class="px-3 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 text-[11px] font-semibold hover:bg-amber-200 transition">
+                                            Revert to Draft
+                                        </button>
+                                    {% else %}
+                                        <button type="submit"
+                                                class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold transition shadow-sm">
+                                            Publish Course
+                                        </button>
+                                    {% endif %}
+                                </form>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                                <a href="{% url 'instructor-course-step2' c.slug %}"
+                                   class="px-2.5 py-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-cyan-600 hover:text-white text-slate-700 dark:text-slate-300 text-[11px] font-medium transition"
+                                   title="Add or edit curriculum modules">
+                                    Modules
+                                </a>
+                                <a href="{% url 'instructor-course-step3' c.slug %}"
+                                   class="px-2.5 py-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-cyan-600 hover:text-white text-slate-700 dark:text-slate-300 text-[11px] font-medium transition"
+                                   title="Add or edit lessons">
+                                    Lessons
+                                </a>
+                                <a href="{% url 'instructor-course-step4' c.slug %}"
+                                   class="px-2.5 py-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-cyan-600 hover:text-white text-slate-700 dark:text-slate-300 text-[11px] font-medium transition"
+                                   title="Upload PDFs and resources">
+                                    Resources
+                                </a>
+                                <a href="{% url 'assessments:instructor-gradebook' c.slug %}"
+                                   class="px-2.5 py-1.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 hover:bg-emerald-900 text-[11px] font-semibold transition"
+                                   title="View Course Gradebook Matrix">
+                                    Gradebook
+                                </a>
+                                <a href="{% url 'instructor-course-step5' c.slug %}"
+                                   class="px-2.5 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-semibold transition"
+                                   title="Review full curriculum">
+                                    Review &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center text-slate-500 text-xs">
+                                You have not created any courses yet.
+                                <a href="{% url 'instructor-course-step1' %}" class="text-cyan-600 hover:underline font-bold ml-1">
+                                    Create your first course &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Phase 2 Grading Queue & Assessment Overview -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-10">
+        <!-- Submissions Needing Review -->
+        <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                        <span>📁</span>
+                        <span>Pending Grading Queue</span>
+                    </h3>
+                    <span class="text-xs text-slate-500">{{ pending_submissions_count }} submissions awaiting assessment</span>
+                </div>
+                <a href="{% url 'assessments:grading-queue' %}" class="text-xs text-cyan-500 hover:underline font-semibold">
+                    Full Queue &rarr;
+                </a>
+            </div>
+
+            <div class="space-y-3">
+                {% for sub in pending_submissions %}
+                <div class="p-3 rounded-xl bg-slate-900/40 border border-slate-800 flex items-center justify-between text-xs">
+                    <div>
+                        <span class="font-bold text-white block">{{ sub.student.get_full_name }}</span>
+                        <span class="text-[11px] text-cyan-400">{{ sub.assignment.title }}</span>
+                        <span class="text-[10px] text-slate-500 block">Submitted {{ sub.submitted_at|timesince }} ago</span>
+                    </div>
+                    <a href="{% url 'assessments:instructor-grade-submission' sub.pk %}" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-[11px] transition">
+                        Grade Now &rarr;
+                    </a>
+                </div>
+                {% empty %}
+                <p class="text-xs text-slate-500 py-4 text-center">✓ No pending submissions. The grading queue is clear!</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Recent Quiz Submissions -->
+        <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                    <span>📊</span>
+                    <span>Recent Quiz Submissions</span>
+                </h3>
+            </div>
+
+            <div class="space-y-2.5">
+                {% for qa in recent_quiz_attempts %}
+                <div class="p-3 rounded-xl bg-slate-900/40 border border-slate-800 flex items-center justify-between text-xs">
+                    <div>
+                        <span class="font-bold text-white block">{{ qa.student.get_full_name }}</span>
+                        <span class="text-[11px] text-slate-400">{{ qa.quiz.title }}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-mono font-bold {% if qa.passed %}text-emerald-400{% else %}text-red-400{% endif %}">
+                            {{ qa.percentage }}%
+                        </span>
+                        <span class="text-[10px] text-slate-500 block">{{ qa.submitted_at|timesince }} ago</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-xs text-slate-500 py-4 text-center">No student quiz attempts recorded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+

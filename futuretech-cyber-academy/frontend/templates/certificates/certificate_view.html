@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate — {{ certificate.certificate_number }} — Future Tech Academy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .certificate-card {
+                box-shadow: none !important;
+                border: 8px solid #0f172a !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 font-sans">
+
+    <!-- Action Controls (Hidden when printing) -->
+    <div class="no-print max-w-4xl w-full flex items-center justify-between mb-6">
+        <a href="{% url 'certificates:certificate-list' %}" class="text-xs text-slate-400 hover:text-white transition">
+            &larr; Back to Certificates Collection
+        </a>
+        <div class="flex items-center space-x-3">
+            <a href="/verify/{{ certificate.certificate_number }}/" target="_blank" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold transition">
+                External Verification Gateway ↗
+            </a>
+            <button onclick="window.print()" class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/30 transition flex items-center space-x-1.5">
+                <span>🖨️</span>
+                <span>Print / Save PDF</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Formal Certificate Paper Frame -->
+    <div class="certificate-card max-w-4xl w-full bg-white text-slate-900 rounded-3xl p-8 sm:p-14 border-8 border-slate-900 shadow-2xl relative overflow-hidden text-center">
+        <!-- Corner Decorative Filigree Elements -->
+        <div class="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-slate-900 pointer-events-none"></div>
+        <div class="absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-slate-900 pointer-events-none"></div>
+        <div class="absolute bottom-4 left-4 w-12 h-12 border-b-2 border-l-2 border-slate-900 pointer-events-none"></div>
+        <div class="absolute bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 border-slate-900 pointer-events-none"></div>
+
+        <!-- Academy Logo Header -->
+        <div class="mb-4">
+            <div class="w-16 h-16 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-3xl mx-auto shadow-md">
+                ⚡
+            </div>
+            <h3 class="text-xs font-extrabold uppercase tracking-[0.3em] text-slate-600 mt-3">
+                {{ certificate.template.academy_title }}
+            </h3>
+            <span class="text-[10px] tracking-widest text-slate-400 uppercase block mt-0.5">Professional Cyber Security Program</span>
+        </div>
+
+        <!-- Formal Title -->
+        <div class="my-6">
+            <h1 class="text-3xl sm:text-5xl font-serif font-extrabold tracking-tight text-slate-900">
+                {{ certificate.template.title }}
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-2 font-serif italic">
+                This official professional certificate is awarded to
+            </p>
+        </div>
+
+        <!-- Student Name -->
+        <div class="my-6 py-2 border-b border-slate-300 max-w-lg mx-auto">
+            <h2 class="text-2xl sm:text-4xl font-serif font-bold text-cyan-900 tracking-wide">
+                {{ certificate.student.get_full_name }}
+            </h2>
+        </div>
+
+        <!-- Conferred Description -->
+        <p class="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed font-serif">
+            Having successfully completed all required coursework, hands-on practical labs, quizzes, and comprehensive examinations in
+        </p>
+
+        <h3 class="text-lg sm:text-xl font-bold text-slate-900 mt-2 mb-8">
+            {{ certificate.course.title }}
+        </h3>
+
+        <!-- Footer Signatures & QR Code -->
+        <div class="grid grid-cols-3 gap-6 items-end pt-8 mt-6 border-t border-slate-200">
+            <!-- Left Signature -->
+            <div class="text-center">
+                <div class="font-serif italic text-base sm:text-lg text-slate-700 mb-1 border-b border-slate-300 pb-1">
+                    {{ certificate.template.signatory_name }}
+                </div>
+                <span class="text-[10px] sm:text-xs text-slate-500 uppercase font-semibold block">
+                    {{ certificate.template.signatory_title }}
+                </span>
+            </div>
+
+            <!-- Center Verification QR Code Badge -->
+            <div class="flex flex-col items-center justify-center">
+                <div class="w-20 h-20 bg-white p-1 rounded-xl shadow-md border border-slate-300 flex items-center justify-center">
+                    {{ certificate.qr_code_svg|safe }}
+                </div>
+                <span class="text-[9px] font-mono text-slate-500 mt-1 font-bold">
+                    {{ certificate.certificate_number }}
+                </span>
+            </div>
+
+            <!-- Right Date & Token -->
+            <div class="text-center">
+                <div class="font-serif text-sm sm:text-base text-slate-700 mb-1 border-b border-slate-300 pb-1">
+                    {{ certificate.completion_date|date:"F d, Y" }}
+                </div>
+                <span class="text-[10px] sm:text-xs text-slate-500 uppercase font-semibold block">
+                    Completion Date
+                </span>
+            </div>
+        </div>
+
+        <!-- Verifiable Token Bottom -->
+        <div class="mt-8 text-[9px] font-mono text-slate-400">
+            Digital Certificate Verification Token: {{ certificate.verification_token }} &bull; Verify at futuretech.academy/verify/{{ certificate.certificate_number }}/
+        </div>
+    </div>
+</body>
+</html>
+

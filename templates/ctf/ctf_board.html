@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}CTF Challenge Board - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 mb-8 border-b border-slate-800 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-white tracking-wide">Capture The Flag (CTF)</h1>
+            <p class="text-xs text-slate-400 mt-1">Exploit targets, solve challenges, extract flags, and conquer the leaderboard.</p>
+        </div>
+        <div class="flex items-center space-x-3 text-xs">
+            <span class="px-3 py-1.5 rounded bg-slate-900 border border-slate-800 text-slate-300">
+                Solved: <strong class="text-emerald-400">{{ solved_challenge_ids|length }}</strong> / {{ challenges.count }}
+            </span>
+            <a href="{% url 'leaderboard' %}" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
+                View Leaderboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Category Groups -->
+    <div class="space-y-10">
+        {% for cat_name, cat_challenges in grouped_challenges.items %}
+        <div>
+            <div class="flex items-center space-x-3 mb-4">
+                <span class="w-3 h-3 rounded bg-cyan-500"></span>
+                <h2 class="text-lg font-bold text-white tracking-wider">{{ cat_name }}</h2>
+                <span class="text-xs text-slate-500 font-mono">({{ cat_challenges|length }} Challenges)</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for challenge in cat_challenges %}
+                {% with is_solved=challenge.id in solved_challenge_ids %}
+                <div class="p-5 rounded-xl border transition cursor-pointer flex flex-col justify-between shadow-lg
+                    {% if is_solved %} bg-emerald-950/20 border-emerald-700/60 {% else %} bg-slate-900 border-slate-800 hover:border-cyan-500/50 {% endif %}"
+                    onclick="openChallengeModal('{{ challenge.id }}', '{{ challenge.title|escapejs }}', '{{ challenge.points }}', '{{ challenge.get_difficulty_display }}', '{{ challenge.description|escapejs }}', {{ is_solved|yesno:'true,false' }})">
+
+                    <div>
+                        <div class="flex justify-between items-center text-xs mb-2">
+                            <span class="px-2 py-0.5 rounded font-mono font-bold uppercase text-[10px]
+                                {% if challenge.difficulty == 'easy' %} bg-emerald-950 text-emerald-400 border border-emerald-800
+                                {% elif challenge.difficulty == 'medium' %} bg-amber-950 text-amber-400 border border-amber-800
+                                {% else %} bg-red-950 text-red-400 border border-red-800 {% endif %}">
+                                {{ challenge.get_difficulty_display }}
+                            </span>
+                            <span class="text-amber-400 font-mono font-bold">{{ challenge.points }} PTS</span>
+                        </div>
+
+                        <h3 class="text-sm font-bold text-white mb-2">{{ challenge.title }}</h3>
+                        <p class="text-xs text-slate-400 line-clamp-2">{{ challenge.description }}</p>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between items-center text-[11px]">
+                        {% if is_solved %}
+                            <span class="text-emerald-400 font-bold flex items-center space-x-1">
+                                <span>✓</span>
+                                <span>SOLVED</span>
+                            </span>
+                        {% else %}
+                            <span class="text-cyan-400">Attempt Challenge &rarr;</span>
+                        {% endif %}
+
+                        {% if challenge.lab %}
+                            <span class="text-slate-500 font-mono">Lab Attached</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endwith %}
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-16 text-slate-500 text-sm">
+            No CTF challenges available at this time.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal for Challenge Detail & Flag Submission -->
+<div id="challenge-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative overflow-hidden">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <div class="flex items-center space-x-2 mb-1">
+                    <span id="modal-difficulty" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase"></span>
+                    <span id="modal-points" class="text-amber-400 font-mono font-bold text-xs"></span>
+                </div>
+                <h3 id="modal-title" class="text-xl font-bold text-white"></h3>
+            </div>
+            <button onclick="closeChallengeModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+        </div>
+
+        <p id="modal-description" class="text-xs text-slate-300 leading-relaxed mb-6 whitespace-pre-wrap"></p>
+
+        <!-- Flag Submission Form -->
+        <div id="modal-submission-box" class="space-y-3">
+            <div id="modal-alert" class="hidden p-3 rounded text-xs"></div>
+
+            <div class="flex gap-2">
+                <input type="text" id="modal-flag-input" placeholder="FTCR{...}" class="flex-grow px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500">
+                <button id="modal-submit-btn" onclick="submitModalFlag()" class="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md transition">
+                    Submit Flag
+                </button>
+            </div>
+            <div class="text-[10px] text-slate-500">Format: <code>FTCR{...}</code>. Rate limit: 5 submissions per minute.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let activeChallengeId = null;
+
+    function openChallengeModal(id, title, points, diff, desc, isSolved) {
+        activeChallengeId = id;
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-points').textContent = points + " PTS";
+        document.getElementById('modal-difficulty').textContent = diff;
+        document.getElementById('modal-description').textContent = desc;
+
+        const alertBox = document.getElementById('modal-alert');
+        alertBox.className = 'hidden';
+        alertBox.textContent = '';
+
+        const submitBtn = document.getElementById('modal-submit-btn');
+        const flagInput = document.getElementById('modal-flag-input');
+
+        if (isSolved) {
+            alertBox.textContent = "✓ You have already solved this challenge.";
+            alertBox.className = "p-3 rounded text-xs bg-emerald-950 border border-emerald-700 text-emerald-200 block";
+            submitBtn.disabled = true;
+            flagInput.disabled = true;
+        } else {
+            submitBtn.disabled = false;
+            flagInput.disabled = false;
+            flagInput.value = '';
+        }
+
+        document.getElementById('challenge-modal').classList.remove('hidden');
+    }
+
+    function closeChallengeModal() {
+        document.getElementById('challenge-modal').classList.add('hidden');
+    }
+
+    async function submitModalFlag() {
+        if (!activeChallengeId) return;
+        const flag = document.getElementById('modal-flag-input').value.trim();
+        const alertBox = document.getElementById('modal-alert');
+
+        if (!flag) {
+            alertBox.textContent = "Please enter a flag.";
+            alertBox.className = "p-3 rounded text-xs bg-amber-950 border border-amber-700 text-amber-200 block";
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/ctf/${activeChallengeId}/submit/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ flag: flag })
+            });
+
+            const data = await resp.json();
+            if (data.success) {
+                alertBox.textContent = data.message;
+                alertBox.className = "p-3 rounded text-xs bg-emerald-950 border border-emerald-700 text-emerald-200 block";
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                alertBox.textContent = data.message;
+                alertBox.className = "p-3 rounded text-xs bg-red-950 border border-red-700 text-red-200 block";
+            }
+        } catch (e) {
+            alertBox.textContent = "Network error communicating with flag validator.";
+            alertBox.className = "p-3 rounded text-xs bg-red-950 border border-red-700 text-red-200 block";
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}
+

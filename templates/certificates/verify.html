@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Verification - {{ PLATFORM_NAME }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#080d19] text-slate-200 min-h-screen flex items-center justify-center p-4 font-mono">
+
+    <div class="max-w-xl w-full p-8 rounded-2xl bg-slate-900 border border-cyan-800/80 shadow-2xl relative overflow-hidden text-center">
+        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-cyan-500 via-emerald-400 to-blue-600"></div>
+
+        <!-- Verification Status Badge -->
+        <div class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-6">
+            <span>✓</span>
+            <span>OFFICIALLY VERIFIED CREDENTIAL</span>
+        </div>
+
+        <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">{{ certificate.program_title }}</h1>
+        <p class="text-xs text-cyan-400 font-mono mb-6">Serial: {{ certificate.certificate_code }}</p>
+
+        <!-- Certificate Details Box -->
+        <div class="p-6 rounded-xl bg-slate-950 border border-slate-800 text-left text-xs space-y-3 mb-6">
+            <div class="flex justify-between border-b border-slate-900 pb-2">
+                <span class="text-slate-500">Recipient Name:</span>
+                <span class="text-white font-bold">{{ certificate.student_name }}</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-900 pb-2">
+                <span class="text-slate-500">Issuing Institution:</span>
+                <span class="text-white font-semibold">{{ PLATFORM_NAME }}</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-900 pb-2">
+                <span class="text-slate-500">Program Duration:</span>
+                <span class="text-slate-300">10 Months (14 Modules + Capstone)</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-900 pb-2">
+                <span class="text-slate-500">Date of Award:</span>
+                <span class="text-slate-300">{{ certificate.issued_at|date:"F d, Y" }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Academic Standing:</span>
+                <span class="text-amber-400 font-bold">{{ certificate.grade }}</span>
+            </div>
+        </div>
+
+        <p class="text-[10px] text-slate-500 mb-6">
+            This verification record confirms that the candidate has completed all required theoretical assessments,
+            offensive and defensive hands-on laboratory exercises, and passed the final viva examination.
+        </p>
+
+        <a href="/" class="text-xs text-cyan-400 hover:underline">
+            &larr; Return to {{ PLATFORM_NAME }}
+        </a>
+    </div>
+
+</body>
+</html>
+

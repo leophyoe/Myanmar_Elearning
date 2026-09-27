@@ -1,0 +1,58 @@
+name: "OWASP Juice Shop"
+slug: "owasp-juice-shop"
+category: "web-application-security"
+type: "WEB_APPLICATION"
+difficulty: "Beginner"
+platform: "Docker"
+docker_image: "bkimminich/juice-shop:v17.1.1"
+internal_port: 3000
+points: 500
+estimated_minutes: 120
+max_runtime_minutes: 120
+
+resources:
+  cpu_limit: "1.0"
+  memory_limit_mb: 1024
+  storage_limit_mb: 2048
+  process_limit: 150
+
+security:
+  isolation: "per-student-container"
+  network_mode: "bridge"
+  cap_drop: ["ALL"]
+  cap_add: ["NET_BIND_SERVICE"]
+  no_new_privileges: true
+  gateway_proxy: true
+
+challenges:
+  - id: "scoreboard"
+    name: "Score Board Discovery"
+    points: 50
+    difficulty: "Beginner"
+    owasp_category: "A01:2021-Broken Access Control"
+    flag_pattern: "FTACK{js_scoreboard_{token}}"
+  - id: "admin_sqli"
+    name: "Admin Login via SQL Injection"
+    points: 100
+    difficulty: "Beginner"
+    owasp_category: "A03:2021-Injection"
+    flag_pattern: "FTACK{js_admin_sqli_{token}}"
+  - id: "dom_xss"
+    name: "DOM-Based Cross-Site Scripting (XSS)"
+    points: 100
+    difficulty: "Intermediate"
+    owasp_category: "A03:2021-Injection"
+    flag_pattern: "FTACK{js_dom_xss_{token}}"
+  - id: "path_traversal"
+    name: "Confidential Document Path Traversal"
+    points: 100
+    difficulty: "Intermediate"
+    owasp_category: "A01:2021-Broken Access Control"
+    flag_pattern: "FTACK{js_path_traversal_{token}}"
+  - id: "basket_idor"
+    name: "Basket IDOR / Broken Object Level Auth"
+    points: 150
+    difficulty: "Intermediate"
+    owasp_category: "A01:2021-Broken Access Control"
+    flag_pattern: "FTACK{js_basket_idor_{token}}"
+

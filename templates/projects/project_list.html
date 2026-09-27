@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Capstone Projects - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white tracking-wide">Cybersecurity Capstone Projects</h1>
+        <p class="text-xs text-slate-400 mt-1">Final integration project required for Diploma graduation. Includes technical audit, remediation, and live Viva Voce.</p>
+    </div>
+
+    <div class="space-y-6">
+        {% for project in projects %}
+        <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+            <h2 class="text-xl font-bold text-white mb-2">{{ project.title }}</h2>
+            <p class="text-xs text-slate-300 leading-relaxed mb-6">{{ project.description }}</p>
+
+            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs mb-6">
+                <span class="font-bold text-cyan-400 uppercase tracking-wider block mb-2">Grading Evaluation Rubric:</span>
+                <ul class="space-y-1 text-slate-400">
+                    <li>• Project Proposal & Scope Definition (15%)</li>
+                    <li>• Lab Sandbox Architecture & Attack Path Design (20%)</li>
+                    <li>• Technical Vulnerability Assessment & Evidence Capture (25%)</li>
+                    <li>• Executive Audit Report & Remediation Roadmap (20%)</li>
+                    <li>• Live Oral Defense Examination & Viva Voce (20%)</li>
+                </ul>
+            </div>
+
+            <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-500 font-mono">Submission Deadline: Month 10</span>
+                <button class="px-5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
+                    Submit Capstone Proposal
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-16 text-slate-500 text-sm">
+            Capstone project guidelines will be unlocked in Month 10.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}HackerTest &bull; External Security Challenges | Future Tech Academy{% endblock %}
+
+{% block content %}
+<div class="space-y-10 max-w-5xl mx-auto">
+    <!-- Breadcrumbs -->
+    <div class="flex items-center space-x-2 text-xs font-mono pb-2 border-b border-slate-200 dark:border-slate-800">
+        <a href="{% url 'labs:challenge-list' %}" class="text-purple-400 hover:underline">&larr; CTF Arena</a>
+        <span class="text-slate-600">/</span>
+        <span class="text-slate-400">External Resources</span>
+        <span class="text-slate-600">/</span>
+        <span class="text-white font-bold">HackerTest.net</span>
+    </div>
+
+    <!-- Main Hero Card -->
+    <div class="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden relative">
+        <div class="absolute -right-20 -top-20 w-80 h-80 bg-gradient-to-br from-amber-500/10 via-purple-500/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="p-8 sm:p-12 space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <span class="px-3 py-1 text-xs font-mono font-bold uppercase tracking-wider rounded-lg bg-amber-950 text-amber-300 border border-amber-800 flex items-center space-x-1.5">
+                        <span>🌐</span>
+                        <span>EXTERNAL_RESOURCE</span>
+                    </span>
+                    <span class="text-xs font-mono text-slate-400">Source: <strong class="text-white">HackerTest.net</strong></span>
+                </div>
+                <div class="flex items-center space-x-2 text-xs font-mono text-slate-500 dark:text-slate-400">
+                    <span>20 Progressive Levels</span>
+                    <span>&bull;</span>
+                    <span>Web & Script Analysis</span>
+                </div>
+            </div>
+
+            <div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight font-mono">
+                    HackerTest
+                </h1>
+                <h2 class="text-xl sm:text-2xl font-bold text-amber-400 mt-1 font-mono">
+                    Security Challenges
+                </h2>
+                <p class="text-slate-600 dark:text-slate-300 text-sm max-w-3xl mt-3 leading-relaxed">
+                    {{ resource.description|default:"External cybersecurity challenge resource. HackerTest provides 20 online levels testing practical client-side script inspection, HTTP forms, JavaScript logic, and reconnaissance fundamentals." }}
+                </p>
+            </div>
+
+            <!-- External Launch Action -->
+            <div class="pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <a href="{{ resource.url|default:'https://www.hackertest.net/' }}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-mono font-bold text-sm rounded-xl transition shadow-lg shadow-amber-500/25 flex items-center justify-center space-x-2 group">
+                    <span>Open HackerTest</span>
+                    <svg class="w-4 h-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+                <span class="text-xs text-slate-400 font-mono flex items-center">
+                    Opens official HackerTest.net website in a new window
+                </span>
+            </div>
+        </div>
+
+        <!-- Academic Notice & Integration Guidelines -->
+        <div class="bg-slate-50 dark:bg-[#0a0f1d] p-6 sm:p-8 border-t border-slate-100 dark:border-slate-800/80 space-y-4">
+            <h3 class="text-xs font-mono uppercase tracking-widest text-slate-400 font-bold flex items-center space-x-2">
+                <span>🛡️</span>
+                <span>Academy Learning Path Integration & Security Policy</span>
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono text-slate-300">
+                <div class="p-4 bg-white dark:bg-[#111827] rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5">
+                    <span class="text-amber-400 font-bold block">Recommended Practice Resource For:</span>
+                    <ul class="space-y-1 text-slate-400 list-disc list-inside">
+                        <li>Cyber Security Fundamentals</li>
+                        <li>Ethical Hacking</li>
+                        <li>Web Security</li>
+                        <li>Security Challenges</li>
+                    </ul>
+                </div>
+                <div class="p-4 bg-white dark:bg-[#111827] rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5">
+                    <span class="text-cyan-400 font-bold block">Progress & Completion Notice:</span>
+                    <p class="text-slate-400 leading-relaxed">
+                        HackerTest is an external platform. Completion of levels on HackerTest.net is for voluntary student enrichment and is <strong>not automatically marked as completed</strong> inside Future Tech Academy.
+                    </p>
+                </div>
+            </div>
+
+            <div class="p-3.5 bg-slate-900/60 rounded-xl border border-slate-800 text-[11px] font-mono text-slate-400 leading-relaxed">
+                <strong class="text-slate-300">Respect of Third-Party Terms:</strong> Future Tech Academy adheres to strict copyright standards. In compliance with terms of service, no HackerTest challenges, solutions, or questions are scraped, mirrored, or redistributed.
+            </div>
+        </div>
+    </div>
+
+    <!-- Future Tech Original Security Challenges Section -->
+    <div class="space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+            <div>
+                <span class="text-xs font-mono uppercase tracking-widest text-purple-400 font-bold">In-House Practice Arena</span>
+                <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono mt-1">
+                    Future Tech Security Challenges
+                </h2>
+                <p class="text-xs text-slate-400 mt-1 max-w-2xl">
+                    100% original, verified challenges designed by Future Tech Academy instructors. Solve these directly in our CTF arena to earn internal points and scoreboard rank.
+                </p>
+            </div>
+            <a href="{% url 'labs:challenge-list' %}?category=future-tech-security-challenges"
+               class="text-xs font-mono font-bold text-purple-400 hover:text-purple-300 transition flex items-center space-x-1">
+                <span>View All Original Challenges &rarr;</span>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            {% for challenge in original_challenges %}
+            <div class="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col justify-between hover:border-purple-500/50 transition group">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
+                            {{ challenge.difficulty }}
+                        </span>
+                        <span class="text-xs font-mono font-bold text-cyan-400">
+                            {{ challenge.points }} pts
+                        </span>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white group-hover:text-purple-400 transition font-mono">
+                        <a href="{% url 'labs:challenge-detail' challenge.slug %}">{{ challenge.title }}</a>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-2 line-clamp-2">
+                        {{ challenge.description|striptags }}
+                    </p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                    <span class="text-[11px] font-mono text-slate-500">{{ challenge.solves_count }} solves</span>
+                    <a href="{% url 'labs:challenge-detail' challenge.slug %}" class="text-xs font-mono text-purple-400 font-bold group-hover:underline">
+                        Solve &rarr;
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

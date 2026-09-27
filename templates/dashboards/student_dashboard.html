@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Command Center - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Header & Student Banner -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 mb-8 border-b border-slate-800 gap-4">
+        <div>
+            <div class="flex items-center space-x-3">
+                <h1 class="text-2xl font-bold text-white tracking-wide">
+                    {{ user.get_full_name|default:user.username }}
+                </h1>
+                <span class="text-xs px-2.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono">
+                    {{ profile.student_id }}
+                </span>
+                <span class="text-xs px-2.5 py-0.5 rounded bg-blue-950 border border-blue-800 text-blue-300">
+                    {{ profile.batch }}
+                </span>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Enrolled in: <strong class="text-slate-300">{{ DIPLOMA_PROGRAM_TITLE }}</strong> (10 Months)</p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'course-list' %}" class="px-4 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                Continue Learning
+            </a>
+            <a href="{% url 'profile' %}" class="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition">
+                Edit Profile
+            </a>
+        </div>
+    </div>
+
+    <!-- Overview Metrics Grid -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <!-- Progress Metric -->
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Program Progress</div>
+            <div class="text-2xl font-bold text-white mb-2">{{ progress_percentage }}%</div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-cyan-500 h-1.5 rounded-full" style="width: {{ progress_percentage }}%"></div>
+            </div>
+        </div>
+
+        <!-- Modules Metric -->
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Completed Modules</div>
+            <div class="text-2xl font-bold text-cyan-400 mb-1">{{ completed_modules }} <span class="text-xs text-slate-500 font-normal">/ {{ total_modules }}</span></div>
+            <div class="text-[11px] text-slate-400">14 Module Curriculum</div>
+        </div>
+
+        <!-- Labs Metric -->
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Hands-on Labs</div>
+            <div class="text-2xl font-bold text-emerald-400 mb-1">{{ completed_labs_count }} <span class="text-xs text-slate-500 font-normal">/ {{ total_labs_count }}</span></div>
+            <div class="text-[11px] text-slate-400">Docker Isolated</div>
+        </div>
+
+        <!-- CTF Points Metric -->
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">CTF Score</div>
+            <div class="text-2xl font-bold text-amber-400 mb-1">{{ profile.points }} <span class="text-xs text-slate-500 font-normal">PTS</span></div>
+            <div class="text-[11px] text-slate-400">Flags & Challenges</div>
+        </div>
+
+        <!-- Rank Metric -->
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Global Rank</div>
+            <div class="text-2xl font-bold text-purple-400 mb-1">#{{ profile.rank }}</div>
+            <a href="{% url 'leaderboard' %}" class="text-[11px] text-cyan-400 hover:underline">View Leaderboard &rarr;</a>
+        </div>
+    </div>
+
+    <!-- Active Sandbox Machine Container (TryHackMe / HTB Style) -->
+    <div class="mb-10">
+        <h2 class="text-base font-bold text-white mb-3 flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Active Sandbox Lab Machine</span>
+        </h2>
+
+        {% if active_instances %}
+            {% for inst in active_instances %}
+            <div class="p-6 rounded-xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-[#0f1d36] border border-cyan-800/60 shadow-xl">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <div>
+                        <div class="flex items-center space-x-3 mb-2">
+                            <h3 class="text-lg font-bold text-white">{{ inst.lab.title }}</h3>
+                            <span class="px-2 py-0.5 text-[10px] rounded font-bold uppercase tracking-wider
+                                {% if inst.status == 'running' %} bg-emerald-950 border border-emerald-700 text-emerald-300
+                                {% else %} bg-amber-950 border border-amber-700 text-amber-300 {% endif %}">
+                                {{ inst.status }}
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap gap-4 text-xs text-slate-400">
+                            <div>Target IP: <code class="text-cyan-300 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-800">{{ inst.target_ip|default:"172.30.1.100" }}</code></div>
+                            <div>Subnet Bridge: <span class="text-slate-300">{{ inst.network_name|default:"Internal Sandbox (No WAN)" }}</span></div>
+                            <div>Auto-Expires In: <span class="text-amber-400 font-mono font-bold">{{ inst.remaining_seconds }}s</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Action Controls -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <a href="{% url 'terminal-view' instance_id=inst.id %}" target="_blank" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition flex items-center space-x-1.5">
+                            <span>💻</span>
+                            <span>Open Web Terminal</span>
+                        </a>
+
+                        <form method="POST" action="{% url 'lab-reset' instance_id=inst.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="px-3 py-2 rounded-lg bg-amber-950 hover:bg-amber-900 border border-amber-700 text-amber-300 text-xs font-semibold transition" onclick="return confirm('Reset this lab environment? A new clean container and flag will be created.')">
+                                🔄 Reset Lab
+                            </button>
+                        </form>
+
+                        <form method="POST" action="{% url 'lab-stop' instance_id=inst.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="px-3 py-2 rounded-lg bg-red-950 hover:bg-red-900 border border-red-700 text-red-300 text-xs font-semibold transition" onclick="return confirm('Stop this lab? Containers will be decommissioned.')">
+                                ⏹️ Stop Lab
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="p-8 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+                <div class="text-2xl mb-2">⚡</div>
+                <p class="text-sm text-slate-300 font-semibold mb-1">No Active Lab Sandbox Running</p>
+                <p class="text-xs text-slate-500 mb-4">Start any hands-on laboratory from the cyber labs catalog or curriculum lessons.</p>
+                <a href="{% url 'lab-list' %}" class="px-4 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                    Browse Cyber Labs
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Two-Column Layout: Unlocked Badges & Solved Challenges -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Badges Card -->
+        <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+            <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center justify-between">
+                <span>🏆 Unlocked Badges & Achievements</span>
+                <span class="text-xs text-cyan-400 font-normal">{{ badges.count }} Earned</span>
+            </h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {% for ub in badges %}
+                    <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-center">
+                        <div class="text-xl mb-1">🛡️</div>
+                        <div class="text-xs font-bold text-slate-200">{{ ub.badge.name }}</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">{{ ub.awarded_at|date:"M d, Y" }}</div>
+                    </div>
+                {% empty %}
+                    <div class="col-span-3 text-center py-6 text-xs text-slate-500">
+                        Complete labs and CTF challenges to unlock your first achievement badge.
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Solved CTF Challenges Card -->
+        <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+            <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center justify-between">
+                <span>🚩 Solved CTF Challenges</span>
+                <a href="{% url 'ctf-board' %}" class="text-xs text-cyan-400 font-normal hover:underline">Challenge Board &rarr;</a>
+            </h3>
+            <div class="space-y-2">
+                {% for solve in solved_challenges|slice:":5" %}
+                    <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 flex justify-between items-center text-xs">
+                        <div>
+                            <span class="font-bold text-white">{{ solve.challenge.title }}</span>
+                            <span class="text-[10px] text-slate-500 block">{{ solve.challenge.get_category_display }}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-emerald-400 font-bold">+{{ solve.points_awarded }} PTS</span>
+                            <span class="text-[10px] text-slate-500 block">{{ solve.solved_at|date:"M d, H:i" }}</span>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="text-center py-6 text-xs text-slate-500">
+                        No challenges solved yet. Visit the CTF board to submit your first flag!
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+

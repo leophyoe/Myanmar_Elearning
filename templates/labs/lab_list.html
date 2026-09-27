@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Cyber Labs - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 mb-8 border-b border-slate-800 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-white tracking-wide">Hands-on Cyber Labs</h1>
+            <p class="text-xs text-slate-400 mt-1">Docker-based isolated sandboxes. No WAN routing. Practice attacks and defense safely.</p>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+            <a href="{% url 'lab-list' %}" class="px-3 py-1.5 rounded-lg {% if not selected_category %}bg-cyan-600 text-white{% else %}bg-slate-900 border border-slate-800 text-slate-400{% endif %}">
+                All Domains
+            </a>
+            {% for cat_val, cat_label in categories %}
+                <a href="{% url 'lab-list' %}?category={{ cat_val }}" class="px-3 py-1.5 rounded-lg {% if selected_category == cat_val %}bg-cyan-600 text-white{% else %}bg-slate-900 border border-slate-800 text-slate-400 hover:text-white{% endif %}">
+                    {{ cat_label|truncatewords:2 }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Labs Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for lab in labs %}
+        <div class="p-6 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between shadow-lg">
+            <div>
+                <div class="flex justify-between items-center text-xs mb-3">
+                    <span class="px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider
+                        {% if lab.difficulty == 'easy' %} bg-emerald-950 text-emerald-400 border border-emerald-800
+                        {% elif lab.difficulty == 'medium' %} bg-amber-950 text-amber-400 border border-amber-800
+                        {% else %} bg-red-950 text-red-400 border border-red-800 {% endif %}">
+                        {{ lab.get_difficulty_display }}
+                    </span>
+                    <span class="text-amber-400 font-bold font-mono">{{ lab.points }} PTS</span>
+                </div>
+
+                <h2 class="text-lg font-bold text-white mb-2">{{ lab.title }}</h2>
+                <p class="text-xs text-slate-400 leading-relaxed mb-4 line-clamp-3">{{ lab.description }}</p>
+
+                <div class="text-[11px] text-slate-500 mb-4 space-y-1">
+                    <div>Type: <span class="text-slate-300">{{ lab.get_lab_type_display }}</span></div>
+                    <div>Category: <span class="text-slate-300">{{ lab.template.get_category_display }}</span></div>
+                </div>
+            </div>
+
+            <a href="{% url 'lab-detail' slug=lab.slug %}" class="w-full text-center py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-600/20 transition">
+                Configure & Launch Lab &rarr;
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-span-3 text-center py-16 text-slate-500 text-sm">
+            No cyber labs found matching the selected filter.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

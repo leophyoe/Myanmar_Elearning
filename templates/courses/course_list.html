@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Diploma Curriculum - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">Cybersecurity Curriculum</h1>
+        <p class="text-sm text-slate-400">10-Month Professional Diploma Program structured into 14 comprehensive academic modules.</p>
+    </div>
+
+    {% for course in courses %}
+    <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mb-12">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 pb-6 border-b border-slate-800">
+            <div>
+                <span class="text-xs px-2.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-bold uppercase tracking-wider">
+                    {{ course.duration_months }} Months Diploma
+                </span>
+                <h2 class="text-2xl font-bold text-white mt-2">{{ course.title }}</h2>
+                <p class="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">{{ course.description }}</p>
+            </div>
+            <a href="{% url 'course-detail' slug=course.slug %}" class="px-5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition">
+                View Full Syllabus &rarr;
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for module in course.modules.all %}
+            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 hover:border-cyan-700/60 transition flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between text-xs mb-2">
+                        <span class="font-bold text-cyan-400">{{ module.code }}</span>
+                        <span class="text-slate-500">{{ module.lessons.count }} Lessons</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-white mb-1.5">{{ module.title }}</h3>
+                    <p class="text-[11px] text-slate-400 leading-relaxed line-clamp-2">{{ module.summary }}</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-900 flex justify-between items-center text-[11px]">
+                    <span class="text-slate-500">Module {{ module.order }} of 14</span>
+                    <a href="{% url 'module-detail' module_id=module.id %}" class="text-cyan-400 hover:underline">Inspect &rarr;</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In - {{ ACADEMY_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[75vh] flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-md p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 to-blue-600"></div>
+
+        <div class="text-center mb-8">
+            <div class="inline-flex p-3 rounded-xl bg-cyan-100 dark:bg-cyan-950/60 border border-cyan-300 dark:border-cyan-800 text-cyan-700 dark:text-cyan-400 mb-3">
+                🛡️
+            </div>
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Academy Sign In</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Authenticate using your registered email address</p>
+        </div>
+
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                    Email Address
+                </label>
+                {{ form.email }}
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
+                    Password
+                </label>
+                {{ form.password }}
+            </div>
+
+            <button type="submit" class="w-full py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm shadow-md transition mt-2">
+                Sign In to Academy
+            </button>
+        </form>
+
+        <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500">
+            Don't have an account yet?
+            <a href="{% url 'register' %}" class="text-cyan-600 dark:text-cyan-400 hover:underline font-semibold ml-1">
+                Enroll as a Student
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

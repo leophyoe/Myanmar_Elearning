@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Global Leaderboard - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="text-center mb-10">
+        <h1 class="text-3xl font-bold text-white tracking-wide">Leaderboard</h1>
+        <p class="text-xs text-slate-400 mt-1">Official rankings based on validated CTF flag captures, laboratory completions, and practical exercises.</p>
+    </div>
+
+    <!-- Leaderboard Table -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[10px]">
+                        <th class="py-3 px-4">Rank</th>
+                        <th class="py-3 px-4">Student</th>
+                        <th class="py-3 px-4">Student ID</th>
+                        <th class="py-3 px-4">Cohort / Batch</th>
+                        <th class="py-3 px-4 text-right">Total Score</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for student in students %}
+                    <tr class="hover:bg-slate-950/60 transition {% if student.user == request.user %}bg-cyan-950/30 border-l-2 border-cyan-500{% endif %}">
+                        <td class="py-3.5 px-4 font-bold font-mono">
+                            {% if forloop.counter == 1 %}
+                                <span class="text-amber-400 font-bold">🥇 #1</span>
+                            {% elif forloop.counter == 2 %}
+                                <span class="text-slate-300 font-bold">🥈 #2</span>
+                            {% elif forloop.counter == 3 %}
+                                <span class="text-amber-600 font-bold">🥉 #3</span>
+                            {% else %}
+                                <span class="text-slate-500">#{{ forloop.counter }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 font-semibold text-white">
+                            {{ student.user.get_full_name|default:student.user.username }}
+                            {% if student.user == request.user %}
+                                <span class="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-cyan-900/60 text-cyan-300">You</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-cyan-400">{{ student.student_id }}</td>
+                        <td class="py-3.5 px-4 text-slate-400">{{ student.batch }}</td>
+                        <td class="py-3.5 px-4 text-right font-mono font-bold text-amber-400 text-sm">
+                            {{ student.points }} <span class="text-[10px] text-slate-500 font-normal">PTS</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-8 text-slate-500">
+                            No student scores recorded yet. Submit flags to appear on the leaderboard!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.title }} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="mb-8">
+        <a href="{% url 'course-list' %}" class="text-xs text-cyan-400 hover:underline mb-2 inline-block">&larr; Back to Programs</a>
+        <h1 class="text-3xl font-bold text-white mb-2">{{ course.title }}</h1>
+        <p class="text-sm text-slate-400 max-w-4xl leading-relaxed">{{ course.description }}</p>
+    </div>
+
+    <!-- Modules Accordion / List -->
+    <div class="space-y-6">
+        {% for module in modules %}
+        <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-4 mb-4 border-b border-slate-800 gap-2">
+                <div>
+                    <span class="text-xs font-mono font-bold text-cyan-400">{{ module.code }}</span>
+                    <h2 class="text-lg font-bold text-white">{{ module.title }}</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ module.summary }}</p>
+                </div>
+                <span class="text-xs text-slate-500 font-mono">{{ module.lessons.count }} Lessons</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {% for lesson in module.lessons.all %}
+                <a href="{% url 'lesson-detail' lesson_id=lesson.id %}" class="p-3 rounded-lg bg-slate-950 border border-slate-800/80 hover:border-cyan-500/50 transition group flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center text-[10px] text-slate-500 mb-1">
+                            <span>Lesson {{ lesson.order }}</span>
+                            {% if lesson.id in completed_lesson_ids %}
+                                <span class="text-emerald-400 font-bold">✓ Completed</span>
+                            {% endif %}
+                        </div>
+                        <h3 class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition">{{ lesson.title }}</h3>
+                    </div>
+                    <div class="flex items-center space-x-2 mt-3 text-[10px]">
+                        {% if lesson.has_lab %}
+                            <span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">Lab</span>
+                        {% endif %}
+                        {% if lesson.has_quiz %}
+                            <span class="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">Quiz</span>
+                        {% endif %}
+                        <span class="text-slate-500 ml-auto">{{ lesson.estimated_minutes }}m</span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

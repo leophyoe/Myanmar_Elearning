@@ -3,186 +3,420 @@
 {% block title %}{{ portfolio_user.get_full_name|default:portfolio_user.username }} — Portfolio - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-[290px_1fr] gap-8">
 
-    <!-- Identity -->
-    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col lg:flex-row lg:items-center gap-6">
-        <div class="w-20 h-20 shrink-0 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-2xl font-bold uppercase">
-            {{ portfolio_user.username|slice:":2" }}
-        </div>
-        <div class="flex-1 min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-                <h1 class="text-2xl font-bold text-white">
+        <!-- ============================================================
+             Sidebar profile  (academicpages _includes/author-profile.html)
+             ============================================================ -->
+        <aside class="lg:sticky lg:top-20 h-fit">
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl text-center">
+                {% if portfolio_user.avatar %}
+                <img src="{{ portfolio_user.avatar.url }}" alt="{{ portfolio_user.get_full_name }}"
+                     class="w-28 h-28 mx-auto rounded-2xl object-cover border border-slate-700" loading="lazy">
+                {% else %}
+                <div class="w-28 h-28 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-4xl font-bold uppercase">
+                    {{ portfolio_user.first_name|default:portfolio_user.username|slice:":1" }}
+                </div>
+                {% endif %}
+
+                <h1 class="text-lg font-bold text-white mt-4 leading-tight">
                     {{ portfolio_user.get_full_name|default:portfolio_user.username }}
                 </h1>
-                <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border
-                    {% if portfolio_user.role == 'admin' %}bg-purple-950 text-purple-300 border-purple-800
-                    {% elif portfolio_user.role == 'teacher' %}bg-emerald-950 text-emerald-300 border-emerald-800
-                    {% else %}bg-cyan-950 text-cyan-300 border-cyan-800{% endif %}">
-                    {{ portfolio_user.get_role_display }}
-                </span>
-                {% if profile and profile.student_id %}
-                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-mono">
-                    {{ profile.student_id }}
-                </span>
-                {% endif %}
-            </div>
-            <p class="text-xs text-slate-500 mt-1 font-mono">portfolio/{{ portfolio_user.username }}</p>
-            {% if profile and profile.bio %}
-            <p class="text-sm text-slate-400 mt-3 leading-relaxed max-w-3xl">{{ profile.bio }}</p>
-            {% endif %}
-        </div>
-        <div class="flex flex-wrap gap-2 text-xs shrink-0">
-            <a href="#share" class="px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">QR / NFC</a>
-            {% if is_owner %}
-            <a href="{% url 'portfolio-edit' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Edit portfolio</a>
-            {% endif %}
-        </div>
-    </div>
+                <p class="text-xs text-cyan-400 font-mono mt-1">@{{ portfolio_user.username }}</p>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        <!-- Skills -->
-        <div class="lg:col-span-2 p-6 rounded-2xl bg-slate-900 border border-slate-800">
-            <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Skills</h2>
-            {% if skills %}
-            <div class="space-y-4">
-                {% regroup skills by get_category_display as skill_groups %}
-                {% for group in skill_groups %}
-                <div>
-                    <div class="text-[11px] uppercase tracking-wider text-cyan-400 mb-2">{{ group.grouper }}</div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {% for skill in group.list %}
-                        <div class="p-3 rounded-lg bg-slate-950 border border-slate-800">
-                            <div class="flex items-center justify-between mb-1.5">
-                                <span class="text-xs text-slate-200 font-medium">{{ skill.name }}</span>
-                                <span class="text-[10px] font-mono text-slate-500">{{ skill.level }}/5</span>
-                            </div>
-                            <div class="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
-                                <div class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500"
-                                     style="width: {{ skill.level_pct }}%"></div>
-                            </div>
-                        </div>
+                <div class="mt-3 flex flex-wrap justify-center gap-1.5">
+                    <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border
+                        {% if portfolio_user.role == 'admin' %}bg-purple-950 text-purple-300 border-purple-800
+                        {% elif portfolio_user.role == 'teacher' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                        {% else %}bg-cyan-950 text-cyan-300 border-cyan-800{% endif %}">
+                        {{ portfolio_user.get_role_display }}
+                    </span>
+                    {% if profile and profile.batch %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">{{ profile.batch }}</span>
+                    {% endif %}
+                    {% if teacher_profile %}
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">{{ teacher_profile.title }}</span>
+                    {% endif %}
+                </div>
+
+                {% if profile and profile.bio %}
+                <p class="text-xs text-slate-400 leading-relaxed mt-4 text-left">{{ profile.bio }}</p>
+                {% elif is_owner %}
+                <p class="text-xs text-slate-500 leading-relaxed mt-4 text-left italic">
+                    Add a short bio so people know what you do.
+                    <a href="{% url 'profile' %}" class="text-cyan-400 not-italic hover:underline">Edit profile &rarr;</a>
+                </p>
+                {% endif %}
+
+                <!-- Facts -->
+                <ul class="mt-4 space-y-1.5 text-[11px] text-slate-400 text-left border-t border-slate-800 pt-4">
+                    {% if profile and profile.student_id %}
+                    <li class="flex items-center gap-2">
+                        <span class="text-slate-600">ID</span>
+                        <span class="font-mono text-slate-300">{{ profile.student_id }}</span>
+                    </li>
+                    {% endif %}
+                    {% if profile %}
+                    <li class="flex items-center gap-2">
+                        <span class="text-slate-600">Points</span>
+                        <span class="font-mono text-amber-400">{{ stats.points }}</span>
+                        {% if stats.rank %}
+                        <span class="text-slate-600 ml-auto">Rank</span>
+                        <span class="font-mono text-slate-300">#{{ stats.rank }}</span>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                    <li class="flex items-center gap-2">
+                        <span class="text-slate-600">Email</span>
+                        <a href="mailto:{{ portfolio_user.email }}" class="text-cyan-400 hover:underline truncate">{{ portfolio_user.email }}</a>
+                    </li>
+                </ul>
+
+                <!-- Social / freelance icons -->
+                {% if links %}
+                <div class="mt-4 pt-4 border-t border-slate-800">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">Profiles</div>
+                    <div class="flex flex-wrap justify-center gap-1.5">
+                        {% for link in links %}
+                        <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer nofollow"
+                           title="{{ link.label }}"
+                           class="px-2 py-1 rounded-md text-[10px] font-semibold border transition
+                           {% if link.is_freelance %}bg-amber-950 border-amber-800 text-amber-300 hover:bg-amber-900
+                           {% else %}bg-slate-950 border-slate-800 text-slate-300 hover:border-cyan-700 hover:text-cyan-300{% endif %}">
+                            {{ link.label }}
+                        </a>
                         {% endfor %}
                     </div>
                 </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="text-sm text-slate-500">No skills listed yet.</p>
-            {% endif %}
-        </div>
+                {% endif %}
 
-        <!-- Links -->
-        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
-            <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Profiles</h2>
-            {% if links %}
-            <div class="space-y-2">
-                {% for link in links %}
-                <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer nofollow"
-                   class="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800 hover:border-cyan-600 transition text-xs">
-                    <span class="text-slate-200 font-medium">{{ link.label }}</span>
-                    <span class="text-slate-600">&rarr;</span>
-                </a>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="text-sm text-slate-500">No profile links yet.</p>
-            {% endif %}
-
-            <div id="share" class="mt-6 pt-5 border-t border-slate-800">
-                <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-3">QR &amp; NFC</h3>
-                <p class="text-[11px] text-slate-500 leading-relaxed mb-3">
-                    Scan to open this portfolio, or write the URL below onto an NFC tag.
-                </p>
-                <a href="{{ qr_url }}" target="_blank" rel="noopener"
-                   class="block w-full text-center text-xs px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition mb-2">
-                    Download QR code (PNG)
-                </a>
-                <a href="{{ nfc_url }}" download
-                   class="block w-full text-center text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
-                    NFC payload (URL text)
-                </a>
-                <p class="text-[10px] text-slate-600 font-mono mt-3 break-all">{{ portfolio_url }}</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Platform certificates -->
-    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 mt-6">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Certificates from {{ PLATFORM_NAME }}</h2>
-            <span class="text-[11px] text-slate-500">{{ platform_certificates|length }} issued</span>
-        </div>
-        {% if platform_certificates %}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {% for c in platform_certificates %}
-            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <div class="text-sm text-white truncate">{{ c.course.title }}</div>
-                    <div class="text-[11px] text-slate-500 font-mono">{{ c.certificate_code }} · {{ c.grade }} · {{ c.issued_at|date:"d M Y" }}</div>
-                </div>
-                <div class="flex gap-2 shrink-0 text-[11px]">
-                    <a href="{% url 'certificate-verify' cert_id=c.id %}" target="_blank" rel="noopener"
-                       class="px-2.5 py-1.5 rounded bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 transition">Verify</a>
-                    <a href="{% url 'certificate-qr' cert_id=c.id %}" target="_blank" rel="noopener"
-                       class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">QR</a>
+                <!-- Share -->
+                <div class="mt-4 pt-4 border-t border-slate-800 space-y-2">
+                    <a href="{{ qr_url }}" target="_blank" rel="noopener"
+                       class="block w-full text-xs px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
+                        QR code
+                    </a>
+                    <a href="{{ nfc_url }}" download
+                       class="block w-full text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                        NFC payload
+                    </a>
+                    {% if is_owner %}
+                    <a href="{% url 'portfolio-edit' %}"
+                       class="block w-full text-xs px-3 py-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-cyan-300 transition">
+                        Edit portfolio
+                    </a>
+                    {% endif %}
                 </div>
             </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="text-sm text-slate-500">No platform certificates yet.</p>
-        {% endif %}
-    </div>
+        </aside>
 
-    <!-- External certificates -->
-    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 mt-6">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-sm font-bold text-white uppercase tracking-wider">Other credentials</h2>
-            {% if is_owner %}
-            <a href="{% url 'portfolio-edit' %}?resource=cert" class="text-xs text-cyan-400 hover:underline">+ Add certificate</a>
+        <!-- ============================================================
+             Main CV sections
+             ============================================================ -->
+        <main class="space-y-8 min-w-0">
+
+            <!-- Stats strip -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                    <div class="text-xl font-bold text-cyan-400 font-mono">{{ stats.credentials }}</div>
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500 mt-1">Credentials</div>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                    <div class="text-xl font-bold text-emerald-400 font-mono">{{ stats.projects }}</div>
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500 mt-1">Work samples</div>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                    <div class="text-xl font-bold text-amber-400 font-mono">{{ stats.skills }}</div>
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500 mt-1">Skills</div>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                    <div class="text-xl font-bold text-white font-mono">{{ stats.completed }}/{{ stats.courses }}</div>
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500 mt-1">Courses done</div>
+                </div>
+            </div>
+
+            <!-- Owner onboarding -->
+            {% if is_owner and missing %}
+            <div class="p-5 rounded-2xl border border-amber-800 bg-amber-950/40">
+                <div class="text-xs font-bold text-amber-300 uppercase tracking-wider mb-3">Finish your portfolio</div>
+                <ul class="space-y-2 text-xs">
+                    {% for done, label, url in missing %}
+                    <li class="flex items-center justify-between gap-3">
+                        <span class="text-slate-300">{{ label }}</span>
+                        <a href="{{ url }}" class="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-500 text-white font-semibold transition shrink-0">Add</a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
             {% endif %}
-        </div>
-        {% if external_certificates %}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {% for cert in external_certificates %}
-            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <div class="text-sm text-white truncate">{{ cert.title }}</div>
-                        <div class="text-[11px] text-slate-500 mt-0.5">{{ cert.issuer }}</div>
+
+            <!-- 1. Skills -->
+            <section id="skills" class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Skills</h2>
+                    {% if is_owner %}<a href="{% url 'portfolio-edit' %}?resource=skill" class="text-xs text-cyan-400 hover:underline">+ Add</a>{% endif %}
+                </div>
+                {% if skills %}
+                {% regroup skills by get_category_display as skill_groups %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {% for group in skill_groups %}
+                    <div>
+                        <div class="text-[10px] uppercase tracking-wider text-cyan-400 mb-2">{{ group.grouper }}</div>
+                        <div class="space-y-2">
+                            {% for skill in group.list %}
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs text-slate-200">{{ skill.name }}</span>
+                                    <span class="text-[10px] font-mono text-slate-500">{{ skill.level }}/5</span>
+                                </div>
+                                <div class="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                                    <div class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500" style="width: {{ skill.level_pct }}%"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
-                    <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase border shrink-0
-                        {% if cert.status == 'verified' %}bg-emerald-950 text-emerald-300 border-emerald-800
-                        {% elif cert.status == 'expired' %}bg-amber-950 text-amber-300 border-amber-800
-                        {% elif cert.status == 'rejected' %}bg-red-950 text-red-300 border-red-800
-                        {% else %}bg-slate-800 text-slate-400 border-slate-700{% endif %}">
-                        {{ cert.get_status_display|default:cert.status|title }}
-                    </span>
+                    {% endfor %}
                 </div>
-                <div class="text-[11px] text-slate-600 font-mono mt-2">
-                    {% if cert.credential_id %}ID: {{ cert.credential_id }}{% endif %}
-                    {% if cert.issued_on %} · {{ cert.issued_on|date:"M Y" }}{% endif %}
-                    {% if cert.expires_on %} → {{ cert.expires_on|date:"M Y" }}{% endif %}
+                {% else %}
+                <p class="text-sm text-slate-500">No skills listed yet.</p>
+                {% endif %}
+            </section>
+
+            <!-- 2. Work samples -->
+            <section id="work" class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Work samples</h2>
+                    {% if is_owner %}<a href="{% url 'portfolio-edit' %}?resource=project" class="text-xs text-cyan-400 hover:underline">+ Add</a>{% endif %}
                 </div>
-                <div class="flex gap-2 mt-3 text-[11px]">
-                    {% if cert.credential_url %}
-                    <a href="{{ cert.credential_url }}" target="_blank" rel="noopener noreferrer nofollow"
-                       class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">Issuer link</a>
-                    {% endif %}
-                    {% if cert.document %}
-                    <a href="{{ cert.document.url }}" target="_blank" rel="noopener"
-                       class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">Document</a>
-                    {% endif %}
+                {% if projects %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {% for p in projects %}
+                    <article class="rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex flex-col">
+                        {% if p.cover %}
+                        <img src="{{ p.cover.url }}" alt="{{ p.title }}" class="w-full h-36 object-cover" loading="lazy">
+                        {% else %}
+                        <div class="w-full h-36 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center text-3xl text-slate-700">◆</div>
+                        {% endif %}
+                        <div class="p-4 flex-1 flex flex-col">
+                            <div class="flex items-start justify-between gap-2">
+                                <h3 class="text-sm text-white font-semibold leading-snug">{{ p.title }}</h3>
+                                <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 uppercase shrink-0">{{ p.get_category_display }}</span>
+                            </div>
+                            {% if p.client or p.role %}
+                            <p class="text-[11px] text-slate-500 mt-1">
+                                {% if p.role %}{{ p.role }}{% endif %}
+                                {% if p.client %}{% if p.role %} · {% endif %}{{ p.client }}{% endif %}
+                            </p>
+                            {% endif %}
+                            {% if p.excerpt %}<p class="text-xs text-slate-400 mt-2 leading-relaxed">{{ p.excerpt }}</p>{% endif %}
+                            {% if p.description %}<p class="text-xs text-slate-500 mt-1 leading-relaxed line-clamp-3">{{ p.description }}</p>{% endif %}
+                            {% if p.tool_list %}
+                            <div class="flex flex-wrap gap-1 mt-3">
+                                {% for t in p.tool_list %}
+                                <span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-900">{{ t }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <div class="mt-auto pt-3 flex items-center gap-2 text-[11px]">
+                                {% if p.completed_on %}<span class="text-slate-600 font-mono">{{ p.completed_on|date:"M Y" }}</span>{% endif %}
+                                {% if p.external_url %}
+                                <a href="{{ p.external_url }}" target="_blank" rel="noopener noreferrer nofollow"
+                                   class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">View live</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
                 </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <p class="text-sm text-slate-500">
-            {% if is_owner %}You have not added any external credentials yet.{% else %}No verified external credentials.{% endif %}
-        </p>
-        {% endif %}
+                {% else %}
+                <p class="text-sm text-slate-500">No work samples published yet.</p>
+                {% endif %}
+            </section>
+
+            <!-- 3. Credentials (platform + external, one list) -->
+            <section id="credentials" class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Credentials</h2>
+                    {% if is_owner %}<a href="{% url 'portfolio-edit' %}?resource=cert" class="text-xs text-cyan-400 hover:underline">+ Add</a>{% endif %}
+                </div>
+                <p class="text-[11px] text-slate-500 mb-5">
+                    Certificates issued by {{ PLATFORM_NAME }} and credentials earned elsewhere, in one place.
+                </p>
+
+                {% if credentials %}
+                <ul class="space-y-3">
+                    {% for c in credentials %}
+                    <li class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div class="flex items-start gap-3 min-w-0 flex-1">
+                            <div class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-sm font-bold
+                                {% if c.source_kind == 'platform' %}bg-cyan-950 text-cyan-300 border border-cyan-800
+                                {% else %}bg-slate-800 text-slate-300 border border-slate-700{% endif %}">
+                                {% if c.source_kind == 'platform' %}M{% else %}C{% endif %}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-sm text-white font-medium leading-snug">{{ c.title }}</div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">
+                                    {{ c.subtitle }}
+                                    {% if c.issued %} · {{ c.issued|date:"d M Y" }}{% endif %}
+                                </div>
+                                {% if c.note %}
+                                <div class="text-[11px] text-slate-500 mt-1">{{ c.note }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col items-start sm:items-end gap-1.5 shrink-0">
+                            <span class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide border
+                                {% if c.source_kind == 'platform' %}bg-cyan-950 text-cyan-300 border-cyan-800
+                                {% else %}bg-slate-800 text-slate-400 border-slate-700{% endif %}">
+                                {{ c.source }}
+                            </span>
+                            <span class="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase border
+                                {% if c.status == 'verified' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                                {% elif c.status == 'expired' %}bg-amber-950 text-amber-300 border-amber-800
+                                {% elif c.status == 'revoked' or c.status == 'rejected' %}bg-red-950 text-red-300 border-red-800
+                                {% else %}bg-slate-800 text-slate-400 border-slate-700{% endif %}">
+                                {{ c.status }}
+                            </span>
+                            <div class="flex gap-1.5 mt-0.5">
+                                {% if c.url %}
+                                <a href="{{ c.url }}" target="_blank" rel="noopener"
+                                   class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">
+                                    {% if c.source_kind == 'platform' %}Verify{% else %}Issuer{% endif %}
+                                </a>
+                                {% endif %}
+                                {% if c.qr_url %}
+                                <a href="{{ c.qr_url }}" target="_blank" rel="noopener"
+                                   class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">QR</a>
+                                {% endif %}
+                                {% if c.document %}
+                                <a href="{{ c.document }}" target="_blank" rel="noopener"
+                                   class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 transition">File</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-sm text-slate-500">No credentials added yet.</p>
+                {% endif %}
+            </section>
+
+            <!-- 4. Education -->
+            <section id="education" class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Education</h2>
+                    {% if is_owner %}<a href="{% url 'portfolio-edit' %}?resource=entry" class="text-xs text-cyan-400 hover:underline">+ Add</a>{% endif %}
+                </div>
+                {% if education %}
+                <ol class="relative border-l border-slate-800 ml-2 space-y-5">
+                    {% for e in education %}
+                    <li class="ml-5 relative">
+                        <span class="absolute -left-[27px] top-1 w-3 h-3 rounded-full bg-cyan-500 border-2 border-slate-900"></span>
+                        <div class="flex flex-wrap items-baseline gap-x-3">
+                            <span class="text-sm text-white font-semibold">{{ e.institution }}</span>
+                            <span class="text-[11px] font-mono text-slate-500">{{ e.period }}</span>
+                        </div>
+                        {% if e.title %}<div class="text-xs text-cyan-400 mt-0.5">{{ e.title }}</div>{% endif %}
+                        {% if e.location %}<div class="text-[11px] text-slate-600">{{ e.location }}</div>{% endif %}
+                        {% if e.details %}<p class="text-xs text-slate-400 mt-1.5 leading-relaxed">{{ e.details }}</p>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ol>
+                {% else %}
+                <p class="text-sm text-slate-500">No education added yet.</p>
+                {% endif %}
+            </section>
+
+            <!-- 5. Experience -->
+            <section id="experience" class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Experience</h2>
+                    {% if is_owner %}<a href="{% url 'portfolio-edit' %}?resource=entry" class="text-xs text-cyan-400 hover:underline">+ Add</a>{% endif %}
+                </div>
+                {% if experience %}
+                <ol class="relative border-l border-slate-800 ml-2 space-y-5">
+                    {% for e in experience %}
+                    <li class="ml-5 relative">
+                        <span class="absolute -left-[27px] top-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-900"></span>
+                        <div class="flex flex-wrap items-baseline gap-x-3">
+                            <span class="text-sm text-white font-semibold">{{ e.institution }}</span>
+                            <span class="text-[11px] font-mono text-slate-500">{{ e.period }}</span>
+                        </div>
+                        {% if e.title %}<div class="text-xs text-emerald-400 mt-0.5">{{ e.title }}</div>{% endif %}
+                        {% if e.location %}<div class="text-[11px] text-slate-600">{{ e.location }}</div>{% endif %}
+                        {% if e.details %}<p class="text-xs text-slate-400 mt-1.5 leading-relaxed">{{ e.details }}</p>{% endif %}
+                    </li>
+                    {% endfor %}
+                </ol>
+                {% else %}
+                <p class="text-sm text-slate-500">No experience added yet.</p>
+                {% endif %}
+            </section>
+
+            <!-- 6. Learning -->
+            <section id="learning" class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Learning on {{ PLATFORM_NAME }}</h2>
+                </div>
+                {% if enrollments %}
+                <div class="space-y-3">
+                    {% for e in enrollments %}
+                    <div class="flex items-center gap-4 p-3 rounded-lg bg-slate-950 border border-slate-800">
+                        <div class="min-w-0 flex-1">
+                            <a href="{% url 'course-detail' slug=e.course.slug %}"
+                               class="text-xs text-slate-200 hover:text-cyan-400 font-medium block truncate">{{ e.course.title }}</a>
+                            <div class="text-[10px] text-slate-600 mt-0.5">
+                                {{ e.get_status_display }} · enrolled {{ e.enrolled_at|date:"d M Y" }}
+                            </div>
+                        </div>
+                        <div class="w-24 shrink-0">
+                            <div class="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                                <div class="h-full rounded-full bg-cyan-500" style="width: {{ e.progress_pct }}%"></div>
+                            </div>
+                            <div class="text-[10px] text-slate-500 font-mono text-right mt-0.5">{{ e.progress_pct }}%</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-slate-500">No courses enrolled yet.</p>
+                {% endif %}
+            </section>
+
+            <!-- 7. Profiles -->
+            <section id="profiles" class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider">Profiles &amp; links</h2>
+                    {% if is_owner %}<a href="{% url 'portfolio-edit' %}?resource=link" class="text-xs text-cyan-400 hover:underline">+ Add</a>{% endif %}
+                </div>
+                {% if links %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {% for link in links %}
+                    <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer nofollow"
+                       class="flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-950 border border-slate-800 transition
+                       {% if link.is_freelance %}hover:border-amber-700{% else %}hover:border-cyan-700{% endif %}">
+                        <span class="min-w-0">
+                            <span class="text-xs text-slate-200 font-medium block truncate">{{ link.label }}</span>
+                            <span class="text-[10px] text-slate-600 font-mono block truncate">{{ link.url }}</span>
+                        </span>
+                        <span class="text-slate-700 shrink-0">&rarr;</span>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% if freelance_links %}
+                <p class="text-[11px] text-slate-600 mt-3">
+                    ⚡ Freelance marketplace: {% for l in freelance_links %}{{ l.label }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                </p>
+                {% endif %}
+                {% else %}
+                <p class="text-sm text-slate-500">No profile links yet.</p>
+                {% endif %}
+            </section>
+        </main>
     </div>
 </div>
 {% endblock %}

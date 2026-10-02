@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Subscribe to {{ plan.name }} — Myanmar E-Learning{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'pricing' %}" class="text-decoration-none">Pricing</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Subscribe: {{ plan.name }}</li>
+                </ol>
+            </nav>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-primary text-white p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-white text-primary rounded-pill px-3 py-1 mb-2 fw-semibold">Membership Plan</span>
+                            <h2 class="h3 fw-bold mb-0">{{ plan.name }} Plan</h2>
+                        </div>
+                        <div class="text-end">
+                            <span class="fs-4 fw-bold">{{ plan.monthly_price|intcomma }} {{ plan.currency }}</span>
+                            <div class="small opacity-75">per month</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    {% if pending_payment %}
+                        <div class="alert alert-warning border-0 rounded-3 mb-4">
+                            <h5 class="alert-heading fw-bold mb-1"><i class="bi bi-clock-history me-2"></i>Payment Under Review</h5>
+                            <p class="mb-0">
+                                You have already submitted a payment of <strong>{{ pending_payment.amount|intcomma }} {{ pending_payment.currency }}</strong>
+                                for this plan on {{ pending_payment.created_at|date:"M d, Y" }}.
+                                An administrator is currently reviewing your receipt and will activate your membership soon.
+                            </p>
+                        </div>
+                    {% endif %}
+
+                    <!-- Local Payment Information (Myanmar) -->
+                    <div class="bg-light p-4 rounded-4 mb-4 border">
+                        <h5 class="fw-bold mb-3"><i class="bi bi-wallet2 text-primary me-2"></i>Payment Instructions (Myanmar)</h5>
+                        <p class="text-muted small mb-3">
+                            Please transfer the subscription fee to any of our official payment accounts below and upload the screenshot receipt.
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="bg-white p-3 rounded-3 border">
+                                    <div class="fw-bold text-primary mb-1">KBZ Pay (KPay)</div>
+                                    <div class="fs-5 fw-semibold">09-974288199</div>
+                                    <small class="text-muted">Account Name: Myanmar E-Learning</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="bg-white p-3 rounded-3 border">
+                                    <div class="fw-bold text-info mb-1">Wave Money / Wave Pay</div>
+                                    <div class="fs-5 fw-semibold">09-974288199</div>
+                                    <small class="text-muted">Account Name: Myanmar E-Learning</small>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="bg-white p-3 rounded-3 border">
+                                    <div class="fw-bold text-dark mb-1">Bank Transfer (KBZ / CB / AYA Bank)</div>
+                                    <div class="text-muted small">
+                                        KBZ Bank: <strong>012345678901234</strong> | AYA Bank: <strong>009876543210</strong> (Myanmar E-Learning)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Submission Form -->
+                    <form method="post" enctype="multipart/form-data" class="needs-validation">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Billing Cycle</label>
+                            {{ form.billing_cycle }}
+                            <div class="form-text">
+                                Monthly: {{ plan.monthly_price|intcomma }} MMK/mo | Annual: {{ plan.yearly_price|intcomma }} MMK/yr
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Payment Method</label>
+                            {{ form.method }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Transaction Reference / Phone</label>
+                            {{ form.reference }}
+                            <div class="form-text">Enter your transaction ID, KPay/WavePay phone number, or bank reference.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Upload Payment Receipt (Screenshot)</label>
+                            {{ form.receipt }}
+                            <div class="form-text">Max file size: 10 MB (PNG, JPG, or PDF).</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Notes (Optional)</label>
+                            {{ form.note }}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary py-3 rounded-3 fw-bold fs-5 shadow-sm">
+                                Submit Subscription Payment
+                            </button>
+                            <a href="{% url 'pricing' %}" class="btn btn-link text-muted">Back to Plans</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

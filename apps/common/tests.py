@@ -281,10 +281,10 @@ class RoleBasedAccessTests(TestCase):
         )
 
     def test_07_role_values_are_three(self):
-        """The platform exposes exactly ADMIN / TEACHER / STUDENT."""
+        """The platform exposes the supported roles: ADMIN / TEACHER / STUDENT / PARTNER."""
         self.assertEqual(
             [value for value, _ in UserRole.choices],
-            ['admin', 'teacher', 'student']
+            ['admin', 'teacher', 'student', 'partner']
         )
 
     def test_08_dashboard_routes_resolve(self):
@@ -399,6 +399,9 @@ class CourseAuthoringAndEnrollmentTests(TestCase):
             username='p2_teacher', email='p2t@mel.edu.mm',
             role=UserRole.TEACHER, password='StrongCyberPass2026!'
         )
+        self.course.owner = self.teacher
+        self.course.is_official = False
+        self.course.save(update_fields=['owner', 'is_official'])
         self.admin = User.objects.create_user(
             username='p2_admin', email='p2a@mel.edu.mm',
             role=UserRole.ADMIN, password='StrongCyberPass2026!'
@@ -573,6 +576,9 @@ class AssessmentAndGradingTests(TestCase):
             username='a3_teacher', email='a3t@mel.edu.mm',
             role=UserRole.TEACHER, password='StrongCyberPass2026!'
         )
+        self.course.owner = self.teacher
+        self.course.is_official = False
+        self.course.save(update_fields=['owner', 'is_official'])
         self.admin = User.objects.create_user(
             username='a3_admin', email='a3a@mel.edu.mm',
             role=UserRole.ADMIN, password='StrongCyberPass2026!'
@@ -2373,7 +2379,7 @@ class RegistrationAndRoleTests(TestCase):
         self.assertEqual(self.client.session['_auth_user_id'], str(user.pk))
         self.assertIn(reverse('dashboard'), response.request['PATH_INFO'])
 
-    def test_128_teacher_application_is_created_inactive(self):
+    def test_128_teacher_application_is_created_active_and_pending_approval(self):
         response = self.client.post(
             self.url,
             self.payload(username='applicant', email='a@mel.edu.mm', role='teacher',
@@ -2383,22 +2389,27 @@ class RegistrationAndRoleTests(TestCase):
         self.assertEqual(response.status_code, 200)
         user = User.objects.get(username='applicant')
         self.assertEqual(user.role, 'teacher')
-        self.assertFalse(user.is_active)
+        self.assertTrue(user.is_active)
+        self.assertEqual(user.active_mode, 'student')
+        self.assertFalse(user.teacher_profile.is_verified)
         self.assertTrue(user.has_usable_password())
         self.assertTrue(hasattr(user, 'teacher_profile'))
         self.assertEqual(user.teacher_profile.department, 'Computing')
         self.assertEqual(user.teacher_profile.title, 'Senior Lecturer')
-        # Not signed in, and parked on the holding page.
-        self.assertNotIn('_auth_user_id', self.client.session)
+        # Landed on registration received page with teacher details.
         self.assertContains(response, 'Application received')
         self.assertContains(response, 'teacher')
 
-    def test_129_pending_teacher_cannot_sign_in(self):
+    def test_129_teacher_can_sign_in_immediately(self):
         self.client.post(self.url, self.payload(
             username='blocked', email='b@mel.edu.mm', role='teacher'))
-        self.assertFalse(
+        self.assertTrue(
             self.client.login(username='blocked', password='Passw0rd!23')
         )
+        user = User.objects.get(username='blocked')
+        self.assertTrue(user.is_active)
+        self.assertEqual(user.active_mode, 'student')
+        self.assertFalse(user.teacher_profile.is_verified)
 
     def test_130_console_activation_lets_the_teacher_sign_in(self):
         self.client.post(self.url, self.payload(

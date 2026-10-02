@@ -1,0 +1,55 @@
+{
+  "folder": "04_full_stack_web_computer_science",
+  "slug": "full-stack-web-computer-science",
+  "title": "Full-Stack Web Engineering & Computer Science Foundations",
+  "subject": "Computer Science",
+  "level": "all_levels",
+  "duration_months": 6,
+  "official": true,
+  "credential": "Professional Certificate",
+  "description": "Comprehensive software engineering curriculum spanning computing systems, algorithms, modern frontend user interfaces, relational databases, backend APIs, and cloud hosting.",
+  "prerequisites": "Basic computer familiarity.",
+  "target_audience": "Aspiring Full-Stack Software Engineers and Web Developers.",
+  "modules": [
+    {
+      "order": 1,
+      "code": "FS-01",
+      "title": "Computing Foundations, Algorithms & Data Structures",
+      "lessons": [
+        "Algorithms, Big-O Time Complexity & Memory",
+        "Data Structures: Arrays, Linked Lists & Hash Maps",
+        "Searching & Sorting Algorithms"
+      ]
+    },
+    {
+      "order": 2,
+      "code": "FS-02",
+      "title": "Modern Frontend Development & Interactive UIs",
+      "lessons": [
+        "Semantic HTML5, CSS Modern Grid & Flexbox",
+        "Modern JavaScript (ES6+), DOM & Async Fetch",
+        "Frontend Component Architecture with React/Alpine"
+      ]
+    },
+    {
+      "order": 3,
+      "code": "FS-03",
+      "title": "Relational Databases, SQL & Backend Architecture",
+      "lessons": [
+        "Relational Database Design & Normalization",
+        "SQL Queries, Joins, Indexing & ACID Transactions",
+        "Backend Architecture, RESTful Routing & Middleware"
+      ]
+    },
+    {
+      "order": 4,
+      "code": "FS-04",
+      "title": "Full-Stack Integration, Security & Cloud Deployment",
+      "lessons": [
+        "Full-Stack API Integration & State Management",
+        "Web Security Essentials: CORS, CSRF & Input Validation",
+        "Containerizing & Deploying Web Applications"
+      ]
+    }
+  ]
+}

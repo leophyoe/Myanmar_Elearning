@@ -1,0 +1,45 @@
+{
+  "folder": "05_ict_network_infrastructure",
+  "slug": "ict-network-infrastructure",
+  "title": "Professional Certificate in Enterprise ICT & Network Infrastructure",
+  "subject": "Information & Communication Technology (ICT)",
+  "level": "beginner",
+  "duration_months": 4,
+  "official": true,
+  "credential": "Professional Certificate",
+  "description": "Hardware assembly, diagnostic troubleshooting, TCP/IP network topology design, subnetting, router/switch configuration, and cloud office administration.",
+  "prerequisites": "None.",
+  "target_audience": "IT Support Technicians, Helpdesk Specialists, and Network Administrators.",
+  "modules": [
+    {
+      "order": 1,
+      "code": "ICT-01",
+      "title": "Computer Systems & Hardware Architecture",
+      "lessons": [
+        "Computer Hardware Architecture & Component Assembly",
+        "Operating Systems Setup (Windows & Linux)",
+        "Hardware Diagnostics & Systematic Troubleshooting"
+      ]
+    },
+    {
+      "order": 2,
+      "code": "ICT-02",
+      "title": "TCP/IP Networking, Routing & Switching",
+      "lessons": [
+        "Network Topologies, OSI Reference & TCP/IP Model",
+        "IPv4 Addressing, Subnetting & CIDR Calculation",
+        "Configuring Local Area Networks, Routers & Wi-Fi"
+      ]
+    },
+    {
+      "order": 3,
+      "code": "ICT-03",
+      "title": "Cloud Productivity & Enterprise IT Operations",
+      "lessons": [
+        "Enterprise Identity Management & Access Controls",
+        "Cloud Office Suites & Backup Automation",
+        "IT Service Management & Helpdesk Operations"
+      ]
+    }
+  ]
+}

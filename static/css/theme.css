@@ -179,3 +179,54 @@
 :root[data-theme="dark"] .theme-to-dark { display: none; }
 :root[data-theme="light"] .theme-to-light { display: none; }
 :root[data-theme="light"] .theme-to-dark { display: inline; }
+
+/* --- Language switch affordances (i18n) ----------------------------------- */
+:root:not([data-lang="my"]) .lang-my,
+:root[data-lang="en"] .lang-my { display: none !important; }
+
+:root:not([data-lang="my"]) .lang-en,
+:root[data-lang="en"] .lang-en { display: inline !important; }
+
+:root:not([data-lang="my"]) .lang-my-block,
+:root[data-lang="en"] .lang-my-block { display: none !important; }
+
+:root:not([data-lang="my"]) .lang-en-block,
+:root[data-lang="en"] .lang-en-block { display: block !important; }
+
+:root:not([data-lang="my"]) .lang-my-flex,
+:root[data-lang="en"] .lang-my-flex { display: none !important; }
+
+:root:not([data-lang="my"]) .lang-en-flex,
+:root[data-lang="en"] .lang-en-flex { display: flex !important; }
+
+:root[data-lang="my"] .lang-en { display: none !important; }
+:root[data-lang="my"] .lang-my { display: inline !important; }
+:root[data-lang="my"] .lang-en-block { display: none !important; }
+:root[data-lang="my"] .lang-my-block { display: block !important; }
+:root[data-lang="my"] .lang-en-flex { display: none !important; }
+:root[data-lang="my"] .lang-my-flex { display: flex !important; }
+
+/* Language switcher indicators */
+:root:not([data-lang="my"]) .lang-badge-en,
+:root[data-lang="en"] .lang-badge-en {
+    color: #38bdf8;
+    font-weight: 700;
+}
+:root:not([data-lang="my"]) .lang-badge-my,
+:root[data-lang="en"] .lang-badge-my {
+    color: #94a3b8;
+    font-weight: 400;
+}
+:root[data-lang="my"] .lang-badge-en {
+    color: #94a3b8;
+    font-weight: 400;
+}
+:root[data-lang="my"] .lang-badge-my {
+    color: #38bdf8;
+    font-weight: 700;
+}
+
+/* Myanmar font support */
+:root[data-lang="my"] {
+    font-family: 'Pyidaungsu', 'Padauk', 'Noto Sans Myanmar', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}

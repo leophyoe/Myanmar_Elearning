@@ -1,6 +1,7 @@
 from django import forms
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
+from django.utils.text import slugify
 from .models import Subject, Course, Module, Lesson, LiveSession
 
 INPUT = 'w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500'
@@ -12,14 +13,41 @@ class SubjectForm(forms.ModelForm):
         model = Subject
         fields = ('title', 'slug', 'description', 'icon_name', 'kind', 'order', 'is_active')
         widgets = {
-            'title': forms.TextInput(attrs={'class': INPUT}),
-            'slug': forms.TextInput(attrs={'class': INPUT}),
-            'description': forms.Textarea(attrs={'class': TEXTAREA, 'rows': 3}),
-            'icon_name': forms.TextInput(attrs={'class': INPUT}),
+            'title': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'e.g. Python Programming, Mathematics, AI'}),
+            'slug': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'Auto-generated from title if blank'}),
+            'description': forms.Textarea(attrs={'class': TEXTAREA, 'rows': 3, 'placeholder': 'Overview of this subject'}),
+            'icon_name': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'e.g. book-open, code-slash, shield-check'}),
             'kind': forms.Select(attrs={'class': INPUT}),
             'order': forms.NumberInput(attrs={'class': INPUT}),
             'is_active': forms.CheckboxInput(attrs={'class': 'accent-cyan-500'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['slug'].required = False
+        self.fields['icon_name'].required = False
+
+    def clean_slug(self):
+        slug = (self.cleaned_data.get('slug') or '').strip()
+        if not slug:
+            title = self.cleaned_data.get('title', '')
+            base_slug = slugify(title) or 'subject'
+            slug = base_slug
+            counter = 2
+            qs = Subject.objects.filter(slug=slug)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            while qs.exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+                qs = Subject.objects.filter(slug=slug)
+                if self.instance and self.instance.pk:
+                    qs = qs.exclude(pk=self.instance.pk)
+        return slug
+
+    def clean_icon_name(self):
+        icon = (self.cleaned_data.get('icon_name') or '').strip()
+        return icon if icon else 'book-open'
 
 
 class CourseForm(forms.ModelForm):
@@ -27,15 +55,16 @@ class CourseForm(forms.ModelForm):
         model = Course
         fields = (
             'title', 'slug', 'subject', 'description', 'duration_months',
-            'is_published', 'thumbnail', 'price', 'billing_period',
+            'is_published', 'is_official', 'thumbnail', 'price', 'billing_period',
         )
         widgets = {
-            'title': forms.TextInput(attrs={'class': INPUT}),
-            'slug': forms.TextInput(attrs={'class': INPUT}),
+            'title': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'Course Title'}),
+            'slug': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'Auto-generated from title if blank'}),
             'subject': forms.Select(attrs={'class': INPUT}),
             'description': forms.Textarea(attrs={'class': TEXTAREA, 'rows': 4}),
             'duration_months': forms.NumberInput(attrs={'class': INPUT}),
             'is_published': forms.CheckboxInput(attrs={'class': 'accent-cyan-500'}),
+            'is_official': forms.CheckboxInput(attrs={'class': 'accent-cyan-500'}),
             'thumbnail': forms.ClearableFileInput(attrs={'class': INPUT}),
             'price': forms.NumberInput(
                 attrs={'class': INPUT, 'min': '0', 'step': '100',
@@ -45,9 +74,44 @@ class CourseForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         # A blank price simply means "free" rather than a validation error.
         self.fields['price'].required = False
+        self.fields['slug'].required = False
+
+        # If user is not admin and course is not already official, hide or disable is_official
+        is_user_admin = bool(self.user and getattr(self.user, 'is_admin', False))
+        if not is_user_admin and 'is_official' in self.fields:
+            if not getattr(self.instance, 'is_official', False):
+                self.fields['is_official'].widget = forms.HiddenInput()
+                self.fields['is_official'].required = False
+            else:
+                self.fields['is_official'].disabled = True
+
+    def clean_is_official(self):
+        is_user_admin = bool(self.user and getattr(self.user, 'is_admin', False))
+        if not is_user_admin:
+            return False
+        return self.cleaned_data.get('is_official', False)
+
+    def clean_slug(self):
+        slug = (self.cleaned_data.get('slug') or '').strip()
+        if not slug:
+            title = self.cleaned_data.get('title', '')
+            base_slug = slugify(title) or 'course'
+            slug = base_slug
+            counter = 2
+            qs = Course.objects.filter(slug=slug)
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            while qs.exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+                qs = Course.objects.filter(slug=slug)
+                if self.instance and self.instance.pk:
+                    qs = qs.exclude(pk=self.instance.pk)
+        return slug
 
     def clean_price(self):
         price = self.cleaned_data.get('price')
@@ -397,10 +461,11 @@ class LiveSessionForm(forms.ModelForm):
         request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
         if request is not None and not request.user.is_admin:
-            # Teachers only schedule sessions on courses they own.
+            # Teachers only schedule sessions on courses they own (not official platform courses).
             self.fields['course'].queryset = Course.objects.filter(
-                owner=request.user
-            ) | Course.objects.filter(owner__isnull=True)
+                owner=request.user,
+                is_official=False,
+            )
 
     def clean_starts_at(self):
         starts_at = self.cleaned_data.get('starts_at')

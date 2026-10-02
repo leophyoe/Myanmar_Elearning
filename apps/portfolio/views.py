@@ -2,10 +2,11 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import IntegrityError
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.views.generic import DetailView, View
+from django.views.generic import DetailView, ListView, View
 
 from apps.common.services import absolute_uri, qr_response
 from apps.certificates.models import Certificate
@@ -50,8 +51,82 @@ def _date_key(value, fallback='1970-01-01'):
 
 
 # ----------------------------------------------------------------------
-# Public portfolio
+# Public portfolio directory & individual portfolio
 # ----------------------------------------------------------------------
+class PortfolioListView(ListView):
+    """
+    Public directory of student, instructor and associate portfolios.
+    Allows searching by query, filtering by role, and filtering by skills.
+    Publicly accessible to guests and authenticated users.
+    """
+    model = User
+    template_name = 'portfolio/list.html'
+    context_object_name = 'portfolio_users'
+    paginate_by = 12
+
+    def get_queryset(self):
+        qs = User.objects.filter(is_active=True).select_related(
+            'student_profile', 'teacher_profile'
+        ).prefetch_related(
+            'skills', 'portfolio_projects', 'certificates', 'external_certificates'
+        )
+
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(username__icontains=q) |
+                Q(first_name__icontains=q) |
+                Q(last_name__icontains=q) |
+                Q(account_id__icontains=q) |
+                Q(student_profile__bio__icontains=q) |
+                Q(student_profile__student_id__icontains=q) |
+                Q(skills__name__icontains=q)
+            ).distinct()
+
+        role = self.request.GET.get('role', '').strip().lower()
+        if role == 'student':
+            qs = qs.filter(role='student')
+        elif role in ('teacher', 'instructor'):
+            qs = qs.filter(role__in=['teacher', 'instructor'])
+        elif role == 'associate':
+            qs = qs.filter(is_associate=True)
+
+        skill = self.request.GET.get('skill', '').strip()
+        if skill:
+            qs = qs.filter(skills__name__iexact=skill).distinct()
+
+        return qs.order_by('-is_associate', '-student_profile__points', 'username')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        q = self.request.GET.get('q', '').strip()
+        role = self.request.GET.get('role', '').strip().lower()
+        skill = self.request.GET.get('skill', '').strip()
+
+        popular_skills = (
+            Skill.objects.values('name')
+            .annotate(user_count=Count('owner', distinct=True))
+            .order_by('-user_count', 'name')[:15]
+        )
+
+        total_active = User.objects.filter(is_active=True).count()
+        students_count = User.objects.filter(is_active=True, role='student').count()
+        teachers_count = User.objects.filter(is_active=True, role__in=['teacher', 'instructor']).count()
+        associates_count = User.objects.filter(is_active=True, is_associate=True).count()
+
+        context.update({
+            'q': q,
+            'role': role,
+            'skill': skill,
+            'popular_skills': popular_skills,
+            'total_active': total_active,
+            'students_count': students_count,
+            'teachers_count': teachers_count,
+            'associates_count': associates_count,
+        })
+        return context
+
+
 class PortfolioDetailView(DetailView):
     """
     Public CV-style portfolio, laid out like the academicpages template:

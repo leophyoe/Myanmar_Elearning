@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Associate Credential Verification - {{ PLATFORM_NAME }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% include 'includes/theme_head.html' %}
+</head>
+<body class="bg-[#080d19] text-slate-200 min-h-screen flex items-center justify-center p-4 font-mono">
+
+    <div class="max-w-xl w-full p-8 rounded-2xl bg-slate-900 border border-amber-600/80 shadow-2xl relative overflow-hidden text-center">
+        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-500"></div>
+
+        <!-- Verification Status Badge -->
+        {% if revoked %}
+        <div class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-red-950 border border-red-700 text-red-300 text-xs font-bold uppercase tracking-wider mb-6">
+            <span>✕</span>
+            <span>Credential Revoked</span>
+        </div>
+        {% else %}
+        <div class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-amber-950 border border-amber-600 text-amber-300 text-xs font-bold uppercase tracking-wider mb-6">
+            <span>★</span>
+            <span>VERIFIED ACADEMIC MERIT CREDENTIAL</span>
+        </div>
+        {% endif %}
+
+        <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">{{ credential.title }}</h1>
+        <p class="text-xs text-amber-400 font-mono mb-6">Serial: {{ credential.credential_code }}</p>
+
+        <!-- Credential Details Box -->
+        <div class="p-6 rounded-xl bg-slate-950 border border-slate-800 text-left text-xs space-y-3 mb-6">
+            <div class="flex justify-between border-b border-slate-900 pb-2">
+                <span class="text-slate-500">Recipient Name:</span>
+                <span class="text-white font-bold">{{ credential.student.get_full_name|default:credential.student.username }}</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-900 pb-2">
+                <span class="text-slate-500">Academic Recognition:</span>
+                <span class="text-amber-400 font-bold">Associate of Myanmar E-Learning</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-900 pb-2">
+                <span class="text-slate-500">Issuing Institution:</span>
+                <span class="text-white font-semibold">{{ PLATFORM_NAME }}</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-900 pb-2">
+                <span class="text-slate-500">Date Conferred:</span>
+                <span class="text-slate-300">{{ credential.awarded_at|date:"F d, Y" }}</span>
+            </div>
+            <div class="flex justify-between border-b border-slate-900 pb-2">
+                <span class="text-slate-500">Record Status:</span>
+                {% if revoked %}
+                <span class="text-red-400 font-bold">REVOKED</span>
+                {% else %}
+                <span class="text-emerald-400 font-bold">VALID &amp; ACTIVE</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Earned Benchmarks Grid -->
+        <div class="p-5 rounded-xl bg-slate-950 border border-slate-800 mb-6 text-left">
+            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+                Satisfied Academic &amp; Practical Benchmarks
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+                <div class="p-3 rounded-lg bg-slate-900 border border-slate-800">
+                    <div class="text-slate-500 text-[10px]">Courses Completed</div>
+                    <div class="text-lg font-bold text-cyan-400">{{ credential.courses_completed_count }}</div>
+                </div>
+                <div class="p-3 rounded-lg bg-slate-900 border border-slate-800">
+                    <div class="text-slate-500 text-[10px]">Labs &amp; Challenges</div>
+                    <div class="text-lg font-bold text-emerald-400">{{ credential.labs_solved_count }}</div>
+                </div>
+                <div class="p-3 rounded-lg bg-slate-900 border border-slate-800">
+                    <div class="text-slate-500 text-[10px]">Projects &amp; Capstones</div>
+                    <div class="text-lg font-bold text-purple-400">{{ credential.capstones_completed_count }}</div>
+                </div>
+                <div class="p-3 rounded-lg bg-slate-900 border border-slate-800">
+                    <div class="text-slate-500 text-[10px]">Active Learning Hours</div>
+                    <div class="text-lg font-bold text-amber-400">{{ credential.active_learning_hours }}+ hrs</div>
+                </div>
+            </div>
+        </div>
+
+        {% if revoked and credential.revocation_reason %}
+        <p class="text-xs text-red-300 bg-red-950 border border-red-800 rounded-lg px-3 py-2 mb-6 text-left">
+            Reason: {{ credential.revocation_reason }}
+        </p>
+        {% endif %}
+
+        <!-- QR + lookup -->
+        <div class="flex flex-col sm:flex-row items-center gap-5 mb-6 p-4 rounded-xl bg-slate-950 border border-slate-800 text-left">
+            <img src="{% url 'associate-qr' cred_id=credential.pk %}"
+                 alt="QR code for this associate credential"
+                 width="120" height="120"
+                 class="shrink-0 rounded bg-white p-1.5" loading="lazy">
+            <div class="min-w-0 text-xs space-y-2">
+                <p class="text-slate-400 leading-relaxed">
+                    Scan this code to verify this official Associate recognition record, or share the direct link.
+                </p>
+                <p class="text-[10px] text-slate-600 font-mono break-all">{{ verify_url }}</p>
+                <a href="{% url 'associate-qr' cred_id=credential.pk %}" download="{{ credential.credential_code }}.png"
+                   class="inline-block text-[11px] text-amber-400 hover:underline">Download QR (PNG)</a>
+            </div>
+        </div>
+
+        <p class="text-[10px] text-slate-500 mb-6">
+            Associate status is a prestigious academic benchmark conferred upon students demonstrating verified
+            curriculum mastery, practical engineering/security competence, reviewed project delivery, and committed study hours.
+        </p>
+
+        <div class="flex items-center justify-center gap-4 text-xs">
+            {% include 'includes/theme_toggle.html' %}
+            <a href="{% url 'certificate-lookup' %}" class="text-amber-400 hover:underline">
+                Lookup another credential
+            </a>
+            <span class="text-slate-700">|</span>
+            <a href="/" class="text-amber-400 hover:underline">
+                &larr; Return to {{ PLATFORM_NAME }}
+            </a>
+        </div>
+    </div>
+
+</body>
+</html>

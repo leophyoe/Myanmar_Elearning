@@ -1,0 +1,169 @@
+{
+  "folder": "01_diploma_in_cyber_security",
+  "slug": "diploma-in-cyber-security",
+  "title": "Diploma in Cyber Security",
+  "subject": "Cyber Security & Ethical Hacking",
+  "level": "all_levels",
+  "duration_months": 10,
+  "official": true,
+  "credential": "Graduate Professional Diploma",
+  "description": "A rigorous 10-month professional diploma combining theoretical defense engineering, hands-on offensive security laboratories, CTF challenge solving, SOC/SIEM operations, and a capstone enterprise cyber range final project.",
+  "prerequisites": "Basic computing, hardware familiarity, and high school mathematics.",
+  "target_audience": "Aspiring Cybersecurity Specialists, SOC Analysts, Penetration Testers, and IT Security Administrators.",
+  "modules": [
+    {
+      "order": 1,
+      "code": "MOD-01",
+      "title": "Introduction to Cyber Security",
+      "lessons": [
+        "Cybersecurity Terminology & The CIA Triad",
+        "Threats, Vulnerabilities & Risk Management",
+        "Phishing, Social Engineering & Password Attacks",
+        "Legal Responsibilities & Professional Ethics"
+      ]
+    },
+    {
+      "order": 2,
+      "code": "MOD-02",
+      "title": "Computer Architecture & Systems Fundamentals",
+      "lessons": [
+        "CPU Registers, Memory Hierarchy & Execution Flow",
+        "Data Representation: Binary, Hex & Endianness",
+        "Virtualization Architecture & Hypervisors",
+        "BIOS/UEFI, Secure Boot & Hardware Security Modules"
+      ]
+    },
+    {
+      "order": 3,
+      "code": "MOD-03",
+      "title": "Linux for Cyber Security Professionals",
+      "lessons": [
+        "Linux Directory Hierarchy & Bash Commands",
+        "Permissions, ACLs, SUID & Sockets",
+        "Bash Scripting for Security Automation",
+        "Linux Process Management & Systemd Services"
+      ]
+    },
+    {
+      "order": 4,
+      "code": "MOD-04",
+      "title": "Computer Networking Fundamentals & Protocols",
+      "lessons": [
+        "OSI 7 Layers & TCP/IP Model Deep Dive",
+        "IPv4, IPv6, Subnetting & CIDR Calculations",
+        "Core Protocols: ARP, DHCP, DNS, HTTP/S, SSH",
+        "Routing, Switching, VLANs & NAT Operations"
+      ]
+    },
+    {
+      "order": 5,
+      "code": "MOD-05",
+      "title": "Network Security, Firewalls & Monitoring",
+      "lessons": [
+        "Firewalls: Packet Filtering, Stateful & Next-Gen",
+        "Intrusion Detection & Prevention (Snort/Suricata)",
+        "Packet Analysis with Wireshark & Tshark",
+        "Network Hardening & Micro-segmentation"
+      ]
+    },
+    {
+      "order": 6,
+      "code": "MOD-06",
+      "title": "Cryptography & Public Key Infrastructure",
+      "lessons": [
+        "Symmetric Cryptography (AES, ChaCha20)",
+        "Asymmetric Cryptography (RSA, ECC, Diffie-Hellman)",
+        "Cryptographic Hash Functions & Message Digests",
+        "PKI, Digital Certificates & TLS/SSL Architecture"
+      ]
+    },
+    {
+      "order": 7,
+      "code": "MOD-07",
+      "title": "Identity, Access Management & Authentication",
+      "lessons": [
+        "Authentication Factors: Passwords, OTP & FIDO2",
+        "Identity Federation: OAuth 2.0, OpenID Connect & SAML",
+        "Active Directory Architecture & Kerberos",
+        "Privileged Access Management & Least Privilege"
+      ]
+    },
+    {
+      "order": 8,
+      "code": "MOD-08",
+      "title": "Vulnerability Assessment & Penetration Testing",
+      "lessons": [
+        "Ethical Hacking Methodologies & Legal Scoping",
+        "Reconnaissance & OSINT Information Gathering",
+        "Vulnerability Scanning with Nmap & Nessus",
+        "Exploitation Frameworks & Metasploit Fundamentals"
+      ]
+    },
+    {
+      "order": 9,
+      "code": "MOD-09",
+      "title": "Web Application Security & OWASP Top 10",
+      "lessons": [
+        "HTTP Request Architecture & Browser Security",
+        "Injection Attacks: SQLi, NoSQLi & OS Command Injection",
+        "Broken Authentication & Session Hijacking",
+        "Cross-Site Scripting (XSS) & CSRF Exploitation"
+      ]
+    },
+    {
+      "order": 10,
+      "code": "MOD-10",
+      "title": "SOC Operations, SIEM & Incident Response",
+      "lessons": [
+        "SOC Architecture, Roles & MITRE ATT&CK Framework",
+        "SIEM Deployment & Log Ingestion with Wazuh",
+        "Alert Triage, Correlation & Threat Hunting",
+        "Incident Response: Containment, Eradication & Recovery"
+      ]
+    },
+    {
+      "order": 11,
+      "code": "MOD-11",
+      "title": "Digital Forensics & Malware Fundamentals",
+      "lessons": [
+        "Digital Evidence Handling & Chain of Custody",
+        "Filesystem Artifacts & Browser Forensics",
+        "Volatile Memory Forensics & Process Injection",
+        "Static Malware Analysis & IOC Extraction"
+      ]
+    },
+    {
+      "order": 12,
+      "code": "MOD-12",
+      "title": "Python for Cyber Security",
+      "lessons": [
+        "Python Scripting Fundamentals & Regex for Security",
+        "Socket Programming: Port Scanners & Banner Grabbers",
+        "Security Automation: Log Analyzers & File Integrity Checkers",
+        "Threat Intelligence APIs & Automated IOC Lookup"
+      ]
+    },
+    {
+      "order": 13,
+      "code": "MOD-13",
+      "title": "Cloud Security, DevSecOps & Modern Cyber Security",
+      "lessons": [
+        "Cloud Architecture, Shared Responsibility & IAM Least Privilege",
+        "Container Security: Docker Benchmarking & Isolation",
+        "DevSecOps CI/CD Pipeline Automation (SAST & DAST)",
+        "Zero Trust Architecture & Modern Perimeter Defense"
+      ]
+    },
+    {
+      "order": 14,
+      "code": "MOD-14",
+      "title": "Integrated Cyber Security Laboratory & Capstone",
+      "lessons": [
+        "Capstone Proposal & Enterprise Cyber Range Architecture",
+        "Enterprise Security Assessment & Attack Simulation",
+        "Remediation Engineering & Technical Audit Report",
+        "Capstone Defense & Viva Voce Examination"
+      ]
+    }
+  ]
+}

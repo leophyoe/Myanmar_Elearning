@@ -3,7 +3,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from apps.common.views import LandingPageView, HealthCheckView
+from apps.common.views import LandingPageView, HealthCheckView, SetLanguageView
+from apps.certificates.views import CertificateVerificationView
 
 urlpatterns = [
     # Admin Interface
@@ -11,6 +12,12 @@ urlpatterns = [
 
     # System Health Check
     path('api/health/', HealthCheckView.as_view(), name='api-health'),
+
+    # Public Canonical Verification
+    path('verify/<str:code>/', CertificateVerificationView.as_view(), name='canonical-verify'),
+
+    # Language Switcher
+    path('set-language/', SetLanguageView.as_view(), name='set-language'),
 
     # Web Pages & Portals
     path('', LandingPageView.as_view(), name='landing-page'),
@@ -27,6 +34,8 @@ urlpatterns = [
     path('projects/', include('apps.projects.urls')),
     path('analytics/', include('apps.analytics.urls')),
     path('billing/', include('apps.billing.urls')),
+    path('pricing/', include('apps.billing.urls')),
+    path('partner/', include('apps.partner.urls')),
     path('console/', include('apps.console.urls')),
     path('portfolio/', include('apps.portfolio.urls')),
 ]

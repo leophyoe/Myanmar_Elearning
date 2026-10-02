@@ -45,6 +45,41 @@ class AdminUserCreateForm(UserCreationForm):
 class AdminUserUpdateForm(forms.ModelForm):
     """Edit identity, role and account status. Password changes use a separate form."""
 
+    is_verified_instructor = forms.BooleanField(
+        required=False,
+        label="Verified Instructor",
+        help_text="Grant teaching and course authoring privileges.",
+        widget=forms.CheckboxInput(attrs={'class': 'accent-cyan-500'}),
+    )
+    instructor_level = forms.ChoiceField(
+        required=False,
+        label="Instructor Rank / Level",
+        choices=[
+            ('associate', 'Associate Instructor'),
+            ('professional', 'Professional Instructor'),
+            ('master', 'Master Instructor'),
+        ],
+        widget=forms.Select(attrs={'class': INPUT}),
+        help_text="Pedagogical rank of the instructor."
+    )
+    department = forms.CharField(
+        max_length=128,
+        required=False,
+        label="Department",
+        widget=forms.TextInput(attrs={'class': INPUT}),
+    )
+    title = forms.CharField(
+        max_length=128,
+        required=False,
+        label="Academic Title",
+        widget=forms.TextInput(attrs={'class': INPUT}),
+    )
+    qualifications = forms.CharField(
+        required=False,
+        label="Qualifications & Degrees",
+        widget=forms.Textarea(attrs={'class': TEXTAREA, 'rows': 3}),
+    )
+
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name', 'email', 'role', 'is_active')
@@ -61,6 +96,14 @@ class AdminUserUpdateForm(forms.ModelForm):
         self.request_user = kwargs.pop('request_user', None)
         super().__init__(*args, **kwargs)
         self.fields['email'].required = True
+
+        if self.instance and hasattr(self.instance, 'teacher_profile'):
+            tp = self.instance.teacher_profile
+            self.fields['is_verified_instructor'].initial = tp.is_verified
+            self.fields['instructor_level'].initial = tp.level
+            self.fields['department'].initial = tp.department
+            self.fields['title'].initial = tp.title
+            self.fields['qualifications'].initial = tp.qualifications
 
     def clean_email(self):
         email = (self.cleaned_data.get('email') or '').strip().lower()
@@ -80,6 +123,38 @@ class AdminUserUpdateForm(forms.ModelForm):
             if cleaned.get('username') and cleaned['username'] != requester.username:
                 self.add_error('username', 'You cannot rename your own account.')
         return cleaned
+
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+        if commit:
+            from apps.users.models import TeacherProfile, ActiveMode
+            from django.contrib.auth.models import Group
+            if user.role in (UserRole.TEACHER, UserRole.ADMIN) or hasattr(user, 'teacher_profile'):
+                tp, _ = TeacherProfile.objects.get_or_create(user=user)
+                if 'is_verified_instructor' in self.cleaned_data:
+                    tp.is_verified = self.cleaned_data['is_verified_instructor']
+                if self.cleaned_data.get('instructor_level'):
+                    tp.level = self.cleaned_data['instructor_level']
+                if 'department' in self.cleaned_data:
+                    tp.department = self.cleaned_data.get('department') or ''
+                if 'title' in self.cleaned_data:
+                    tp.title = self.cleaned_data.get('title') or ''
+                if 'qualifications' in self.cleaned_data:
+                    tp.qualifications = self.cleaned_data.get('qualifications') or ''
+                tp.save()
+
+                if tp.is_verified:
+                    grp, _ = Group.objects.get_or_create(name='Instructor')
+                    user.groups.add(grp)
+                    if user.role in (UserRole.TEACHER, UserRole.ADMIN) and user.active_mode == ActiveMode.STUDENT:
+                        user.active_mode = ActiveMode.INSTRUCTOR
+                        user.save(update_fields=['active_mode'])
+                else:
+                    user.groups.filter(name='Instructor').delete()
+                    if user.active_mode == ActiveMode.INSTRUCTOR:
+                        user.active_mode = ActiveMode.STUDENT
+                        user.save(update_fields=['active_mode'])
+        return user
 
 
 class AdminPasswordResetForm(SetPasswordForm):

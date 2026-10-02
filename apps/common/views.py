@@ -66,3 +66,28 @@ class HealthCheckView(View):
         status_code = 200 if health['status'] == 'healthy' else 207
         return JsonResponse(health, status=status_code)
 
+
+class SetLanguageView(View):
+    """Switch user language between English ('en') and Myanmar ('my') and redirect."""
+
+    def get(self, request, *args, **kwargs):
+        return self._handle_switch(request, request.GET.get('lang', 'en'))
+
+    def post(self, request, *args, **kwargs):
+        return self._handle_switch(request, request.POST.get('lang', 'en'))
+
+    def _handle_switch(self, request, lang):
+        from django.shortcuts import redirect
+        from django.utils.http import url_has_allowed_host_and_scheme
+
+        if lang not in ('en', 'my'):
+            lang = 'en'
+        next_url = request.POST.get('next') or request.GET.get('next') or request.META.get('HTTP_REFERER') or '/'
+        if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+            next_url = '/'
+        response = redirect(next_url)
+        response.set_cookie('mel_lang', lang, max_age=365 * 24 * 60 * 60, samesite='Lax')
+        request.session['mel_lang'] = lang
+        return response
+
+

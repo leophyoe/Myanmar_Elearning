@@ -3,6 +3,7 @@ from django.views.generic import (
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
+from django.http import Http404
 from django.contrib import messages
 from django.utils import timezone
 from django.urls import reverse_lazy, reverse
@@ -12,6 +13,7 @@ from apps.billing.models import active_payment_for, Payment
 from .models import (
     Subject, Course, Module, Lesson, LessonType, Quiz, Question, Choice,
     UserProgress, Enrollment, Assignment, AssignmentSubmission, LiveSession,
+    QuizAttempt,
 )
 from .forms import (
     SubjectForm, CourseForm, ModuleForm, LessonForm,
@@ -27,7 +29,7 @@ def can_access_course(user, course):
     """Teachers/admins always see a course.
 
     Students need an active enrollment, and on paid courses an approved,
-    unexpired payment on top of it (the enrolment alone is not enough).
+    unexpired payment or active subscription covering the course.
     """
     if not getattr(user, 'is_authenticated', False):
         return False
@@ -39,8 +41,21 @@ def can_access_course(user, course):
         return False
     if course.is_free:
         return True
+
+    # 1. Direct course purchase check
     payment = active_payment_for(user, course)
-    return bool(payment and payment.is_current)
+    if payment and payment.is_current:
+        return True
+
+    # 2. Subscription tier access check
+    from apps.billing.models import active_subscription_for
+    sub = active_subscription_for(user)
+    if sub and sub.is_current:
+        if getattr(course, 'is_premium', False):
+            return bool(sub.plan.has_premium_courses)
+        return bool(sub.plan.has_all_standard_courses)
+
+    return False
 
 
 def course_progress_pct(user, course):
@@ -90,7 +105,34 @@ class CourseListView(ListView):
     context_object_name = 'courses'
 
     def get_queryset(self):
-        return Course.objects.filter(is_published=True).prefetch_related('modules__lessons', 'subject')
+        qs = Course.objects.filter(is_published=True).select_related('subject', 'owner').prefetch_related('modules__lessons')
+
+        category_slug = self.request.GET.get('category')
+        if category_slug:
+            qs = qs.filter(subject__slug=category_slug)
+
+        level = self.request.GET.get('level')
+        if level:
+            qs = qs.filter(level=level)
+
+        query = self.request.GET.get('q')
+        if query:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(title__icontains=query) |
+                Q(description__icontains=query) |
+                Q(subject__title__icontains=query)
+            )
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        Subject.ensure_default_subjects()
+        context['categories'] = Subject.objects.filter(is_active=True).order_by('order')
+        context['selected_category'] = self.request.GET.get('category', '')
+        context['selected_level'] = self.request.GET.get('level', '')
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
 
 
 class CourseDetailView(DetailView):
@@ -119,13 +161,24 @@ class CourseDetailView(DetailView):
                 enrollment and enrollment.status == Enrollment.Status.ACTIVE
             )
             context['progress_pct'] = course_progress_pct(user, course) if enrollment else 0
-            context['can_manage'] = user.is_teacher or user.is_admin
+            context['can_manage'] = bool(
+                user.is_admin or (user.is_teacher and course.owner == user and not course.is_official)
+            )
             context['has_access'] = can_access_course(user, course)
             context['is_purchased'] = False
             context['pending_payment'] = None
             if not course.is_free:
                 payment = active_payment_for(user, course)
                 context['is_purchased'] = bool(payment and payment.is_current)
+                from apps.billing.models import active_subscription_for
+                sub = active_subscription_for(user)
+                if sub and sub.is_current:
+                    if getattr(course, 'is_premium', False):
+                        if sub.plan.has_premium_courses:
+                            context['is_purchased'] = True
+                    else:
+                        if sub.plan.has_all_standard_courses:
+                            context['is_purchased'] = True
                 context['pending_payment'] = Payment.objects.filter(
                     student=user, course=course, status=Payment.Status.PENDING
                 ).first()
@@ -145,11 +198,14 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['course'] = self.object.course
+        course = self.object.course
+        context['course'] = course
         context['assignments'] = self.object.assignments.all().order_by('due_date')
         user = self.request.user
         context['can_manage'] = bool(
-            user.is_authenticated and (user.is_teacher or user.is_admin)
+            user.is_authenticated and (
+                user.is_admin or (user.is_teacher and course.owner == user and not course.is_official)
+            )
         )
         return context
 
@@ -167,6 +223,10 @@ class LessonDetailView(LoginRequiredMixin, DetailView):
         if not can_access_course(request.user, lesson.module.course):
             messages.info(request, "Please enrol in this course before opening its lessons.")
             return redirect('course-detail', slug=lesson.module.course.slug)
+        enrollment = Enrollment.objects.filter(student=request.user, course=lesson.module.course).first()
+        if enrollment and not enrollment.started_at:
+            enrollment.started_at = timezone.now()
+            enrollment.save(update_fields=['started_at'])
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -185,7 +245,13 @@ class LessonDetailView(LoginRequiredMixin, DetailView):
         )
         context['progress'] = progress
         context['labs'] = lesson.labs.filter(is_active=True)
-        context['can_manage'] = self.request.user.is_teacher or self.request.user.is_admin
+        context['can_manage'] = bool(
+            self.request.user.is_authenticated and (
+                self.request.user.is_admin or (
+                    self.request.user.is_teacher and course.owner == self.request.user and not course.is_official
+                )
+            )
+        )
         context['assignments'] = lesson.module.assignments.all().order_by('due_date')
         if self.request.user.is_authenticated:
             context['my_submissions'] = {
@@ -209,16 +275,24 @@ class EnrollView(LoginRequiredMixin, View):
     def post(self, request, slug):
         course = get_object_or_404(Course, slug=slug, is_published=True)
 
-        if not request.user.is_student:
-            messages.info(request, "Staff accounts do not need to enrol.")
-            return redirect('course-detail', slug=slug)
-
-        if not course.is_free:
+        is_staff = request.user.is_teacher or request.user.is_admin
+        if not course.is_free and not is_staff:
             payment = active_payment_for(request.user, course)
-            if not (payment and payment.is_current):
+            has_payment = bool(payment and payment.is_current)
+
+            from apps.billing.models import active_subscription_for
+            sub = active_subscription_for(request.user)
+            has_sub = False
+            if sub and sub.is_current:
+                if getattr(course, 'is_premium', False):
+                    has_sub = bool(sub.plan.has_premium_courses)
+                else:
+                    has_sub = bool(sub.plan.has_all_standard_courses)
+
+            if not has_payment and not has_sub:
                 messages.info(
                     request,
-                    f"{course.title} is a paid course — complete checkout first "
+                    f"{course.title} is a paid course — subscribe to a membership plan or complete checkout first "
                     f"({course.price} {course.currency} / "
                     f"{course.get_billing_period_display()})."
                 )
@@ -250,8 +324,83 @@ class MyCoursesView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
         for enrollment in context['enrollments']:
-            enrollment.live_progress = course_progress_pct(self.request.user, enrollment.course)
+            enrollment.live_progress = course_progress_pct(user, enrollment.course)
+
+        # Faculty / Teacher workspace data
+        if user.is_teacher and not user.is_admin:
+            context['is_teacher_view'] = True
+            # ONLY courses created and owned by this teacher.
+            # Official platform curricula (Diploma in Cyber Security, Full-Stack Web, AI/ML, etc.)
+            # are managed centrally by administrators and MUST NOT be shown under personal teaching courses.
+            teaching_qs = Course.objects.filter(
+                owner=user,
+                is_official=False,
+                is_published=True,
+            ).select_related('subject')
+
+            teaching_list = []
+            total_students = 0
+            for c in teaching_qs:
+                enrolled_cnt = c.enrollments.filter(status=Enrollment.Status.ACTIVE).count()
+                pending_cnt = AssignmentSubmission.objects.filter(
+                    assignment__module__course=c, score__isnull=True
+                ).count()
+                sessions = c.live_sessions.all()[:2]
+                upcoming_cnt = c.live_sessions.filter(starts_at__gte=timezone.now()).count()
+                total_students += enrolled_cnt
+                teaching_list.append({
+                    'course': c,
+                    'enrolled_count': enrolled_cnt,
+                    'pending_submissions_count': pending_cnt,
+                    'live_sessions': sessions,
+                    'upcoming_sessions_count': upcoming_cnt,
+                })
+
+            context['teaching_courses'] = teaching_list
+            context['total_teaching_students'] = total_students
+            context['total_pending_grading'] = AssignmentSubmission.objects.filter(
+                assignment__module__course__in=teaching_qs,
+                score__isnull=True,
+            ).count()
+            context['total_live_sessions'] = LiveSession.objects.filter(
+                course__in=teaching_qs,
+                starts_at__gte=timezone.now(),
+            ).count()
+            context['student_enrollments'] = context['enrollments']
+        elif user.is_admin:
+            # Platform administrators viewing My Courses
+            context['is_admin_view'] = True
+            context['is_teacher_view'] = True
+            admin_qs = Course.objects.filter(is_official=True, is_published=True).select_related('subject')
+            teaching_list = []
+            total_students = 0
+            for c in admin_qs:
+                enrolled_cnt = c.enrollments.filter(status=Enrollment.Status.ACTIVE).count()
+                pending_cnt = AssignmentSubmission.objects.filter(
+                    assignment__module__course=c, score__isnull=True
+                ).count()
+                sessions = c.live_sessions.all()[:2]
+                upcoming_cnt = c.live_sessions.filter(starts_at__gte=timezone.now()).count()
+                total_students += enrolled_cnt
+                teaching_list.append({
+                    'course': c,
+                    'enrolled_count': enrolled_cnt,
+                    'pending_submissions_count': pending_cnt,
+                    'live_sessions': sessions,
+                    'upcoming_sessions_count': upcoming_cnt,
+                })
+
+            context['teaching_courses'] = teaching_list
+            context['official_programs'] = teaching_list
+            context['total_teaching_students'] = total_students
+            context['total_pending_grading'] = AssignmentSubmission.objects.filter(score__isnull=True).count()
+            context['total_live_sessions'] = LiveSession.objects.filter(starts_at__gte=timezone.now()).count()
+            context['student_enrollments'] = context['enrollments']
+        else:
+            context['is_teacher_view'] = False
+
         return context
 
 
@@ -292,6 +441,17 @@ class QuizSubmitView(LoginRequiredMixin, View):
         score_pct = int((correct_count / total_questions) * 100)
         passed = score_pct >= quiz.passing_percentage
 
+        attempt_number = quiz.attempts.filter(student=request.user).count() + 1
+        QuizAttempt.objects.create(
+            student=request.user,
+            quiz=quiz,
+            attempt_number=attempt_number,
+            score_percentage=score_pct,
+            passed=passed,
+            points_earned=points_earned if passed else 0,
+            answers_data={k: v for k, v in request.POST.items() if k.startswith('question_')},
+        )
+
         if passed:
             progress, _ = UserProgress.objects.get_or_create(
                 user=request.user,
@@ -325,9 +485,21 @@ class ManageHomeView(TeacherRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['subjects'] = Subject.objects.all().prefetch_related('courses')
-        context['courses'] = Course.objects.all().prefetch_related('modules__lessons', 'subject')
-        context['ungraded_count'] = AssignmentSubmission.objects.filter(score__isnull=True).count()
+        user = self.request.user
+        if user.is_admin:
+            context['subjects'] = Subject.objects.all().prefetch_related('courses')
+            context['courses'] = Course.objects.all().prefetch_related('modules__lessons', 'subject')
+            context['ungraded_count'] = AssignmentSubmission.objects.filter(score__isnull=True).count()
+        else:
+            context['subjects'] = []
+            context['courses'] = Course.objects.filter(
+                owner=user,
+                is_official=False,
+            ).prefetch_related('modules__lessons', 'subject')
+            context['ungraded_count'] = AssignmentSubmission.objects.filter(
+                assignment__module__course__owner=user,
+                score__isnull=True,
+            ).count()
         return context
 
 
@@ -336,6 +508,13 @@ class SubjectCreateView(TeacherRequiredMixin, CreateView):
     form_class = SubjectForm
     template_name = 'courses/manage/subject_form.html'
     success_url = reverse_lazy('manage-home')
+
+    def get_success_url(self):
+        next_url = self.request.POST.get('next') or self.request.GET.get('next')
+        if next_url:
+            separator = '&' if '?' in next_url else '?'
+            return f"{next_url}{separator}subject={self.object.id}"
+        return reverse('manage-home')
 
     def form_valid(self, form):
         messages.success(self.request, f"Subject “{form.cleaned_data['title']}” created.")
@@ -367,8 +546,15 @@ class CourseCreateView(TeacherRequiredMixin, CreateView):
             initial['subject'] = subject_id
         return initial
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
         form.instance.owner = self.request.user
+        if self.request.user.is_admin:
+            form.instance.is_official = True
         messages.success(self.request, f"Course “{form.cleaned_data['title']}” created.")
         return super().form_valid(form)
 
@@ -381,17 +567,24 @@ class CourseUpdateView(TeacherRequiredMixin, UpdateView):
     success_url = reverse_lazy('manage-home')
 
     def get_queryset(self):
-        # Admins edit everything; teachers only their own courses (legacy courses
-        # without an owner remain open to every teacher).
+        # Admins edit everything; teachers only their own non-official courses.
         if self.request.user.is_admin:
             return Course.objects.all()
-        return Course.objects.filter(owner__isnull=True) | Course.objects.filter(
-            owner=self.request.user
+        return Course.objects.filter(
+            owner=self.request.user,
+            is_official=False,
         )
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
         if not form.instance.owner_id:
             form.instance.owner = self.request.user
+        if self.request.user.is_admin and (form.instance.owner is None or form.instance.owner.is_admin):
+            form.instance.is_official = True
         messages.success(self.request, "Course updated.")
         return super().form_valid(form)
 
@@ -421,6 +614,14 @@ class ModuleUpdateView(TeacherRequiredMixin, UpdateView):
     template_name = 'courses/manage/module_form.html'
     pk_url_kwarg = 'module_id'
     success_url = reverse_lazy('manage-home')
+
+    def get_queryset(self):
+        if self.request.user.is_admin:
+            return Module.objects.all()
+        return Module.objects.filter(
+            course__owner=self.request.user,
+            course__is_official=False,
+        )
 
     def form_valid(self, form):
         messages.success(self.request, "Module updated.")
@@ -455,6 +656,14 @@ class LessonUpdateView(TeacherRequiredMixin, UpdateView):
     template_name = 'courses/manage/lesson_form.html'
     pk_url_kwarg = 'lesson_id'
 
+    def get_queryset(self):
+        if self.request.user.is_admin:
+            return Lesson.objects.all()
+        return Lesson.objects.filter(
+            module__course__owner=self.request.user,
+            module__course__is_official=False,
+        )
+
     def get_success_url(self):
         return reverse('module-edit', kwargs={'module_id': self.object.module_id})
 
@@ -468,6 +677,14 @@ class LessonDeleteView(TeacherRequiredMixin, DeleteView):
     template_name = 'courses/manage/lesson_confirm_delete.html'
     pk_url_kwarg = 'lesson_id'
     success_url = reverse_lazy('manage-home')
+
+    def get_queryset(self):
+        if self.request.user.is_admin:
+            return Lesson.objects.all()
+        return Lesson.objects.filter(
+            module__course__owner=self.request.user,
+            module__course__is_official=False,
+        )
 
     def form_valid(self, form):
         messages.success(self.request, "Lesson deleted.")
@@ -486,7 +703,12 @@ class QuizBuilderView(TeacherRequiredMixin, View):
     template_name = 'courses/manage/quiz_form.html'
 
     def get_object(self, **kwargs):
-        return get_object_or_404(Lesson, id=self.kwargs['lesson_id'])
+        lesson = get_object_or_404(Lesson, id=self.kwargs['lesson_id'])
+        if not self.request.user.is_admin and (
+            lesson.module.course.owner != self.request.user or lesson.module.course.is_official
+        ):
+            raise Http404("You do not have permission to edit this quiz.")
+        return lesson
 
     def _render(self, request, lesson, quiz, quiz_form=None, question_formset=None):
         context = {
@@ -556,6 +778,14 @@ class AssignmentUpdateView(TeacherRequiredMixin, UpdateView):
     pk_url_kwarg = 'assignment_id'
     success_url = reverse_lazy('manage-home')
 
+    def get_queryset(self):
+        if self.request.user.is_admin:
+            return Assignment.objects.all()
+        return Assignment.objects.filter(
+            module__course__owner=self.request.user,
+            module__course__is_official=False,
+        )
+
     def form_valid(self, form):
         messages.success(self.request, 'Assignment updated.')
         return super().form_valid(form)
@@ -566,6 +796,14 @@ class AssignmentDeleteView(TeacherRequiredMixin, DeleteView):
     template_name = 'courses/manage/assignment_confirm_delete.html'
     pk_url_kwarg = 'assignment_id'
     success_url = reverse_lazy('manage-home')
+
+    def get_queryset(self):
+        if self.request.user.is_admin:
+            return Assignment.objects.all()
+        return Assignment.objects.filter(
+            module__course__owner=self.request.user,
+            module__course__is_official=False,
+        )
 
     def form_valid(self, form):
         messages.success(self.request, 'Assignment deleted.')
@@ -620,16 +858,34 @@ class SubmissionListView(TeacherRequiredMixin, ListView):
         qs = AssignmentSubmission.objects.select_related(
             'assignment__module__course', 'student', 'graded_by'
         ).order_by('-created_at')
+        if not self.request.user.is_admin:
+            qs = qs.filter(
+                assignment__module__course__owner=self.request.user,
+                assignment__module__course__is_official=False,
+            )
         return qs.filter(**self.STATUS_FILTERS[self.get_status()])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['status'] = self.get_status()
-        context['ungraded_count'] = AssignmentSubmission.objects.filter(score__isnull=True).count()
-        context['graded_count'] = AssignmentSubmission.objects.filter(score__isnull=False).count()
-        context['assignments'] = Assignment.objects.select_related('module__course').order_by(
-            'module__course__title', 'module__order'
-        )
+        base_qs = AssignmentSubmission.objects.all()
+        if not self.request.user.is_admin:
+            base_qs = base_qs.filter(
+                assignment__module__course__owner=self.request.user,
+                assignment__module__course__is_official=False,
+            )
+            context['assignments'] = Assignment.objects.filter(
+                module__course__owner=self.request.user,
+                module__course__is_official=False,
+            ).select_related('module__course').order_by(
+                'module__course__title', 'module__order'
+            )
+        else:
+            context['assignments'] = Assignment.objects.select_related('module__course').order_by(
+                'module__course__title', 'module__order'
+            )
+        context['ungraded_count'] = base_qs.filter(score__isnull=True).count()
+        context['graded_count'] = base_qs.filter(score__isnull=False).count()
         return context
 
 
@@ -640,9 +896,15 @@ class SubmissionGradeView(TeacherRequiredMixin, UpdateView):
     pk_url_kwarg = 'submission_id'
 
     def get_queryset(self):
-        return AssignmentSubmission.objects.select_related(
+        qs = AssignmentSubmission.objects.select_related(
             'assignment__module__course', 'student'
         )
+        if not self.request.user.is_admin:
+            qs = qs.filter(
+                assignment__module__course__owner=self.request.user,
+                assignment__module__course__is_official=False,
+            )
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -793,8 +1055,9 @@ class LiveSessionMixin(TeacherRequiredMixin):
     def owned_courses(self):
         if self.request.user.is_admin:
             return Course.objects.all()
-        return Course.objects.filter(owner=self.request.user) | Course.objects.filter(
-            owner__isnull=True
+        return Course.objects.filter(
+            owner=self.request.user,
+            is_official=False,
         )
 
     def get_initial(self):
@@ -874,3 +1137,76 @@ class LiveSessionDeleteView(LiveSessionMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, "Live session removed.")
         return super().form_valid(form)
+
+
+# -----------------------------------------------------------------------------
+# REST API Endpoints (Mobile / Desktop / SPA Clients)
+# -----------------------------------------------------------------------------
+from rest_framework import permissions, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .serializers import (
+    SubjectSerializer, CourseListSerializer, CourseDetailSerializer
+)
+
+
+class CategoryListAPIView(APIView):
+    """
+    GET /courses/api/categories/
+    Returns list of all active categories (Python, CS, ICT, GED, AI, etc.)
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        Subject.ensure_default_subjects()
+        subjects = Subject.objects.filter(is_active=True).order_by('order')
+        serializer = SubjectSerializer(subjects, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CourseListAPIView(APIView):
+    """
+    GET /courses/api/courses/
+    Filters by ?category=<slug>&level=<level>&is_premium=<bool>&q=<query>
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        qs = Course.objects.filter(is_published=True).select_related('subject', 'owner')
+        category = request.GET.get('category')
+        if category:
+            qs = qs.filter(subject__slug=category)
+        level = request.GET.get('level')
+        if level:
+            qs = qs.filter(level=level)
+        is_premium = request.GET.get('is_premium')
+        if is_premium is not None and is_premium != '':
+            qs = qs.filter(is_premium=is_premium.lower() in ['true', '1'])
+        q = request.GET.get('q')
+        if q:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(title__icontains=q) |
+                Q(description__icontains=q) |
+                Q(subject__title__icontains=q)
+            )
+        serializer = CourseListSerializer(qs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CourseDetailAPIView(APIView):
+    """
+    GET /courses/api/courses/<slug>/
+    Returns full course structure and syllabus modules.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, slug):
+        course = get_object_or_404(
+            Course.objects.prefetch_related('modules__lessons'),
+            slug=slug,
+            is_published=True
+        )
+        serializer = CourseDetailSerializer(course)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+

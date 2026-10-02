@@ -81,11 +81,13 @@
 
             <!-- Teacher-only details -->
             <div id="teacher-fields" class="space-y-4 {% if not form.is_teacher_application %}hidden{% endif %}">
-                <div class="p-3 rounded-lg bg-slate-950 border border-emerald-900/70 space-y-3">
-                    <p class="text-[11px] text-emerald-300 leading-relaxed">
-                        Teacher applications are reviewed by an administrator before activation.
-                        You will not be able to sign in until then.
-                    </p>
+                <div class="p-3.5 rounded-lg bg-emerald-950/40 border border-emerald-800/80 space-y-3">
+                    <div class="flex items-start gap-2">
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">Instant Sign-in Enabled</span>
+                        <p class="text-[11px] text-emerald-300 leading-relaxed">
+                            Sign in immediately upon registration to access courses and student resources. Teaching and course authoring privileges will be verified and assigned by an administrator.
+                        </p>
+                    </div>
                     <div>
                         <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Department <span class="text-slate-600">(optional)</span></label>
                         <input type="text" name="department" value="{{ form.department.value|default:'' }}"

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}My Subscription — Myanmar E-Learning{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <h2 class="fw-bold mb-4">My Membership & Subscription</h2>
+
+            {% if subscription %}
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                    <div class="card-body p-4 p-md-5">
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <div>
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 mb-2 fw-semibold">Active Plan</span>
+                                <h3 class="fw-bold text-dark">{{ subscription.plan.name }}</h3>
+                                <p class="text-muted mb-0">Billing cycle: <strong>{{ subscription.get_billing_cycle_display }}</strong></p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary fs-6 px-3 py-2 rounded-3">
+                                    {% if subscription.end_date %}
+                                        Valid until {{ subscription.end_date|date:"M d, Y" }}
+                                    {% else %}
+                                        Lifetime Access
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded-3 border">
+                                    <div class="text-muted small">Standard Courses</div>
+                                    <div class="fw-bold text-success">
+                                        {% if subscription.plan.has_all_standard_courses %}<i class="bi bi-check-circle-fill"></i> Unlocked{% else %}Preview Only{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded-3 border">
+                                    <div class="text-muted small">Cyber Range Labs</div>
+                                    <div class="fw-bold {% if subscription.plan.has_cyber_range %}text-success{% else %}text-muted{% endif %}">
+                                        {% if subscription.plan.has_cyber_range %}<i class="bi bi-check-circle-fill"></i> Enabled{% else %}Premium only{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 bg-light rounded-3 border">
+                                    <div class="text-muted small">Live Class Discount</div>
+                                    <div class="fw-bold {% if subscription.plan.live_class_discount_percent %}text-success{% else %}text-muted{% endif %}">
+                                        {% if subscription.plan.live_class_discount_percent %}{{ subscription.plan.live_class_discount_percent }}% OFF{% else %}None{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'pricing' %}" class="btn btn-outline-primary rounded-3">Change / Upgrade Plan</a>
+                            <a href="{% url 'course-list' %}" class="btn btn-primary rounded-3">Browse Courses</a>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card border-0 shadow-sm rounded-4 p-5 text-center mb-4">
+                    <div class="display-6 text-muted mb-3"><i class="bi bi-stars"></i></div>
+                    <h4 class="fw-bold">No Active Paid Subscription</h4>
+                    <p class="text-muted mx-auto" style="max-width: 500px;">
+                        You are currently on the free Starter tier. Upgrade to Standard or Premium to unlock all course materials, examinations, verified certificates, and interactive labs.
+                    </p>
+                    <div>
+                        <a href="{% url 'pricing' %}" class="btn btn-primary px-4 py-2 rounded-3 fw-semibold">View Membership Plans</a>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Subscription Payment History -->
+            {% if payments %}
+                <div class="card border-0 shadow-sm rounded-4 p-4">
+                    <h5 class="fw-bold mb-3">Subscription Payment History</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Plan</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in payments %}
+                                    <tr>
+                                        <td>{{ p.created_at|date:"Y-m-d H:i" }}</td>
+                                        <td>{{ p.plan.name|default:"Membership" }} ({{ p.billing_period|title }})</td>
+                                        <td>{{ p.amount|intcomma }} {{ p.currency }}</td>
+                                        <td>{{ p.get_method_display }}</td>
+                                        <td>
+                                            {% if p.status == 'approved' %}
+                                                <span class="badge bg-success">Approved</span>
+                                            {% elif p.status == 'pending' %}
+                                                <span class="badge bg-warning text-dark">Under Review</span>
+                                            {% elif p.status == 'rejected' %}
+                                                <span class="badge bg-danger">Rejected</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ p.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,21 +3,201 @@
 {% block title %}My Courses - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    {% if is_teacher_view %}
+    <!-- ================================================================= -->
+    <!-- TEACHER / INSTRUCTOR WORKSPACE -->
+    <!-- ================================================================= -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-800">
+        <div>
+            <div class="flex items-center gap-2 mb-1.5">
+                <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-emerald-950 text-emerald-300 border border-emerald-800 tracking-wider">
+                    Faculty Workspace
+                </span>
+                <span class="text-[10px] text-slate-500">Instructor Account</span>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-wide">My Teaching Courses</h1>
+            <p class="text-xs text-slate-400 mt-1">Manage assigned classes, track student enrollments, grade assignments, and launch live lecture sessions.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+            <a href="{% url 'submission-list' %}" class="text-xs px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition flex items-center gap-1.5 shadow-md shadow-amber-600/20">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span>Grading Queue ({{ total_pending_grading }})</span>
+            </a>
+            <a href="{% url 'live-session-create' %}" class="text-xs px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <span>+ Schedule Live Class</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Instructor Quick Metrics -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-800/60 flex items-center justify-center text-cyan-400 shrink-0">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            </div>
+            <div>
+                <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Learners</div>
+                <div class="text-2xl font-bold text-white mt-0.5">{{ total_teaching_students }}</div>
+                <div class="text-[10px] text-slate-500">Active enrollments in your classes</div>
+            </div>
+        </div>
+
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-950/80 border border-amber-800/60 flex items-center justify-center text-amber-400 shrink-0">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            </div>
+            <div>
+                <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Awaiting Evaluation</div>
+                <div class="text-2xl font-bold text-amber-400 mt-0.5">{{ total_pending_grading }}</div>
+                <div class="text-[10px] text-slate-500">Submissions requiring grading</div>
+            </div>
+        </div>
+
+        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-800/60 flex items-center justify-center text-emerald-400 shrink-0">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            </div>
+            <div>
+                <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Scheduled Live Classes</div>
+                <div class="text-2xl font-bold text-emerald-400 mt-0.5">{{ total_live_sessions }}</div>
+                <div class="text-[10px] text-slate-500">Upcoming Zoom / Google Meet sessions</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Teaching Courses Section -->
+    <div class="mb-10">
+        <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+            <span>Teaching Curriculum &amp; Classes</span>
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for item in teaching_courses %}
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between shadow-lg">
+                <div>
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-slate-800 text-slate-300 border border-slate-700">
+                            {{ item.course.subject.title|default:"Tech Program" }}
+                        </span>
+                        {% if item.course.is_official %}
+                            <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-purple-950 text-purple-300 border border-purple-800">
+                                Official Curriculum
+                            </span>
+                        {% endif %}
+                    </div>
+                    <h3 class="text-base font-bold text-white mb-1.5 leading-snug">{{ item.course.title }}</h3>
+                    <p class="text-xs text-slate-400 line-clamp-2 mb-4">{{ item.course.description }}</p>
+
+                    <!-- Stats Row -->
+                    <div class="grid grid-cols-3 gap-2 py-2.5 px-3 rounded-xl bg-slate-950/70 border border-slate-800/80 mb-5 text-center text-xs">
+                        <div>
+                            <div class="text-[10px] text-slate-500 uppercase font-medium">Students</div>
+                            <div class="font-bold text-white mt-0.5">{{ item.enrolled_count }}</div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-500 uppercase font-medium">To Grade</div>
+                            <div class="font-bold {% if item.pending_submissions_count %}text-amber-400{% else %}text-slate-400{% endif %} mt-0.5">
+                                {{ item.pending_submissions_count }}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-500 uppercase font-medium">Live Sessions</div>
+                            <div class="font-bold text-emerald-400 mt-0.5">{{ item.upcoming_sessions_count }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Links -->
+                <div class="flex flex-col gap-2 pt-3 border-t border-slate-800/80">
+                    <div class="flex gap-2">
+                        <a href="{% url 'submission-list' %}" class="flex-1 text-center text-[11px] px-3 py-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-600/40 font-semibold transition">
+                            Grade Submissions
+                        </a>
+                        <a href="{% url 'live-session-create' %}" class="flex-1 text-center text-[11px] px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-600/40 font-semibold transition">
+                            + Live Class
+                        </a>
+                    </div>
+                    <a href="{% url 'course-detail' slug=item.course.slug %}" class="w-full text-center text-[11px] px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                        View Course Syllabus &rarr;
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full p-10 rounded-2xl bg-slate-900 border border-slate-800 text-center flex flex-col items-center justify-center">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-950/70 border border-emerald-800/60 flex items-center justify-center text-emerald-400 mb-4">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                </div>
+                <h3 class="text-base font-bold text-white mb-2">
+                    <span class="lang-en">No Personal Teaching Courses Created Yet</span>
+                    <span class="lang-my">ဆရာကိုယ်တိုင် ဖန်တီးထားသော သင်ရိုးများ မရှိသေးပါ</span>
+                </h3>
+                <p class="text-xs text-slate-400 max-w-md mb-6 leading-relaxed">
+                    <span class="lang-en">Official platform curricula (such as Diploma in Cyber Security, Full-Stack Web, AI/ML) are managed centrally by administrators. Courses you author will appear here for student management, assignment grading, and live classes.</span>
+                    <span class="lang-my">ပလက်ဖောင်းတရားဝင် သင်ရိုးများ (Diploma in Cyber Security, AI/ML စသည်) ကို Admin များက စီမံခန့်ခွဲပါသည်။ သင်ကိုယ်တိုင် ရေးသားဖွင့်လှစ်သော သင်ရိုးများသည် ကျောင်းသားစီမံခန့်ခွဲမှုနှင့် အမှတ်ပေးခြင်းများအတွက် ဤနေရာတွင် ပေါ်လာမည်ဖြစ်ပါသည်။</span>
+                </p>
+                <div class="flex flex-wrap items-center justify-center gap-3">
+                    <a href="{% url 'course-create' %}" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center gap-2 shadow-lg shadow-emerald-600/20">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span class="lang-en">+ Create Your First Course</span>
+                        <span class="lang-my">+ သင်ရိုးအသစ် စတင်ဖန်တီးမည်</span>
+                    </a>
+                    <a href="{% url 'manage-home' %}" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition">
+                        <span class="lang-en">Open Content Studio</span>
+                        <span class="lang-my">Content Studio သို့ သွားမည်</span>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- If teacher has student enrollments as well -->
+    {% if student_enrollments %}
+    <div class="pt-8 border-t border-slate-800">
+        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Courses You Are Enrolled In (Student Learning)</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for enrollment in student_enrollments %}
+            <div class="p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between">
+                <div>
+                    <h4 class="text-sm font-semibold text-white">{{ enrollment.course.title }}</h4>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Progress: {{ enrollment.live_progress }}%</p>
+                </div>
+                <a href="{% url 'course-detail' slug=enrollment.course.slug %}" class="text-xs px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition">
+                    Continue &rarr;
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- ================================================================= -->
+    <!-- STUDENT WORKSPACE -->
+    <!-- ================================================================= -->
     <div class="flex items-center justify-between pb-6 mb-8 border-b border-slate-800">
         <div>
-            <h1 class="text-2xl font-bold text-white tracking-wide">My Courses</h1>
-            <p class="text-xs text-slate-400 mt-1">Everything you are enrolled in, with live progress.</p>
+            <div class="flex items-center gap-2 mb-1.5">
+                <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-cyan-950 text-cyan-300 border border-cyan-800 tracking-wider">
+                    Student Workspace
+                </span>
+            </div>
+            <h1 class="text-2xl font-bold text-white tracking-wide">My Enrolled Courses</h1>
+            <p class="text-xs text-slate-400 mt-1">Everything you are enrolled in, with live progress and continuous assessments.</p>
         </div>
         <a href="{% url 'course-list' %}" class="text-xs px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
-            Browse catalogue
+            Browse catalogue &rarr;
         </a>
     </div>
 
     {% if enrollments %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         {% for enrollment in enrollments %}
-        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col">
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col justify-between">
             <div class="flex items-start justify-between gap-3 mb-3">
                 <div>
                     {% if enrollment.course.subject %}
@@ -39,9 +219,9 @@
                 </span>
             </div>
 
-            <div class="mt-auto">
+            <div class="mt-4">
                 <div class="flex items-center justify-between text-[11px] mb-1.5">
-                    <span class="text-slate-400">Progress</span>
+                    <span class="text-slate-400">Course Progress</span>
                     <span class="text-cyan-400 font-mono font-bold">{{ enrollment.live_progress }}%</span>
                 </div>
                 <div class="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
@@ -52,7 +232,7 @@
                 <div class="flex gap-2 mt-4">
                     <a href="{% url 'course-detail' slug=enrollment.course.slug %}"
                        class="flex-1 text-center text-xs px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
-                        Continue learning
+                        Continue learning &rarr;
                     </a>
                 </div>
             </div>
@@ -67,5 +247,8 @@
         </a>
     </div>
     {% endif %}
+
+    {% endif %}
+
 </div>
 {% endblock %}

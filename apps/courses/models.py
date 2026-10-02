@@ -34,6 +34,101 @@ class Subject(BaseModel):
     def __str__(self):
         return self.title
 
+    @classmethod
+    def ensure_default_subjects(cls):
+        """
+        Seeds standard subject disciplines:
+        - Python Programming
+        - Computer Science
+        - ICT
+        - IGCSE / O Level
+        - GED
+        - Artificial Intelligence
+        - Cyber Security
+        - Engineering
+        - Non-IT subjects
+        """
+        categories = [
+            {
+                'slug': 'python-programming',
+                'title': 'Python Programming',
+                'description': 'Master Python from fundamentals to advanced automation and software development.',
+                'icon_name': 'code-slash',
+                'kind': cls.Kind.GENERAL,
+                'order': 1,
+            },
+            {
+                'slug': 'computer-science',
+                'title': 'Computer Science',
+                'description': 'Data structures, algorithms, operating systems, and computer architecture.',
+                'icon_name': 'cpu',
+                'kind': cls.Kind.GENERAL,
+                'order': 2,
+            },
+            {
+                'slug': 'ict',
+                'title': 'Information & Communication Technology (ICT)',
+                'description': 'Digital literacy, productivity tools, computer networking, and office systems.',
+                'icon_name': 'laptop',
+                'kind': cls.Kind.GENERAL,
+                'order': 3,
+            },
+            {
+                'slug': 'igcse-o-level',
+                'title': 'IGCSE / O Level',
+                'description': 'International curriculum preparation for IGCSE Computer Science, ICT, and Sciences.',
+                'icon_name': 'mortarboard',
+                'kind': cls.Kind.GENERAL,
+                'order': 4,
+            },
+            {
+                'slug': 'ged',
+                'title': 'GED (General Educational Development)',
+                'description': 'Comprehensive preparation for high school equivalency exams.',
+                'icon_name': 'journal-bookmark',
+                'kind': cls.Kind.GENERAL,
+                'order': 5,
+            },
+            {
+                'slug': 'artificial-intelligence',
+                'title': 'Artificial Intelligence & Machine Learning',
+                'description': 'Deep learning, computer vision, natural language processing, and modern GenAI.',
+                'icon_name': 'robot',
+                'kind': cls.Kind.GENERAL,
+                'order': 6,
+            },
+            {
+                'slug': 'cyber-security',
+                'title': 'Cyber Security & Ethical Hacking',
+                'description': 'Network defense, web security, reverse engineering, and hands-on CTF challenges.',
+                'icon_name': 'shield-check',
+                'kind': cls.Kind.CYBER,
+                'order': 7,
+            },
+            {
+                'slug': 'engineering',
+                'title': 'Engineering & Technology',
+                'description': 'Electrical engineering, embedded systems, robotics, and hardware principles.',
+                'icon_name': 'gear',
+                'kind': cls.Kind.GENERAL,
+                'order': 8,
+            },
+            {
+                'slug': 'non-it',
+                'title': 'Non-IT & Academic Subjects',
+                'description': 'Languages, business studies, mathematics, and professional development.',
+                'icon_name': 'book',
+                'kind': cls.Kind.GENERAL,
+                'order': 9,
+            },
+        ]
+        created = []
+        for cat in categories:
+            slug = cat.pop('slug')
+            obj, _ = cls.objects.update_or_create(slug=slug, defaults=cat)
+            created.append(obj)
+        return created
+
 
 class Course(BaseModel):
     """
@@ -44,6 +139,49 @@ class Course(BaseModel):
         ONE_TIME = 'one_time', 'One-time payment'
         MONTHLY = 'monthly', 'Monthly subscription'
 
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Draft'
+        PENDING_REVIEW = 'pending_review', 'Pending Review'
+        APPROVED = 'approved', 'Approved'
+        PUBLISHED = 'published', 'Published'
+        ARCHIVED = 'archived', 'Archived'
+
+    class MembershipTierRequired(models.TextChoices):
+        STARTER = 'starter', 'Starter (Free / Exploratory)'
+        STANDARD = 'standard', 'Standard Tier'
+        PREMIUM = 'premium', 'Premium Tier'
+
+    class Level(models.TextChoices):
+        BEGINNER = 'beginner', 'Beginner'
+        INTERMEDIATE = 'intermediate', 'Intermediate'
+        ADVANCED = 'advanced', 'Advanced'
+        ALL_LEVELS = 'all_levels', 'All Levels'
+
+    class Language(models.TextChoices):
+        BURMESE = 'my', 'Myanmar'
+        ENGLISH = 'en', 'English'
+        BILINGUAL = 'bi', 'Bilingual (Myanmar + English)'
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PUBLISHED,
+        db_index=True,
+        help_text="Course editorial lifecycle state."
+    )
+    membership_tier_required = models.CharField(
+        max_length=16,
+        choices=MembershipTierRequired.choices,
+        default=MembershipTierRequired.STANDARD,
+        db_index=True,
+        help_text="Minimum membership tier required to access this course."
+    )
+    certificate_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Additional certificate issuance fee (in MMK). 0 if included in course/membership."
+    )
     title = models.CharField(max_length=255, default="Diploma in Cyber Security")
     slug = models.SlugField(unique=True, db_index=True)
     subject = models.ForeignKey(
@@ -54,8 +192,41 @@ class Course(BaseModel):
         related_name='courses',
     )
     description = models.TextField()
+    level = models.CharField(
+        max_length=16,
+        choices=Level.choices,
+        default=Level.ALL_LEVELS,
+        db_index=True,
+    )
+    language = models.CharField(
+        max_length=8,
+        choices=Language.choices,
+        default=Language.BURMESE,
+    )
+    is_premium = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Requires Premium membership tier or individual course purchase.",
+    )
+    certificate_eligible = models.BooleanField(
+        default=True,
+        help_text="Grants verified completion certificate upon passing criteria.",
+    )
+    exam_required = models.BooleanField(
+        default=False,
+        help_text="Requires passing an official proctored examination before certification.",
+    )
+    exam_voucher_price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text="Price for specialized proctored examination voucher (in MMK). 0 if included in course.",
+    )
     duration_months = models.PositiveSmallIntegerField(default=10)
     is_published = models.BooleanField(default=True, db_index=True)
+    is_official = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Designates official Myanmar E-Learning platform course created/owned by administration."
+    )
     thumbnail = models.ImageField(upload_to='courses/', null=True, blank=True)
 
     # Commercial settings — teachers price their own courses; the platform keeps
@@ -85,9 +256,38 @@ class Course(BaseModel):
     def __str__(self):
         return self.title
 
+    def save(self, *args, **kwargs):
+        if self.owner and hasattr(self.owner, 'is_admin') and self.owner.is_admin:
+            self.is_official = True
+        elif self.owner is None:
+            self.is_official = True
+        if self.status == self.Status.PUBLISHED:
+            self.is_published = True
+        elif self.status in (self.Status.DRAFT, self.Status.PENDING_REVIEW, self.Status.ARCHIVED):
+            self.is_published = False
+        super().save(*args, **kwargs)
+
     @property
     def is_free(self):
         return self.price is None or self.price <= 0
+
+    @property
+    def is_official_platform_course(self):
+        """Returns True if marked official or authored by administration / unassigned."""
+        if self.is_official:
+            return True
+        if self.owner is None:
+            return True
+        if hasattr(self.owner, 'is_admin') and self.owner.is_admin:
+            return True
+        return False
+
+    @property
+    def publisher_display_name(self):
+        """Displays 'Myanmar E-Learning' for official platform courses, or the instructor's name."""
+        if self.is_official_platform_course:
+            return "Myanmar E-Learning"
+        return self.owner.get_full_name() or self.owner.username
 
 
 class Module(BaseModel):
@@ -195,8 +395,20 @@ class Quiz(BaseModel):
     """
     Multiple-choice knowledge evaluation for a lesson or module.
     """
+    class QuizType(models.TextChoices):
+        QUIZ = 'quiz', 'Module/Lesson Quiz'
+        EXAM = 'exam', 'Proctored Final Exam'
+        PRACTICE_EXAM = 'practice_exam', 'Practice Exam'
+        PRACTICAL = 'practical', 'Practical Assessment'
+
     lesson = models.OneToOneField(Lesson, on_delete=models.CASCADE, related_name='quiz')
     title = models.CharField(max_length=255)
+    quiz_type = models.CharField(
+        max_length=20,
+        choices=QuizType.choices,
+        default=QuizType.QUIZ,
+        db_index=True,
+    )
     passing_percentage = models.PositiveSmallIntegerField(default=75)
     max_attempts = models.PositiveSmallIntegerField(default=3)
 
@@ -225,6 +437,36 @@ class Choice(BaseModel):
 
     def __str__(self):
         return f"{'[✓]' if self.is_correct else '[ ]'} {self.text[:50]}"
+
+
+class QuizAttempt(BaseModel):
+    """
+    Pedagogical audit trail for every student attempt at a quiz or exam.
+    """
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='quiz_attempts',
+    )
+    quiz = models.ForeignKey(
+        Quiz,
+        on_delete=models.CASCADE,
+        related_name='attempts',
+    )
+    attempt_number = models.PositiveSmallIntegerField(default=1)
+    score_percentage = models.PositiveSmallIntegerField(default=0)
+    passed = models.BooleanField(default=False)
+    points_earned = models.PositiveIntegerField(default=0)
+    answers_data = models.JSONField(default=dict, blank=True)
+    time_taken_seconds = models.PositiveIntegerField(default=0)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.student.username} - {self.quiz.title} (Attempt #{self.attempt_number}: {self.score_percentage}%)"
 
 
 class Assignment(BaseModel):
@@ -300,6 +542,7 @@ class Enrollment(BaseModel):
     )
     progress_pct = models.PositiveSmallIntegerField(default=0)
     enrolled_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    started_at = models.DateTimeField(blank=True, null=True, db_index=True, help_text="First accessed lesson timestamp.")
     completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -311,6 +554,29 @@ class Enrollment(BaseModel):
 
     def __str__(self):
         return f"{self.student.username} -> {self.course.title} ({self.get_status_display()})"
+
+    @property
+    def completed_lessons_count(self):
+        from .models import UserProgress
+        return UserProgress.objects.filter(
+            user=self.student,
+            lesson__module__course=self.course,
+            is_completed=True,
+        ).count()
+
+    @property
+    def completed_modules_count(self):
+        total_completed = 0
+        for mod in self.course.modules.prefetch_related('lessons').all():
+            total_lessons = mod.lessons.count()
+            if total_lessons > 0:
+                completed = self.student.progress_records.filter(
+                    lesson__module=mod,
+                    is_completed=True,
+                ).count()
+                if completed >= total_lessons:
+                    total_completed += 1
+        return total_completed
 
 
 

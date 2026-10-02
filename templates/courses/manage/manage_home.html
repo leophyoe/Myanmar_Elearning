@@ -10,7 +10,9 @@
             <p class="text-xs text-slate-400 mt-1">Create subjects, structure courses, add modules and publish lessons.</p>
         </div>
         <div class="flex flex-wrap gap-2">
+            {% if user.is_admin %}
             <a href="{% url 'subject-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Subject</a>
+            {% endif %}
             <a href="{% url 'course-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Course</a>
             <a href="{% url 'module-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Module</a>
             <a href="{% url 'assignment-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Assignment</a>
@@ -26,6 +28,7 @@
         </div>
     </div>
 
+    {% if user.is_admin %}
     <!-- Subjects -->
     <section class="mb-10">
         <h2 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Subjects</h2>
@@ -53,6 +56,7 @@
         <p class="text-xs text-slate-500">No subjects yet — create one to group your courses.</p>
         {% endif %}
     </section>
+    {% endif %}
 
     <!-- Courses -->
     <section>
@@ -116,7 +120,19 @@
             {% endfor %}
         </div>
         {% empty %}
-        <p class="text-xs text-slate-500">No courses yet.</p>
+        <div class="p-8 rounded-xl bg-slate-900 border border-slate-800 text-center">
+            <p class="text-sm text-slate-300 font-semibold mb-1">
+                <span class="lang-en">No Personal Courses Created Yet</span>
+                <span class="lang-my">ဆရာကိုယ်တိုင် ဖန်တီးထားသော သင်ရိုးများ မရှိသေးပါ</span>
+            </p>
+            <p class="text-xs text-slate-500 mb-4">
+                <span class="lang-en">Official platform programs are managed by administrators. Create your own course to publish curriculum here.</span>
+                <span class="lang-my">ပလက်ဖောင်းတရားဝင် သင်ရိုးများကို Admin များက စီမံခန့်ခွဲပါသည်။ သင်ကိုယ်တိုင် သင်ကြားလိုသော သင်ရိုးများကို စတင်ဖန်တီးနိုင်ပါသည်။</span>
+            </p>
+            <a href="{% url 'course-create' %}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition">
+                + Create Course
+            </a>
+        </div>
         {% endfor %}
     </section>
 </div>

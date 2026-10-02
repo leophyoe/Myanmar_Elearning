@@ -24,6 +24,7 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
 ]
 
 # Third-Party Applications (Dynamically added if installed)
@@ -57,6 +58,7 @@ LOCAL_APPS = [
     'apps.console',
     'apps.terminal',
     'apps.vpn',
+    'apps.partner',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -96,6 +98,11 @@ ASGI_APPLICATION = 'config.asgi.application'
 
 # Custom Abstract User Model
 AUTH_USER_MODEL = 'users.User'
+
+AUTHENTICATION_BACKENDS = [
+    'apps.users.backends.UniversalAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 # Authentication redirects (named URLs from apps.users.urls)
 LOGIN_URL = 'login'

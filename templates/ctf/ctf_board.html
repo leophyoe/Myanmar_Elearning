@@ -32,10 +32,13 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {% for challenge in cat_challenges %}
-                {% with is_solved=challenge.id in solved_challenge_ids %}
-                <div class="p-5 rounded-xl border transition cursor-pointer flex flex-col justify-between shadow-lg
-                    {% if is_solved %} bg-emerald-950/20 border-emerald-700/60 {% else %} bg-slate-900 border-slate-800 hover:border-cyan-500/50 {% endif %}"
-                    onclick="openChallengeModal('{{ challenge.id }}', '{{ challenge.title|escapejs }}', '{{ challenge.points }}', '{{ challenge.get_difficulty_display }}', '{{ challenge.description|escapejs }}', {{ is_solved|yesno:'true,false' }})">
+                {% if challenge.id in solved_challenge_ids %}
+                <div class="p-5 rounded-xl border transition cursor-pointer flex flex-col justify-between shadow-lg bg-emerald-950/20 border-emerald-700/60"
+                    onclick="openChallengeModal('{{ challenge.id }}', '{{ challenge.title|escapejs }}', '{{ challenge.points }}', '{{ challenge.get_difficulty_display }}', '{{ challenge.description|escapejs }}', true)">
+                {% else %}
+                <div class="p-5 rounded-xl border transition cursor-pointer flex flex-col justify-between shadow-lg bg-slate-900 border-slate-800 hover:border-cyan-500/50"
+                    onclick="openChallengeModal('{{ challenge.id }}', '{{ challenge.title|escapejs }}', '{{ challenge.points }}', '{{ challenge.get_difficulty_display }}', '{{ challenge.description|escapejs }}', false)">
+                {% endif %}
 
                     <div>
                         <div class="flex justify-between items-center text-xs mb-2">
@@ -53,7 +56,7 @@
                     </div>
 
                     <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between items-center text-[11px]">
-                        {% if is_solved %}
+                        {% if challenge.id in solved_challenge_ids %}
                             <span class="text-emerald-400 font-bold flex items-center space-x-1">
                                 <span>✓</span>
                                 <span>SOLVED</span>
@@ -67,7 +70,6 @@
                         {% endif %}
                     </div>
                 </div>
-                {% endwith %}
                 {% endfor %}
             </div>
         </div>

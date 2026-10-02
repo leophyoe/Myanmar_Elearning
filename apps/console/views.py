@@ -56,9 +56,9 @@ class ConsoleHomeView(AdminRequiredMixin, TemplateView):
             'teachers': User.objects.filter(role=UserRole.TEACHER).count(),
             'admins': User.objects.filter(role=UserRole.ADMIN).count(),
             'deactivated': User.objects.filter(is_active=False).count(),
-            'pending_teachers': User.objects.filter(
-                role=UserRole.TEACHER, is_active=False
-            ).count(),
+            'pending_teachers': User.objects.filter(role=UserRole.TEACHER).filter(
+                Q(is_active=False) | Q(teacher_profile__is_verified=False)
+            ).distinct().count(),
             'courses': Course.objects.count(),
             'published_courses': Course.objects.filter(is_published=True).count(),
             'paid_courses': Course.objects.exclude(price=0).count(),
@@ -107,7 +107,12 @@ class UserListView(AdminRequiredMixin, TemplateView):
         if status == 'active':
             qs = qs.filter(is_active=True)
         elif status == 'inactive':
-            qs = qs.filter(is_active=False)
+            if role == 'teacher':
+                qs = qs.filter(
+                    Q(is_active=False) | Q(role=UserRole.TEACHER, teacher_profile__is_verified=False)
+                ).distinct()
+            else:
+                qs = qs.filter(is_active=False)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -265,17 +270,75 @@ class UserToggleActiveView(AdminRequiredMixin, View):
             messages.error(request, 'You cannot deactivate your own account.')
             return redirect('console-user-detail', user_id=target.pk)
 
-        target.is_active = not target.is_active
-        target.save(update_fields=['is_active'])
-
-        if target.is_active:
-            messages.success(request, f'“{target.username}” reactivated.')
+        if target.role == UserRole.TEACHER and hasattr(target, 'teacher_profile') and not target.teacher_profile.is_verified:
+            target.is_active = True
+            target.save(update_fields=['is_active'])
+            target.teacher_profile.is_verified = True
+            target.teacher_profile.save(update_fields=['is_verified'])
+            from django.contrib.auth.models import Group
+            instructor_group, _ = Group.objects.get_or_create(name='Instructor')
+            target.groups.add(instructor_group)
+            messages.success(request, f'“{target.username}” verified and approved as instructor.')
         else:
-            messages.warning(
-                request,
-                f'“{target.username}” deactivated — they can no longer sign in. '
-                f'Related data is kept.'
-            )
+            target.is_active = not target.is_active
+            target.save(update_fields=['is_active'])
+
+            if target.is_active:
+                if hasattr(target, 'teacher_profile'):
+                    target.teacher_profile.is_verified = True
+                    target.teacher_profile.save(update_fields=['is_verified'])
+                from django.contrib.auth.models import Group
+                instructor_group, _ = Group.objects.get_or_create(name='Instructor')
+                target.groups.add(instructor_group)
+                messages.success(request, f'“{target.username}” activated and approved.')
+            else:
+                messages.warning(
+                    request,
+                    f'“{target.username}” deactivated — they can no longer sign in. '
+                    f'Related data is kept.'
+                )
+        next_url = request.POST.get('next') or request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect('console-user-detail', user_id=target.pk)
+
+
+class UserApproveInstructorView(AdminRequiredMixin, View):
+    """POST-only: Verify teacher profile, promote role, and grant Instructor group permission."""
+
+    def post(self, request, *args, **kwargs):
+        target = get_object_or_404(User, pk=self.kwargs['user_id'])
+        from django.contrib.auth.models import Group
+        from django.utils import timezone
+        from apps.users.models import UserRole, ActiveMode, TeacherProfile, InstructorApplication
+
+        target.role = UserRole.TEACHER
+        target.active_mode = ActiveMode.INSTRUCTOR
+        target.save(update_fields=['role', 'active_mode'])
+
+        instructor_group, _ = Group.objects.get_or_create(name='Instructor')
+        target.groups.add(instructor_group)
+
+        profile, _ = TeacherProfile.objects.get_or_create(user=target)
+        profile.is_verified = True
+
+        app = target.instructor_applications.filter(status=InstructorApplication.Status.PENDING).first()
+        if app:
+            app.status = InstructorApplication.Status.APPROVED
+            app.reviewed_by = request.user
+            app.reviewed_at = timezone.now()
+            app.save(update_fields=['status', 'reviewed_by', 'reviewed_at'])
+            profile.level = app.awarded_level
+            if app.department:
+                profile.department = app.department
+            if app.title:
+                profile.title = app.title
+
+        profile.save()
+        messages.success(request, f'Instructor permissions verified and approved for “{target.username}”.')
+        next_url = request.POST.get('next') or request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
         return redirect('console-user-detail', user_id=target.pk)
 
 

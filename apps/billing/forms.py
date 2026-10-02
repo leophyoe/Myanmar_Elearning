@@ -2,7 +2,7 @@ from django import forms
 from django.conf import settings
 
 from apps.courses.forms import INPUT, TEXTAREA
-from .models import Payment
+from .models import Payment, UserSubscription
 
 
 class PaymentSubmitForm(forms.ModelForm):
@@ -20,6 +20,54 @@ class PaymentSubmitForm(forms.ModelForm):
             'note': forms.Textarea(
                 attrs={'class': TEXTAREA, 'rows': 3,
                        'placeholder': 'Anything the reviewer should know'}
+            ),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        reference = (cleaned.get('reference') or '').strip()
+        if not reference and not cleaned.get('receipt'):
+            raise forms.ValidationError(
+                'Add the transaction reference, upload the receipt, or both.'
+            )
+        return cleaned
+
+    def clean_receipt(self):
+        upload = self.cleaned_data.get('receipt')
+        if upload and hasattr(upload, 'size'):
+            limit = getattr(settings, 'PAYMENT_RECEIPT_MAX_MB', 10) * 1024 * 1024
+            if upload.size > limit:
+                raise forms.ValidationError(
+                    f'Receipt is {upload.size // (1024 * 1024)} MB — '
+                    f'the limit is {getattr(settings, "PAYMENT_RECEIPT_MAX_MB", 10)} MB.'
+                )
+        return upload
+
+
+class SubscriptionSubmitForm(forms.ModelForm):
+    """Student submits proof of payment for a membership plan."""
+
+    billing_cycle = forms.ChoiceField(
+        choices=(
+            (UserSubscription.BillingCycle.MONTHLY, 'Monthly Billing'),
+            (UserSubscription.BillingCycle.YEARLY, 'Annual Billing (Save ~17%)'),
+        ),
+        widget=forms.Select(attrs={'class': INPUT}),
+        initial=UserSubscription.BillingCycle.MONTHLY,
+    )
+
+    class Meta:
+        model = Payment
+        fields = ('billing_cycle', 'method', 'reference', 'receipt', 'note')
+        widgets = {
+            'method': forms.Select(attrs={'class': INPUT}),
+            'reference': forms.TextInput(
+                attrs={'class': INPUT, 'placeholder': 'Transaction ID or wallet phone number'}
+            ),
+            'receipt': forms.ClearableFileInput(attrs={'class': INPUT}),
+            'note': forms.Textarea(
+                attrs={'class': TEXTAREA, 'rows': 3,
+                       'placeholder': 'Optional note for administrator review'}
             ),
         }
 

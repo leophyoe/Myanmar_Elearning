@@ -1,0 +1,56 @@
+{
+  "folder": "03_artificial_intelligence",
+  "slug": "artificial-intelligence-machine-learning",
+  "title": "Professional Certificate in Artificial Intelligence & Machine Learning",
+  "subject": "Artificial Intelligence & Machine Learning",
+  "level": "intermediate",
+  "duration_months": 6,
+  "official": true,
+  "credential": "Professional Certificate",
+  "description": "Practical AI curriculum covering exploratory data science, supervised & unsupervised machine learning, deep learning with PyTorch, computer vision, and modern Generative AI/LLM applications.",
+  "prerequisites": "Python programming foundations and basic linear algebra/statistics.",
+  "target_audience": "Software Engineers, Data Scientists, and Machine Learning Practitioners.",
+  "modules": [
+    {
+      "order": 1,
+      "code": "AI-01",
+      "title": "Data Science Foundations with NumPy & Pandas",
+      "lessons": [
+        "Vectorized Computing & Array Operations with NumPy",
+        "Data Manipulation & Feature Engineering with Pandas",
+        "Data Visualization with Matplotlib & Seaborn"
+      ]
+    },
+    {
+      "order": 2,
+      "code": "AI-02",
+      "title": "Classical Machine Learning Algorithms",
+      "lessons": [
+        "Supervised Learning: Linear & Logistic Regression",
+        "Decision Trees, Random Forests & Ensemble Methods",
+        "Unsupervised Learning: K-Means & PCA Dimensionality Reduction",
+        "Model Evaluation, Cross-Validation & Hyperparameter Tuning"
+      ]
+    },
+    {
+      "order": 3,
+      "code": "AI-03",
+      "title": "Deep Learning & Neural Networks with PyTorch",
+      "lessons": [
+        "Artificial Neural Networks & Gradient Descent",
+        "Building Deep Learning Models with PyTorch",
+        "Convolutional Neural Networks (CNN) for Image Recognition"
+      ]
+    },
+    {
+      "order": 4,
+      "code": "AI-04",
+      "title": "Generative AI, Large Language Models & RAG",
+      "lessons": [
+        "Transformer Architecture & LLM Foundations",
+        "Prompt Engineering & Structured Outputs with Gemini API",
+        "Vector Databases & Retrieval-Augmented Generation (RAG)"
+      ]
+    }
+  ]
+}

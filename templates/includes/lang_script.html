@@ -1,0 +1,33 @@
+<script>
+    (function () {
+        function applyLanguage(lang) {
+            var el = document.documentElement;
+            el.setAttribute('data-lang', lang);
+            el.classList.toggle('lang-en', lang === 'en');
+            el.classList.toggle('lang-my', lang === 'my');
+            try { localStorage.setItem('mel-lang', lang); } catch (e) {}
+            document.cookie = "mel_lang=" + lang + ";path=/;max-age=31536000;SameSite=Lax";
+            
+            // Update placeholders with data-placeholder-en / data-placeholder-my
+            document.querySelectorAll('[data-placeholder-en]').forEach(function(input) {
+                var ph = (lang === 'my') ? input.getAttribute('data-placeholder-my') : input.getAttribute('data-placeholder-en');
+                if (ph) { input.setAttribute('placeholder', ph); }
+            });
+        }
+
+        document.addEventListener('click', function (event) {
+            var target = event.target;
+            if (!target || !target.closest) { return; }
+            if (!target.closest('[data-lang-toggle]')) { return; }
+            var current = document.documentElement.getAttribute('data-lang') || 'en';
+            var nextLang = (current === 'en') ? 'my' : 'en';
+            applyLanguage(nextLang);
+        });
+
+        // Initialize placeholders on DOM load
+        document.addEventListener('DOMContentLoaded', function() {
+            var current = document.documentElement.getAttribute('data-lang') || 'en';
+            applyLanguage(current);
+        });
+    })();
+</script>

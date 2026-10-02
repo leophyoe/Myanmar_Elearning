@@ -1,0 +1,45 @@
+{
+  "folder": "06_igcse_computer_science",
+  "slug": "igcse-computer-science-curriculum",
+  "title": "IGCSE / O Level Computer Science & ICT Preparation",
+  "subject": "IGCSE / O Level",
+  "level": "beginner",
+  "duration_months": 6,
+  "official": true,
+  "credential": "Academic Preparation Certificate",
+  "description": "International secondary academic curriculum covering computational thinking, programming logic, data representation, logic gates, and theory of computer systems.",
+  "prerequisites": "Secondary school student or adult learner preparing for Cambridge/Edexcel examinations.",
+  "target_audience": "IGCSE / O Level candidates, High School Students, and Computer Science Beginners.",
+  "modules": [
+    {
+      "order": 1,
+      "code": "IGCSE-01",
+      "title": "Theory of Computer Systems & Data Representation",
+      "lessons": [
+        "Number Systems: Binary, Denary & Hexadecimal Conversions",
+        "Data Representation: Text, Sound & Bitmap Images",
+        "Von Neumann Architecture, CPU Registers & Fetch-Execute Cycle"
+      ]
+    },
+    {
+      "order": 2,
+      "code": "IGCSE-02",
+      "title": "Logic Gates & Algorithm Problem Solving",
+      "lessons": [
+        "Logic Gates, Boolean Expressions & Truth Tables",
+        "Flowcharts, Trace Tables & Algorithm Design",
+        "Standard Pseudocode Conventions & Problem Decomposition"
+      ]
+    },
+    {
+      "order": 3,
+      "code": "IGCSE-03",
+      "title": "Practical Programming & Exam Readiness",
+      "lessons": [
+        "Sequence, Selection & Iteration in Structured Code",
+        "Input Validation, Verification & Testing Strategies",
+        "IGCSE Past Paper Case Studies & Exam Solving"
+      ]
+    }
+  ]
+}

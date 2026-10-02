@@ -61,12 +61,14 @@
                         </span>
                     </td>
                     <td class="px-5 py-3">
-                        {% if u.is_active %}
-                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 uppercase font-bold">Active</span>
-                        {% elif u.role == 'teacher' %}
-                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 uppercase font-bold" title="Registered through /register/ — activate to let them sign in">Awaiting approval</span>
-                        {% else %}
+                        {% if not u.is_active and u.role == 'teacher' %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 uppercase font-bold" title="Registered teacher account — activate to let them sign in">Awaiting approval</span>
+                        {% elif not u.is_active %}
                         <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-950 text-red-300 border border-red-800 uppercase font-bold">Deactivated</span>
+                        {% elif u.role == 'teacher' and not u.teacher_profile.is_verified %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 uppercase font-bold" title="Instructor privileges awaiting admin verification">Awaiting approval</span>
+                        {% else %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 uppercase font-bold">Active</span>
                         {% endif %}
                     </td>
                     <td class="px-5 py-3 text-right whitespace-nowrap space-x-2">
@@ -75,6 +77,13 @@
                             {% csrf_token %}
                             <button type="submit" class="text-xs px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition shadow-sm">
                                 Approve &amp; Activate
+                            </button>
+                        </form>
+                        {% elif u.role == 'teacher' and not u.teacher_profile.is_verified %}
+                        <form method="POST" action="{% url 'console-user-approve-instructor' user_id=u.pk %}?next={{ request.get_full_path|urlencode }}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-xs px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition shadow-sm">
+                                Approve Instructor
                             </button>
                         </form>
                         {% endif %}

@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+
+{% block title %}Public Portfolios & Talent Directory - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 font-mono">
+
+    <!-- Directory Header -->
+    <div class="mb-10 text-center sm:text-left">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-950/80 border border-cyan-800 text-cyan-300 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    <span class="lang-en">Verified Talent Directory</span>
+                    <span class="lang-my">အတည်ပြုပြီး ပရိုဖိုင်များ စာရင်း</span>
+                </div>
+                <h1 class="text-3xl font-extrabold text-white tracking-tight">
+                    <span class="lang-en">Public Portfolios</span>
+                    <span class="lang-my">အများပြည်သူ ကြည့်ရှုနိုင်သော ပရိုဖိုင်များ</span>
+                </h1>
+                <p class="text-sm text-slate-400 mt-2 max-w-2xl">
+                    <span class="lang-en">Discover and verify talent from Myanmar E-Learning. Inspect hands-on cyber lab proof, CTF scores, verified certificates, and practical projects.</span>
+                    <span class="lang-my">Myanmar E-Learning မှ အရည်အသွေးမြင့် ကျောင်းသားများနှင့် ဆရာများ၏ ပရိုဖိုင်များ၊ လက်တွေ့ Lab စွမ်းဆောင်ရည်၊ CTF ရမှတ်များ၊ အတည်ပြုပြီး အောင်လက်မှတ်များနှင့် ပရောဂျက်များကို စစ်ဆေးကြည့်ရှုနိုင်ပါသည်။</span>
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                {% if user.is_authenticated %}
+                <a href="{% url 'portfolio-detail' username=request.user.username %}" class="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition flex items-center gap-2 shadow-lg shadow-cyan-600/20">
+                    <span class="lang-en">👤 My Public Portfolio</span>
+                    <span class="lang-my">👤 ကျွန်ုပ်၏ ပရိုဖိုင်</span>
+                </a>
+                <a href="{% url 'portfolio-edit' %}" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold transition">
+                    <span class="lang-en">✏️ Edit Profile</span>
+                    <span class="lang-my">✏️ ပရိုဖိုင် ပြင်ဆင်မည်</span>
+                </a>
+                {% else %}
+                <a href="{% url 'register' %}" class="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition shadow-lg shadow-cyan-600/20">
+                    <span class="lang-en">Join &amp; Build Portfolio &rarr;</span>
+                    <span class="lang-my">ပရိုဖိုင် တည်ဆောက်ရန် စာရင်းသွင်းမည် &rarr;</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Controls -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mb-8 space-y-5">
+        <form method="GET" action="{% url 'portfolio-list' %}" class="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+            <!-- Search Bar -->
+            <div class="flex-grow relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                    🔍
+                </div>
+                <input type="text" name="q" value="{{ q }}"
+                       placeholder="Search by name, username, account ID, bio, or skill..."
+                       data-placeholder-en="Search by name, username, account ID, bio, or skill..."
+                       data-placeholder-my="အမည်၊ အကောင့်နံပါတ်၊ ကျွမ်းကျင်မှုဖြင့် ရှာဖွေပါ..."
+                       class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500 transition">
+            </div>
+
+            <!-- Role Hidden Filter or Preserved -->
+            {% if role %}
+            <input type="hidden" name="role" value="{{ role }}">
+            {% endif %}
+            {% if skill %}
+            <input type="hidden" name="skill" value="{{ skill }}">
+            {% endif %}
+
+            <!-- Submit & Reset -->
+            <div class="flex items-center gap-2">
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition shadow-md shadow-cyan-600/20">
+                    <span class="lang-en">Search</span><span class="lang-my">ရှာဖွေမည်</span>
+                </button>
+                {% if q or role or skill %}
+                <a href="{% url 'portfolio-list' %}" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs transition">
+                    <span class="lang-en">Clear Filters</span><span class="lang-my">စစ်ထုတ်မှု ပယ်ဖျက်မည်</span>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+
+        <!-- Role Filter Tabs -->
+        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800/80 text-xs">
+            <span class="text-slate-500 text-[11px] uppercase tracking-wider mr-2">
+                <span class="lang-en">Filter by Role:</span>
+                <span class="lang-my">အဆင့်အလိုက် စစ်ထုတ်ရန်:</span>
+            </span>
+            
+            <a href="?{% if q %}q={{ q }}&amp;{% endif %}{% if skill %}skill={{ skill }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg border transition font-semibold
+               {% if not role %}bg-cyan-950 border-cyan-700 text-cyan-300{% else %}bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700{% endif %}">
+                <span class="lang-en">All</span><span class="lang-my">အားလုံး</span> ({{ total_active }})
+            </a>
+
+            <a href="?role=student{% if q %}&amp;q={{ q }}{% endif %}{% if skill %}&amp;skill={{ skill }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg border transition font-semibold
+               {% if role == 'student' %}bg-cyan-950 border-cyan-700 text-cyan-300{% else %}bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700{% endif %}">
+                <span class="lang-en">Students</span><span class="lang-my">ကျောင်းသားများ</span> ({{ students_count }})
+            </a>
+
+            <a href="?role=teacher{% if q %}&amp;q={{ q }}{% endif %}{% if skill %}&amp;skill={{ skill }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg border transition font-semibold
+               {% if role == 'teacher' %}bg-emerald-950 border-emerald-700 text-emerald-300{% else %}bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700{% endif %}">
+                <span class="lang-en">Instructors</span><span class="lang-my">ဆရာများ</span> ({{ teachers_count }})
+            </a>
+
+            <a href="?role=associate{% if q %}&amp;q={{ q }}{% endif %}{% if skill %}&amp;skill={{ skill }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg border transition font-semibold
+               {% if role == 'associate' %}bg-purple-950 border-purple-700 text-purple-300{% else %}bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700{% endif %}">
+                <span class="lang-en">MEL Associates</span><span class="lang-my">အသိအမှတ်ပြု Associates</span> ({{ associates_count }})
+            </a>
+        </div>
+
+        <!-- Popular Skills Tag Chips -->
+        {% if popular_skills %}
+        <div class="flex flex-wrap items-center gap-1.5 pt-3 border-t border-slate-800/80 text-[11px]">
+            <span class="text-slate-500 uppercase tracking-wider mr-2 text-[10px]">Popular Skills:</span>
+            {% for item in popular_skills %}
+                <a href="?skill={{ item.name }}{% if role %}&amp;role={{ role }}{% endif %}{% if q %}&amp;q={{ q }}{% endif %}"
+                   class="px-2.5 py-1 rounded-md border transition
+                   {% if skill|lower == item.name|lower %}bg-cyan-500/20 text-cyan-300 border-cyan-500 font-bold
+                   {% else %}bg-slate-950/80 text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-200{% endif %}">
+                    {{ item.name }}
+                    <span class="text-[9px] text-slate-500 ml-0.5">({{ item.user_count }})</span>
+                </a>
+            {% endfor %}
+            {% if skill %}
+            <a href="?{% if role %}role={{ role }}&amp;{% endif %}{% if q %}q={{ q }}{% endif %}"
+               class="px-2 py-1 rounded-md bg-red-950/60 border border-red-800 text-red-300 text-[10px] hover:bg-red-900 transition">
+                &times; Remove Skill Filter
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Active Filter Indicator -->
+    {% if q or role or skill %}
+    <div class="mb-6 flex items-center justify-between text-xs text-slate-400 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800">
+        <div>
+            Showing results for
+            {% if q %}query: <strong class="text-white">“{{ q }}”</strong>{% endif %}
+            {% if role %}• role: <strong class="text-cyan-400 uppercase">{{ role }}</strong>{% endif %}
+            {% if skill %}• skill: <strong class="text-emerald-400">{{ skill }}</strong>{% endif %}
+        </div>
+        <a href="{% url 'portfolio-list' %}" class="text-cyan-400 hover:underline">Reset</a>
+    </div>
+    {% endif %}
+
+    <!-- Portfolios Grid -->
+    {% if portfolio_users %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for u in portfolio_users %}
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between shadow-lg group">
+            <div>
+                <!-- Top Header: Avatar & Names -->
+                <div class="flex items-start gap-4 mb-4">
+                    {% if u.avatar %}
+                    <img src="{{ u.avatar.url }}" alt="{{ u.get_full_name }}" class="w-14 h-14 rounded-xl object-cover border border-slate-700">
+                    {% else %}
+                    <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-xl font-bold uppercase shadow-md shadow-cyan-500/20 flex-shrink-0">
+                        {{ u.first_name|default:u.username|slice:":1" }}
+                    </div>
+                    {% endif %}
+
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="text-base font-bold text-white group-hover:text-cyan-400 transition truncate">
+                                {{ u.get_full_name|default:u.username }}
+                            </h3>
+                            {% if u.is_associate %}
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-950 border border-purple-700 text-purple-300 uppercase">
+                                Associate
+                            </span>
+                            {% endif %}
+                        </div>
+                        <p class="text-xs text-cyan-400 font-mono">@{{ u.username }}</p>
+                        <p class="text-[10px] text-slate-500 font-mono mt-0.5">{{ u.account_id|default:"MEL-MEMBER" }}</p>
+                    </div>
+                </div>
+
+                <!-- Roles & Status Pill -->
+                <div class="flex flex-wrap items-center gap-1.5 mb-3">
+                    <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase border
+                        {% if u.role == 'admin' %}bg-purple-950 text-purple-300 border-purple-800
+                        {% elif u.role == 'teacher' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                        {% else %}bg-cyan-950 text-cyan-300 border-cyan-800{% endif %}">
+                        {{ u.get_role_display }}
+                    </span>
+                    {% if u.teacher_profile %}
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-emerald-400">
+                        {{ u.teacher_profile.title }}
+                    </span>
+                    {% elif u.student_profile and u.student_profile.batch %}
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-400">
+                        {{ u.student_profile.batch }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Bio Snippet -->
+                <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed mb-4 min-h-[2rem]">
+                    {% if u.student_profile and u.student_profile.bio %}
+                        {{ u.student_profile.bio }}
+                    {% elif u.teacher_profile and u.teacher_profile.qualifications %}
+                        {{ u.teacher_profile.qualifications }}
+                    {% else %}
+                        Cybersecurity practitioner and platform member at Myanmar E-Learning.
+                    {% endif %}
+                </p>
+
+                <!-- Top Skills -->
+                {% if u.skills.all %}
+                <div class="mb-4">
+                    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-1.5">Top Skills</div>
+                    <div class="flex flex-wrap gap-1">
+                        {% for s in u.skills.all|slice:":4" %}
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
+                            {{ s.name }}
+                        </span>
+                        {% endfor %}
+                        {% if u.skills.all.count > 4 %}
+                        <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-950 text-slate-500">
+                            +{{ u.skills.all.count|add:"-4" }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div>
+                <!-- Stats Row -->
+                <div class="grid grid-cols-3 gap-2 py-3 border-t border-slate-800/80 text-center mb-4 bg-slate-950/50 rounded-xl">
+                    <div>
+                        <div class="text-[10px] text-slate-500 uppercase">
+                            <span class="lang-en">Points</span><span class="lang-my">ရမှတ်</span>
+                        </div>
+                        <div class="text-xs font-bold text-amber-400 mt-0.5">{{ u.student_profile.points|default:0 }}</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-500 uppercase">
+                            <span class="lang-en">Projects</span><span class="lang-my">ပရောဂျက်</span>
+                        </div>
+                        <div class="text-xs font-bold text-cyan-400 mt-0.5">{{ u.portfolio_projects.count }}</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-500 uppercase">
+                            <span class="lang-en">Certs</span><span class="lang-my">အောင်လက်မှတ်</span>
+                        </div>
+                        <div class="text-xs font-bold text-emerald-400 mt-0.5">{{ u.certificates.count }}</div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <a href="{% url 'portfolio-detail' username=u.username %}"
+                   class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-cyan-600 hover:text-white border border-slate-700 text-cyan-400 text-xs font-bold transition flex items-center justify-center gap-1.5">
+                    <span><span class="lang-en">View Public Portfolio</span><span class="lang-my">ပရိုဖိုင် ကြည့်ရှုမည်</span></span>
+                    <span>&rarr;</span>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if is_paginated %}
+    <div class="mt-12 flex items-center justify-between border-t border-slate-800 pt-6 text-xs">
+        <div>
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if q %}&amp;q={{ q }}{% endif %}{% if role %}&amp;role={{ role }}{% endif %}{% if skill %}&amp;skill={{ skill }}{% endif %}"
+               class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-400 transition">
+                <span class="lang-en">&larr; Previous Page</span>
+                <span class="lang-my">&larr; ရှေ့စာမျက်နှာ</span>
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="text-slate-500">
+            <span class="lang-en">Page <strong class="text-white">{{ page_obj.number }}</strong> of <strong class="text-white">{{ page_obj.paginator.num_pages }}</strong></span>
+            <span class="lang-my">စာမျက်နှာ <strong class="text-white">{{ page_obj.number }}</strong> / <strong class="text-white">{{ page_obj.paginator.num_pages }}</strong></span>
+        </div>
+
+        <div>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if q %}&amp;q={{ q }}{% endif %}{% if role %}&amp;role={{ role }}{% endif %}{% if skill %}&amp;skill={{ skill }}{% endif %}"
+               class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-cyan-400 transition">
+                <span class="lang-en">Next Page &rarr;</span>
+                <span class="lang-my">နောက်စာမျက်နှာ &rarr;</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="p-12 rounded-2xl bg-slate-900 border border-slate-800 text-center max-w-lg mx-auto">
+        <div class="w-16 h-16 rounded-full bg-slate-800 text-2xl flex items-center justify-center mx-auto mb-4">
+            🔍
+        </div>
+        <h3 class="text-lg font-bold text-white mb-2">
+            <span class="lang-en">No Portfolios Found</span>
+            <span class="lang-my">ပရိုဖိုင် မတွေ့ရှိပါ</span>
+        </h3>
+        <p class="text-xs text-slate-400 mb-6">
+            <span class="lang-en">We couldn't find any portfolios matching your query or filter criteria. Try searching with different keywords or clear the filters.</span>
+            <span class="lang-my">ရှာဖွေမှုနှင့် ကိုက်ညီသော ပရိုဖိုင် မရှိသေးပါ။ အခြားသော စကားလုံးများဖြင့် ရှာဖွေပါ သို့မဟုတ် စစ်ထုတ်မှုများကို ပယ်ဖျက်ပါ။</span>
+        </p>
+        <a href="{% url 'portfolio-list' %}" class="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition shadow-md shadow-cyan-600/20 inline-block">
+            <span class="lang-en">Clear All Filters &amp; View All</span>
+            <span class="lang-my">စစ်ထုတ်မှု အားလုံး ပယ်ဖျက်မည်</span>
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

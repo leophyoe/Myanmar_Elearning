@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Membership Plans & Pricing — Myanmar E-Learning{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-semibold mb-2">Student Membership Plans</span>
+        <h1 class="display-5 fw-bold text-dark mb-3">Affordable Learning for Everyone in Myanmar</h1>
+        <p class="lead text-muted mx-auto" style="max-width: 720px;">
+            Choose a plan that fits your study goals. Switch or upgrade anytime.
+            One account gives you seamless access to multi-category courses, practical labs, and verified certificates.
+        </p>
+    </div>
+
+    <!-- Pricing Cards Grid -->
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-5 align-items-stretch">
+        <!-- Starter Plan -->
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative">
+                <div class="card-body p-4 p-xl-5 d-flex flex-column">
+                    <div class="mb-4">
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-1 mb-2">Free Starter</span>
+                        <h3 class="fw-bold text-dark">Starter</h3>
+                        <p class="text-muted small">Ideal for exploring courses and starting your learning journey.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <span class="display-6 fw-bold text-dark">0</span>
+                        <span class="text-muted fw-semibold">MMK / Free</span>
+                    </div>
+
+                    <ul class="list-unstyled mb-5 flex-grow-1">
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
+                            <span>Selected Free Courses</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
+                            <span>Free Lessons & Video Previews</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
+                            <span>Basic Learning Resources</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
+                            <span>Selected Knowledge Quizzes</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center text-muted">
+                            <i class="bi bi-x-circle text-secondary me-2 fs-5"></i>
+                            <span>No Official Examinations</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center text-muted">
+                            <i class="bi bi-x-circle text-secondary me-2 fs-5"></i>
+                            <span>No Official Certificate</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center text-muted">
+                            <i class="bi bi-x-circle text-secondary me-2 fs-5"></i>
+                            <span>No Hands-on / Cyber Labs</span>
+                        </li>
+                    </ul>
+
+                    {% if current_subscription and current_subscription.plan.plan_type == 'starter' %}
+                        <button class="btn btn-outline-secondary w-100 py-2 rounded-3" disabled>Active Plan</button>
+                    {% else %}
+                        <a href="{% url 'subscribe' plan_type='starter' %}" class="btn btn-outline-primary w-100 py-2 rounded-3 fw-semibold">
+                            Get Started Free
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Standard Plan (Featured) -->
+        <div class="col">
+            <div class="card h-100 border-primary border-2 shadow rounded-4 overflow-hidden position-relative">
+                <div class="position-absolute top-0 end-0 bg-primary text-white text-uppercase px-3 py-1 fw-bold" style="font-size: 0.75rem; border-bottom-left-radius: 12px;">
+                    Most Popular
+                </div>
+                <div class="card-body p-4 p-xl-5 d-flex flex-column">
+                    <div class="mb-4">
+                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 mb-2">Standard Access</span>
+                        <h3 class="fw-bold text-dark">Standard</h3>
+                        <p class="text-muted small">Complete access to academic courses, quizzes, assignments & certificates.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex align-items-baseline">
+                            <span class="display-6 fw-bold text-primary">5,000</span>
+                            <span class="text-muted fw-semibold ms-2">MMK / month</span>
+                        </div>
+                        <span class="text-muted small">or 50,000 MMK / year (save 10,000 MMK)</span>
+                    </div>
+
+                    <ul class="list-unstyled mb-5 flex-grow-1">
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
+                            <span><strong>All Standard Courses</strong> in every discipline</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
+                            <span>Complete Video & Markdown Lectures</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
+                            <span>Quizzes & Graded Assignments</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
+                            <span><strong>Official Examination Access</strong></span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
+                            <span><strong>Verified Course Completion Certificates</strong></span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
+                            <span>Downloadable Study Materials</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center text-muted">
+                            <i class="bi bi-x-circle text-secondary me-2 fs-5"></i>
+                            <span>No Advanced Cyber Range Labs</span>
+                        </li>
+                    </ul>
+
+                    {% if current_subscription and current_subscription.plan.plan_type == 'standard' %}
+                        <button class="btn btn-primary w-100 py-2 rounded-3" disabled>Current Plan</button>
+                    {% else %}
+                        <a href="{% url 'subscribe' plan_type='standard' %}" class="btn btn-primary w-100 py-2 rounded-3 fw-semibold shadow-sm">
+                            Subscribe Standard
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Premium Plan -->
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative bg-dark text-white">
+                <div class="card-body p-4 p-xl-5 d-flex flex-column">
+                    <div class="mb-4">
+                        <span class="badge bg-warning text-dark rounded-pill px-3 py-1 mb-2">Full Power</span>
+                        <h3 class="fw-bold text-white">Premium</h3>
+                        <p class="text-white-50 small">All courses plus practical Cyber Range, real browser labs & live class discounts.</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex align-items-baseline">
+                            <span class="display-6 fw-bold text-warning">15,000</span>
+                            <span class="text-white-50 fw-semibold ms-2">MMK / month</span>
+                        </div>
+                        <span class="text-white-50 small">or 150,000 MMK / year (save 30,000 MMK)</span>
+                    </div>
+
+                    <ul class="list-unstyled mb-5 flex-grow-1">
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
+                            <span><strong>Everything in Standard</strong></span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
+                            <span><strong>All Premium & Advanced Courses</strong></span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
+                            <span><strong>Full Cyber Range & Terminal Access</strong></span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
+                            <span>Hands-on Docker Labs & CTF Challenges</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
+                            <span>Capstone Industry Projects</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
+                            <span><strong>20% Discount</strong> on Instructor Live Classes</span>
+                        </li>
+                        <li class="mb-3 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
+                            <span>Priority Student Support</span>
+                        </li>
+                    </ul>
+
+                    {% if current_subscription and current_subscription.plan.plan_type == 'premium' %}
+                        <button class="btn btn-warning text-dark w-100 py-2 rounded-3" disabled>Current Plan</button>
+                    {% else %}
+                        <a href="{% url 'subscribe' plan_type='premium' %}" class="btn btn-warning text-dark w-100 py-2 rounded-3 fw-semibold">
+                            Subscribe Premium
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+        <h3 class="fw-bold mb-4 text-center">Feature Breakdown & Entitlements</h3>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 40%;">Feature</th>
+                        <th class="text-center" style="width: 20%;">Starter (Free)</th>
+                        <th class="text-center" style="width: 20%;">Standard (5,000 MMK)</th>
+                        <th class="text-center" style="width: 20%;">Premium (15,000 MMK)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="fw-semibold">Monthly Price</td>
+                        <td class="text-center">0 MMK</td>
+                        <td class="text-center fw-bold text-primary">5,000 MMK</td>
+                        <td class="text-center fw-bold text-warning">15,000 MMK</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Annual Price</td>
+                        <td class="text-center">0 MMK</td>
+                        <td class="text-center">50,000 MMK</td>
+                        <td class="text-center">150,000 MMK</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Standard Courses (Python, CS, ICT, GED, etc.)</td>
+                        <td class="text-center text-muted">Previews only</td>
+                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Full Access</td>
+                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Full Access</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Premium & Advanced Specialist Courses</td>
+                        <td class="text-center text-muted">No</td>
+                        <td class="text-center text-muted">No</td>
+                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Full Access</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Official Exam & Verified Certificate</td>
+                        <td class="text-center text-muted">No</td>
+                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Included</td>
+                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Included</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Hands-on Cyber Range & Terminal Labs</td>
+                        <td class="text-center text-muted">No</td>
+                        <td class="text-center text-muted">No</td>
+                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Included</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Live Class Discount</td>
+                        <td class="text-center text-muted">None</td>
+                        <td class="text-center text-muted">Standard rate</td>
+                        <td class="text-center fw-bold text-success">20% OFF</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

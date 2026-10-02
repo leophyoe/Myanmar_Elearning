@@ -12,6 +12,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.NOTICE("Seeding Myanmar E-Learning curriculum..."))
 
         # 1. Main Course: Diploma in Cyber Security
+        from apps.users.models import User, UserRole
+        admin_user = User.objects.filter(role=UserRole.ADMIN).first()
+
         course, created = Course.objects.get_or_create(
             slug="diploma-in-cyber-security",
             defaults={
@@ -23,8 +26,16 @@ class Command(BaseCommand):
                 ),
                 "duration_months": 10,
                 "is_published": True,
+                "is_official": True,
+                "owner": admin_user,
             }
         )
+        if not course.is_official or (admin_user and course.owner != admin_user):
+            course.is_official = True
+            if admin_user:
+                course.owner = admin_user
+            course.save(update_fields=['is_official', 'owner'] if admin_user else ['is_official'])
+
         if created:
             self.stdout.write(self.style.SUCCESS(f"Created Course: {course.title}"))
 

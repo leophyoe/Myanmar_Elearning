@@ -1,0 +1,16 @@
+<!-- Language: read stored preference before first paint so there is no layout jump -->
+<script>
+    (function () {
+        var lang;
+        try { lang = localStorage.getItem('mel-lang'); } catch (e) {}
+        if (!lang) {
+            var match = document.cookie.match(/(?:^|;\s*)mel_lang=([^;]+)/);
+            if (match) { lang = match[1]; }
+        }
+        if (lang !== 'my' && lang !== 'en') { lang = 'en'; }
+        var el = document.documentElement;
+        el.setAttribute('data-lang', lang);
+        el.classList.toggle('lang-en', lang === 'en');
+        el.classList.toggle('lang-my', lang === 'my');
+    })();
+</script>

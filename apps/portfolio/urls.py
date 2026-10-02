@@ -1,7 +1,14 @@
 from django.urls import path
-from .views import PortfolioDetailView, PortfolioEditView, PortfolioNFCView, PortfolioQRView
+from .views import (
+    PortfolioDetailView,
+    PortfolioEditView,
+    PortfolioListView,
+    PortfolioNFCView,
+    PortfolioQRView,
+)
 
 urlpatterns = [
+    path('', PortfolioListView.as_view(), name='portfolio-list'),
     path('edit/', PortfolioEditView.as_view(), name='portfolio-edit'),
     path('qr/', PortfolioQRView.as_view(), name='portfolio-qr'),
     path('nfc/', PortfolioNFCView.as_view(), name='portfolio-nfc'),

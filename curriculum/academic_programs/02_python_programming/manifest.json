@@ -1,0 +1,58 @@
+{
+  "folder": "02_python_programming",
+  "slug": "python-programming-software-development",
+  "title": "Professional Certificate in Python Programming & Software Development",
+  "subject": "Python Programming",
+  "level": "beginner",
+  "duration_months": 4,
+  "official": true,
+  "credential": "Professional Certificate",
+  "description": "Master modern Python programming from syntax fundamentals and data structures to object-oriented architecture, web APIs with FastAPI/Django, automated testing, and Docker containerization.",
+  "prerequisites": "Basic computer literacy.",
+  "target_audience": "Junior Developers, Data Analysts, Automation Engineers, and System Administrators.",
+  "modules": [
+    {
+      "order": 1,
+      "code": "PY-01",
+      "title": "Python Core Essentials & Data Structures",
+      "lessons": [
+        "Python Syntax, Variables & Dynamic Typing",
+        "Control Flow, Conditionals & Loops",
+        "Functions, Scope & Lambda Expressions",
+        "Data Structures: Lists, Dictionaries, Sets & Comprehensions"
+      ]
+    },
+    {
+      "order": 2,
+      "code": "PY-02",
+      "title": "Object-Oriented Programming & Clean Architecture",
+      "lessons": [
+        "Classes, Objects, Attributes & Methods",
+        "Inheritance, Polymorphism & Composition",
+        "Magic Dunder Methods & Operator Overloading",
+        "Exception Handling, Context Managers & Clean Code"
+      ]
+    },
+    {
+      "order": 3,
+      "code": "PY-03",
+      "title": "Web Frameworks & REST APIs with FastAPI & Django",
+      "lessons": [
+        "HTTP Protocols, RESTful Architecture & JSON",
+        "Building High-Performance APIs with FastAPI & Pydantic",
+        "Relational Databases, SQLite & SQLModel/SQLAlchemy",
+        "JWT Authentication, Middleware & Security"
+      ]
+    },
+    {
+      "order": 4,
+      "code": "PY-04",
+      "title": "Testing, Tooling & Production Deployment",
+      "lessons": [
+        "Automated Unit Testing with Pytest & Mocking",
+        "Packaging Python Projects & Dependency Management",
+        "Containerizing Python Apps with Docker & CI/CD"
+      ]
+    }
+  ]
+}

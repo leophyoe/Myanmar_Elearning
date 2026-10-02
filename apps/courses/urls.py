@@ -14,6 +14,7 @@ from .views import (
     SubmissionListView, SubmissionGradeView,
     LiveSessionListView, LiveSessionCreateView,
     LiveSessionUpdateView, LiveSessionDeleteView,
+    CategoryListAPIView, CourseListAPIView, CourseDetailAPIView,
 )
 from apps.billing.views import CheckoutView
 
@@ -60,6 +61,11 @@ urlpatterns = [
     path('manage/live/new/', LiveSessionCreateView.as_view(), name='live-session-create'),
     path('manage/live/<uuid:session_id>/edit/', LiveSessionUpdateView.as_view(), name='live-session-edit'),
     path('manage/live/<uuid:session_id>/delete/', LiveSessionDeleteView.as_view(), name='live-session-delete'),
+
+    # REST APIs (Mobile / SPA clients)
+    path('api/categories/', CategoryListAPIView.as_view(), name='api-categories'),
+    path('api/courses/', CourseListAPIView.as_view(), name='api-courses'),
+    path('api/courses/<slug:slug>/', CourseDetailAPIView.as_view(), name='api-course-detail'),
 
     # Single-segment catch-all must stay last
     path('<slug:slug>/', CourseDetailView.as_view(), name='course-detail'),

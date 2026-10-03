@@ -1,6 +1,7 @@
 import uuid
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from apps.common.models import BaseModel
 
@@ -459,10 +460,132 @@ class InstructorApplication(BaseModel):
     )
     reviewed_at = models.DateTimeField(null=True, blank=True)
     admin_notes = models.TextField(blank=True)
+    # Requirement 18 fields
+    bio = models.TextField(default='', blank=True, help_text="Personal biography and philosophy.")
+    location = models.CharField(max_length=128, default='', blank=True, help_text="City/Region, Myanmar or Overseas.")
+    education_degree = models.CharField(max_length=255, default='', blank=True, help_text="Highest degree / diploma achieved.")
+    education_institution = models.CharField(max_length=255, default='', blank=True, help_text="Awarding university / college.")
+    graduation_year = models.CharField(max_length=16, default='', blank=True, help_text="Year completed.")
+    skills = models.TextField(default='', blank=True, help_text="Subject matter and technical skills.")
+    work_experience_years = models.PositiveIntegerField(default=0, help_text="Total years of industry experience.")
+    teaching_experience_years = models.PositiveIntegerField(default=0, help_text="Total years of teaching/lecturing.")
+    website = models.URLField(default='', blank=True)
+    github_url = models.URLField(default='', blank=True)
+    linkedin_url = models.URLField(default='', blank=True)
+    teaching_sample_topic = models.CharField(max_length=255, default='', blank=True, help_text="Topic presented in sample video.")
+    teaching_sample_duration_mins = models.PositiveIntegerField(default=0)
+    exam_passed = models.BooleanField(default=False, help_text="MEL Instructor Assessment passed.")
+    exam_score = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    rejection_feedback = models.TextField(default='', blank=True, help_text="Guidance for resubmission.")
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
         return f"InstructorApplication({self.user.username} - {self.status})"
+
+
+class StudentRecognition(BaseModel):
+    """
+    Merit-based student achievement/recognition (Associate Learner, Professional Learner, Advanced Learner).
+    Decoupled from authentication roles and membership tiers.
+    """
+    class RecognitionLevel(models.TextChoices):
+        ASSOCIATE = 'associate', 'Associate Learner'
+        PROFESSIONAL = 'professional', 'Professional Learner'
+        ADVANCED = 'advanced', 'Advanced Learner'
+
+    student = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='student_recognitions'
+    )
+    level = models.CharField(
+        max_length=32,
+        choices=RecognitionLevel.choices,
+        default=RecognitionLevel.ASSOCIATE,
+        db_index=True
+    )
+    title = models.CharField(max_length=128, default='Associate Learner')
+    credential_code = models.CharField(max_length=64, unique=True, db_index=True)
+    awarded_at = models.DateTimeField(default=timezone.now)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-awarded_at']
+
+    def __str__(self):
+        return f"{self.title} - {self.student.username} ({self.credential_code})"
+
+
+class Notification(BaseModel):
+    """
+    In-app and mobile push notification delivery for academic & platform updates.
+    """
+    class Level(models.TextChoices):
+        INFO = 'info', 'Info'
+        SUCCESS = 'success', 'Success'
+        WARNING = 'warning', 'Warning'
+        ERROR = 'error', 'Error'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    level = models.CharField(
+        max_length=16,
+        choices=Level.choices,
+        default=Level.INFO,
+    )
+    link = models.CharField(max_length=255, blank=True, null=True)
+    is_read = models.BooleanField(default=False, db_index=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"Notification({self.user.username}: {self.title})"
+
+    def mark_as_read(self):
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
+
+
+class PushDevice(BaseModel):
+    """
+    Registered mobile or web push device tokens for Android and iOS clients.
+    """
+    class Platform(models.TextChoices):
+        ANDROID = 'android', 'Android'
+        IOS = 'ios', 'iOS'
+        WEB = 'web', 'Web'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='push_devices',
+    )
+    token = models.CharField(max_length=255, unique=True, db_index=True)
+    platform = models.CharField(max_length=16, choices=Platform.choices, default=Platform.ANDROID)
+    device_name = models.CharField(max_length=128, blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+        ]
+
+    def __str__(self):
+        return f"PushDevice({self.user.username} - {self.platform} - {self.device_name or 'unnamed'})"
+
 

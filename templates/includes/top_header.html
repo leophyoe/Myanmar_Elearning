@@ -97,6 +97,30 @@
                         </a>
                         {% endif %}
 
+                        {% if user.is_partner %}
+                        <a href="{% url 'partner-portal' %}" class="flex items-center gap-2 px-4 py-2 text-amber-400 hover:bg-slate-800 transition">
+                            <span>🏛️</span>
+                            <span>Partner Portal</span>
+                        </a>
+                        {% endif %}
+
+                        {% if user.get_available_modes|length > 1 %}
+                        <div class="border-t border-slate-800 my-1"></div>
+                        <div class="px-4 py-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Switch Mode</div>
+                        {% for mode_opt in user.get_available_modes %}
+                            {% if mode_opt != user.active_mode %}
+                            <form method="POST" action="{% url 'switch-user-mode' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="mode" value="{{ mode_opt }}">
+                                <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-1.5 text-sky-300 hover:bg-slate-800 hover:text-white transition">
+                                    <span class="text-xs">🔄</span>
+                                    <span>{{ mode_opt|title }} Mode</span>
+                                </button>
+                            </form>
+                            {% endif %}
+                        {% endfor %}
+                        {% endif %}
+
                         <div class="border-t border-slate-800 my-1"></div>
                         <form method="POST" action="{% url 'logout' %}">
                             {% csrf_token %}

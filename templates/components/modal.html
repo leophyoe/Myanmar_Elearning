@@ -1,0 +1,41 @@
+{# Reusable Clean Modal Component #}
+<div id="{{ id|default:'melModal' }}" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="{{ id|default:'melModal' }}Title" role="dialog" aria-modal="true">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Backdrop Overlay (Zero glassmorphism) -->
+        <div class="fixed inset-0 bg-slate-900/50 transition-opacity" aria-hidden="true" onclick="closeModal('{{ id|default:'melModal' }}')"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <!-- Modal Surface (Solid white, 16px radius, neutral border) -->
+        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-[#E2E8F0]">
+            <div class="px-6 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="flex items-start justify-between pb-3 border-b border-[#E2E8F0]">
+                    <h3 class="text-base font-semibold leading-6 text-[#0F172A]" id="{{ id|default:'melModal' }}Title">
+                        {{ title }}
+                    </h3>
+                    <button type="button" class="text-slate-400 hover:text-slate-600 focus:outline-none" onclick="closeModal('{{ id|default:'melModal' }}')">
+                        <span class="sr-only">Close</span>
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="mt-4 text-sm text-[#64748B]">
+                    {{ content|safe }}
+                </div>
+            </div>
+            {% if actions or footer %}
+            <div class="bg-[#F8FAFC] px-6 py-3 border-t border-[#E2E8F0] flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                {% if actions %}
+                    {{ actions|safe }}
+                {% else %}
+                    <button type="button" class="px-4 py-2 text-sm font-medium text-[#64748B] hover:text-[#0F172A] rounded-lg border border-[#E2E8F0] bg-white hover:bg-slate-50" onclick="closeModal('{{ id|default:'melModal' }}')">Cancel</button>
+                    {% if confirm_text %}
+                    <button type="button" class="px-4 py-2 text-sm font-medium text-white bg-[#2563EB] hover:bg-[#1D4ED8] rounded-lg shadow-sm" {% if on_confirm %}onclick="{{ on_confirm }}"{% endif %}>{{ confirm_text }}</button>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+

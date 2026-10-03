@@ -88,10 +88,10 @@
 
                     <div class="mb-4">
                         <div class="d-flex align-items-baseline">
-                            <span class="display-6 fw-bold text-primary">5,000</span>
-                            <span class="text-muted fw-semibold ms-2">MMK / month</span>
+                            <span class="display-6 fw-bold text-primary">{{ standard_plan.monthly_price|default:5000|intcomma }}</span>
+                            <span class="text-muted fw-semibold ms-2">{{ standard_plan.currency|default:"MMK" }} / month</span>
                         </div>
-                        <span class="text-muted small">or 50,000 MMK / year (save 10,000 MMK)</span>
+                        <span class="text-muted small">or {{ standard_plan.yearly_price|default:50000|intcomma }} {{ standard_plan.currency|default:"MMK" }} / year (save {{ standard_plan.annual_savings|default:10000|intcomma }} {{ standard_plan.currency|default:"MMK" }})</span>
                     </div>
 
                     <ul class="list-unstyled mb-5 flex-grow-1">
@@ -148,10 +148,10 @@
 
                     <div class="mb-4">
                         <div class="d-flex align-items-baseline">
-                            <span class="display-6 fw-bold text-warning">15,000</span>
-                            <span class="text-white-50 fw-semibold ms-2">MMK / month</span>
+                            <span class="display-6 fw-bold text-warning">{{ premium_plan.monthly_price|default:15000|intcomma }}</span>
+                            <span class="text-white-50 fw-semibold ms-2">{{ premium_plan.currency|default:"MMK" }} / month</span>
                         </div>
-                        <span class="text-white-50 small">or 150,000 MMK / year (save 30,000 MMK)</span>
+                        <span class="text-white-50 small">or {{ premium_plan.yearly_price|default:150000|intcomma }} {{ premium_plan.currency|default:"MMK" }} / year (save {{ premium_plan.annual_savings|default:30000|intcomma }} {{ premium_plan.currency|default:"MMK" }})</span>
                     </div>
 
                     <ul class="list-unstyled mb-5 flex-grow-1">
@@ -206,22 +206,22 @@
                     <tr>
                         <th style="width: 40%;">Feature</th>
                         <th class="text-center" style="width: 20%;">Starter (Free)</th>
-                        <th class="text-center" style="width: 20%;">Standard (5,000 MMK)</th>
-                        <th class="text-center" style="width: 20%;">Premium (15,000 MMK)</th>
+                        <th class="text-center" style="width: 20%;">Standard ({{ standard_plan.monthly_price|default:5000|intcomma }} {{ standard_plan.currency|default:"MMK" }})</th>
+                        <th class="text-center" style="width: 20%;">Premium ({{ premium_plan.monthly_price|default:15000|intcomma }} {{ premium_plan.currency|default:"MMK" }})</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td class="fw-semibold">Monthly Price</td>
                         <td class="text-center">0 MMK</td>
-                        <td class="text-center fw-bold text-primary">5,000 MMK</td>
-                        <td class="text-center fw-bold text-warning">15,000 MMK</td>
+                        <td class="text-center fw-bold text-primary">{{ standard_plan.monthly_price|default:5000|intcomma }} {{ standard_plan.currency|default:"MMK" }}</td>
+                        <td class="text-center fw-bold text-warning">{{ premium_plan.monthly_price|default:15000|intcomma }} {{ premium_plan.currency|default:"MMK" }}</td>
                     </tr>
                     <tr>
                         <td class="fw-semibold">Annual Price</td>
                         <td class="text-center">0 MMK</td>
-                        <td class="text-center">50,000 MMK</td>
-                        <td class="text-center">150,000 MMK</td>
+                        <td class="text-center">{{ standard_plan.yearly_price|default:50000|intcomma }} {{ standard_plan.currency|default:"MMK" }}</td>
+                        <td class="text-center">{{ premium_plan.yearly_price|default:150000|intcomma }} {{ premium_plan.currency|default:"MMK" }}</td>
                     </tr>
                     <tr>
                         <td class="fw-semibold">Standard Courses (Python, CS, ICT, GED, etc.)</td>

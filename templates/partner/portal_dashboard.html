@@ -13,6 +13,9 @@
             <p class="text-sm text-slate-400 mt-1">Manage academic cohorts, batch student enrollments, and track course completion analytics.</p>
         </div>
         <div class="flex gap-3">
+            <a href="{% url 'partner-revenue-report' %}" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold shadow-sm transition">
+                Revenue & Accounting
+            </a>
             <a href="{% url 'partner-list' %}" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition">
                 Public Directory
             </a>
@@ -23,7 +26,13 @@
         <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg">
             <div class="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2">Partner Institutions</div>
             <div class="text-3xl font-extrabold text-white">{{ institutions.count }}</div>
-            <div class="text-xs text-slate-500 mt-2">Verified academic organizations</div>
+            <div class="text-xs text-slate-400 mt-2 flex flex-wrap gap-1">
+                {% for inst in institutions %}
+                    <span class="inline-block bg-slate-800 rounded px-2 py-0.5 text-xs text-slate-200">{{ inst.name }}</span>
+                {% empty %}
+                    <span class="text-slate-500">Verified academic organizations</span>
+                {% endfor %}
+            </div>
         </div>
 
         <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg">

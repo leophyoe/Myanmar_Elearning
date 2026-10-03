@@ -1,0 +1,23 @@
+{# Reusable Clean Button Component #}
+<{% if href %}a href="{{ href }}"{% else %}button type="{{ type|default:'button' }}"{% endif %}
+    {% if id %}id="{{ id }}"{% endif %}
+    {% if disabled %}disabled{% endif %}
+    class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-offset-1
+    {% if variant == 'primary' or not variant %}
+        bg-[#2563EB] hover:bg-[#1D4ED8] text-white shadow-sm focus:ring-[#2563EB]
+    {% elif variant == 'secondary' %}
+        bg-white hover:bg-[#F8FAFC] text-[#0F172A] border border-[#E2E8F0] shadow-sm focus:ring-[#CBD5E1]
+    {% elif variant == 'danger' %}
+        bg-[#DC2626] hover:bg-[#B91C1C] text-white shadow-sm focus:ring-[#DC2626]
+    {% elif variant == 'ghost' %}
+        bg-transparent hover:bg-[#F1F5F9] text-[#64748B] hover:text-[#0F172A] focus:ring-[#E2E8F0]
+    {% elif variant == 'link' %}
+        bg-transparent text-[#2563EB] hover:underline p-0 focus:ring-0
+    {% endif %}
+    {% if size == 'sm' %}px-3 py-1.5 text-xs rounded-md{% elif size == 'lg' %}px-5 py-2.5 text-base rounded-xl{% endif %}
+    {% if full_width %}w-full{% endif %}
+    {% if extra_classes %}{{ extra_classes }}{% endif %}">
+    {% if icon %}<span>{{ icon|safe }}</span>{% endif %}
+    <span>{{ text }}</span>
+</{% if href %}a{% else %}button{% endif %}>
+

@@ -24,7 +24,7 @@ class Certificate(BaseModel):
         help_text="Public certificate serial ID, e.g. MEL-CERT-2026-89A1"
     )
     student_name = models.CharField(max_length=255)
-    program_title = models.CharField(max_length=255, default="Diploma in Cyber Security")
+    program_title = models.CharField(max_length=255, default="Course Completion Certificate")
     issued_at = models.DateTimeField(auto_now_add=True)
     completion_date = models.DateField(blank=True, null=True, help_text="Date requirements were satisfied.")
     grade = models.CharField(max_length=16, default="Distinction")
@@ -36,6 +36,42 @@ class Certificate(BaseModel):
 
     def __str__(self):
         return f"{self.certificate_code} - {self.student_name}"
+
+    def save(self, *args, **kwargs):
+        if not self.program_title or self.program_title == "Course Completion Certificate":
+            if self.course and getattr(self.course, 'title', None):
+                self.program_title = self.course.title
+        super().save(*args, **kwargs)
+
+    @property
+    def certificate_id(self):
+        return self.certificate_code
+
+    @property
+    def verification_code(self):
+        return self.certificate_code
+
+    @property
+    def issue_date(self):
+        return self.issued_at
+
+    @property
+    def course_name(self):
+        return self.course.title if self.course else self.program_title
+
+    @property
+    def program(self):
+        return self.program_title
+
+    def revoke(self, reason=""):
+        self.is_revoked = True
+        self.revocation_reason = reason
+        self.save(update_fields=['is_revoked', 'revocation_reason'])
+
+    def unrevoke(self):
+        self.is_revoked = False
+        self.revocation_reason = ""
+        self.save(update_fields=['is_revoked', 'revocation_reason'])
 
     @classmethod
     def generate_code(cls):

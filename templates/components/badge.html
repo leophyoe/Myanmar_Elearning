@@ -1,0 +1,18 @@
+{# Reusable Subtle Status Badge Component #}
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border
+    {% if type == 'success' or type == 'published' or type == 'active' or type == 'completed' %}bg-emerald-50 text-[#16A34A] border-emerald-200
+    {% elif type == 'warning' or type == 'pending' or type == 'draft' %}bg-amber-50 text-[#D97706] border-amber-200
+    {% elif type == 'error' or type == 'danger' or type == 'rejected' or type == 'failed' or type == 'suspended' %}bg-rose-50 text-[#DC2626] border-rose-200
+    {% elif type == 'primary' or type == 'info' %}bg-[#EFF6FF] text-[#2563EB] border-blue-200
+    {% else %}bg-[#F1F5F9] text-[#64748B] border-[#E2E8F0]{% endif %} {% if extra_classes %}{{ extra_classes }}{% endif %}">
+    {% if dot %}
+    <span class="w-1.5 h-1.5 rounded-full
+        {% if type == 'success' or type == 'published' or type == 'active' or type == 'completed' %}bg-[#16A34A]
+        {% elif type == 'warning' or type == 'pending' or type == 'draft' %}bg-[#F59E0B]
+        {% elif type == 'error' or type == 'danger' or type == 'rejected' or type == 'failed' or type == 'suspended' %}bg-[#DC2626]
+        {% elif type == 'primary' or type == 'info' %}bg-[#2563EB]
+        {% else %}bg-[#64748B]{% endif %}"></span>
+    {% endif %}
+    <span>{{ text }}</span>
+</span>
+

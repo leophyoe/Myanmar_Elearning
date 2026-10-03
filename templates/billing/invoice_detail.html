@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex items-center justify-between gap-4 mb-6 print:hidden">
+        <a href="{% url 'payment-history' %}" class="text-xs text-cyan-400 hover:underline flex items-center gap-1">
+            &larr; Back to payments
+        </a>
+        <div class="flex gap-2">
+            <button onclick="window.print()"
+                    class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-2 border border-slate-700 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                </svg>
+                Print Invoice
+            </button>
+        </div>
+    </div>
+
+    <!-- Printable Invoice Container -->
+    <div class="p-8 sm:p-12 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl print:bg-white print:text-black print:border-none print:shadow-none print:p-0">
+        <!-- Top branding & invoice metadata -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-8 border-b border-slate-800 print:border-gray-200 gap-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl font-black tracking-tight text-white print:text-black">{{ PLATFORM_NAME }}</span>
+                    <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-semibold print:border-gray-300 print:text-gray-700 print:bg-gray-100">Official Receipt</span>
+                </div>
+                <p class="text-xs text-slate-400 print:text-gray-500 mt-1">Myanmar E-Learning Technology Platform</p>
+            </div>
+            <div class="text-left sm:text-right">
+                <div class="text-xs text-slate-400 print:text-gray-500 uppercase tracking-widest font-mono">Invoice Number</div>
+                <div class="text-xl font-extrabold text-cyan-400 font-mono print:text-gray-900">{{ invoice.invoice_number }}</div>
+                <div class="mt-2">
+                    <span class="text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider
+                        {% if invoice.status == 'paid' %}bg-emerald-950 text-emerald-300 border border-emerald-800 print:bg-emerald-100 print:text-emerald-800
+                        {% elif invoice.status == 'refunded' %}bg-purple-950 text-purple-300 border border-purple-800 print:bg-purple-100 print:text-purple-800
+                        {% elif invoice.status == 'voided' %}bg-slate-800 text-slate-400 print:bg-gray-200 print:text-gray-700
+                        {% else %}bg-amber-950 text-amber-300 border border-amber-800 print:bg-yellow-100 print:text-yellow-800{% endif %}">
+                        {{ invoice.get_status_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Billing Entity Info -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 py-8 border-b border-slate-800 print:border-gray-200 text-sm">
+            <div>
+                <span class="text-[11px] uppercase tracking-wider text-slate-500 print:text-gray-400 font-semibold">Billed To</span>
+                <div class="text-base font-bold text-white print:text-black mt-1">{{ invoice.billing_name|default:invoice.student.username }}</div>
+                <div class="text-slate-400 print:text-gray-600 text-xs mt-0.5">Username: <span class="font-mono text-slate-300 print:text-gray-800">{{ invoice.student.username }}</span></div>
+                {% if invoice.billing_email or invoice.student.email %}
+                <div class="text-slate-400 print:text-gray-600 text-xs mt-0.5">Email: {{ invoice.billing_email|default:invoice.student.email }}</div>
+                {% endif %}
+            </div>
+            <div class="sm:text-right">
+                <span class="text-[11px] uppercase tracking-wider text-slate-500 print:text-gray-400 font-semibold">Payment Details</span>
+                <div class="text-xs text-slate-300 print:text-gray-700 mt-1">Issue Date: <span class="font-semibold">{{ invoice.issue_date|date:"F d, Y" }}</span></div>
+                {% if invoice.paid_at %}
+                <div class="text-xs text-slate-300 print:text-gray-700 mt-0.5">Paid On: <span class="font-semibold">{{ invoice.paid_at|date:"F d, Y H:i" }}</span></div>
+                {% endif %}
+                <div class="text-xs text-slate-300 print:text-gray-700 mt-0.5">Payment Method: <span class="font-semibold">{{ invoice.payment.get_method_display }}</span></div>
+                {% if invoice.payment.reference %}
+                <div class="text-xs text-slate-300 print:text-gray-700 mt-0.5 font-mono">Reference: {{ invoice.payment.reference }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Itemized line items -->
+        <div class="py-8">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="text-xs uppercase tracking-wider text-slate-500 print:text-gray-500 border-b border-slate-800 print:border-gray-300">
+                        <th class="pb-3 font-semibold">Item & Description</th>
+                        <th class="pb-3 text-right font-semibold">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 print:divide-gray-200">
+                    <tr>
+                        <td class="py-4">
+                            <div class="font-bold text-white print:text-black">{{ invoice.item_title }}</div>
+                            <div class="text-xs text-slate-400 print:text-gray-500 mt-0.5">
+                                {% if invoice.payment.plan %}
+                                    Membership Tier Access ({{ invoice.payment.billing_period|capfirst }})
+                                {% elif invoice.payment.course %}
+                                    Full verified curriculum, video modules, exams, and certificates
+                                {% else %}
+                                    Educational learning credential
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="py-4 text-right font-mono font-bold text-lg text-white print:text-black">
+                            {{ invoice.amount|floatformat:0|intcomma }} {{ invoice.currency }}
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="border-t border-slate-800 print:border-gray-300">
+                        <td class="pt-4 text-right text-xs uppercase tracking-wider text-slate-400 print:text-gray-500 font-semibold">Subtotal</td>
+                        <td class="pt-4 text-right font-mono text-slate-300 print:text-gray-700">
+                            {{ invoice.amount|floatformat:0|intcomma }} {{ invoice.currency }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="pt-2 text-right text-xs uppercase tracking-wider text-slate-400 print:text-gray-500 font-semibold">Platform Fee & Tax</td>
+                        <td class="pt-2 text-right font-mono text-slate-400 print:text-gray-500">0 {{ invoice.currency }}</td>
+                    </tr>
+                    <tr class="border-t border-slate-700 print:border-gray-400">
+                        <td class="pt-4 text-right text-sm uppercase tracking-wider font-extrabold text-white print:text-black">Total Paid</td>
+                        <td class="pt-4 text-right font-mono text-2xl font-black text-amber-300 print:text-black">
+                            {{ invoice.amount|floatformat:0|intcomma }} {{ invoice.currency }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Footer / Verification notice -->
+        <div class="pt-8 border-t border-slate-800 print:border-gray-200 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 print:text-gray-400 gap-4">
+            <div>
+                Thank you for learning with {{ PLATFORM_NAME }}. Keep this invoice for your academic records.
+            </div>
+            <div class="font-mono text-[10px]">
+                ID: {{ invoice.id }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

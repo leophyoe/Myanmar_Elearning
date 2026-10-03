@@ -1,0 +1,26 @@
+{# Reusable Inside-Page Tab Bar Component #}
+<div class="border-b border-[#E2E8F0] mb-6 {% if extra_classes %}{{ extra_classes }}{% endif %}">
+    <nav class="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">
+        {% for tab in tabs %}
+        <a href="{{ tab.url|default:'#' }}"
+           {% if tab.id %}id="{{ tab.id }}"{% endif %}
+           {% if tab.target %}data-tab-target="{{ tab.target }}"{% endif %}
+           class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm transition flex items-center gap-2
+           {% if tab.is_active or tab.active %}
+               border-[#2563EB] text-[#2563EB]
+           {% else %}
+               border-transparent text-[#64748B] hover:text-[#0F172A] hover:border-[#CBD5E1]
+           {% endif %}">
+            {% if tab.icon %}<span>{{ tab.icon|safe }}</span>{% endif %}
+            <span>{{ tab.label }}</span>
+            {% if tab.count is not None %}
+            <span class="ml-1.5 py-0.5 px-2 rounded-full text-xs font-semibold
+                {% if tab.is_active or tab.active %}bg-blue-50 text-[#2563EB]{% else %}bg-slate-100 text-[#64748B]{% endif %}">
+                {{ tab.count }}
+            </span>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </nav>
+</div>
+

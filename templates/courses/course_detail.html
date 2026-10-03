@@ -175,6 +175,48 @@
     </div>
     {% endif %}
 
+    <!-- Course Assessments & Examinations -->
+    {% if course_assessments %}
+    <div class="mb-8 p-6 rounded-2xl bg-slate-900 border border-slate-800">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+            <div>
+                <h2 class="text-lg font-bold text-white">Course Assessments &amp; Examinations</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Comprehensive benchmarks required to prove competency and earn certification.</p>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 uppercase font-bold">
+                {{ course_assessments|length }} Assessment{{ course_assessments|length|pluralize }}
+            </span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for ca in course_assessments %}
+            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between text-xs mb-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-950 text-blue-300 border border-blue-800">
+                            {{ ca.get_quiz_type_display }}
+                        </span>
+                        <span class="text-slate-400 font-mono text-[11px]">Pass: {{ ca.passing_percentage }}%</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-white mb-1">{{ ca.title }}</h3>
+                    {% if ca.description %}
+                    <p class="text-xs text-slate-400 line-clamp-2 mb-3">{{ ca.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                    <span class="text-[11px] text-slate-500 font-mono">
+                        {% if ca.time_limit_minutes %}{{ ca.time_limit_minutes }} mins{% else %}No time limit{% endif %}
+                    </span>
+                    <a href="{% url 'assessment-detail' slug=course.slug assessment_id=ca.id %}"
+                       class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition">
+                        Open Assessment &rarr;
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Modules Accordion / List -->
     <div class="space-y-6">
         {% for module in modules %}

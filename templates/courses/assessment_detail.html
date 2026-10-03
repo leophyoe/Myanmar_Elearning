@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ assessment.title }} - {{ course.title }} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb -->
+    <nav class="flex items-center space-x-2 text-xs text-slate-500 mb-6">
+        <a href="{% url 'course-list' %}" class="hover:text-blue-600 dark:hover:text-blue-400">Courses</a>
+        <span>/</span>
+        <a href="{% url 'course-detail' slug=course.slug %}" class="hover:text-blue-600 dark:hover:text-blue-400">{{ course.title }}</a>
+        <span>/</span>
+        <span class="text-slate-700 dark:text-slate-300 font-semibold">{{ assessment.title }}</span>
+    </nav>
+
+    <!-- Assessment Header Card -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 sm:p-8 shadow-sm mb-8">
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+            <div class="max-w-3xl">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+                        {% if assessment.quiz_type == 'final_exam' or assessment.quiz_type == 'course_exam' or assessment.quiz_type == 'exam' %}
+                            bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300 border border-purple-200 dark:border-purple-800
+                        {% elif assessment.quiz_type == 'practical' %}
+                            bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-200 dark:border-amber-800
+                        {% else %}
+                            bg-blue-100 text-blue-800 dark:bg-blue-950/70 dark:text-blue-300 border border-blue-200 dark:border-blue-800
+                        {% endif %}">
+                        {{ assessment.get_quiz_type_display }}
+                    </span>
+                    {% if assessment.is_required %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                        Required for Completion
+                    </span>
+                    {% endif %}
+                </div>
+
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{{ assessment.title }}</h1>
+                {% if assessment.description %}
+                <p class="text-sm text-slate-600 dark:text-slate-300 mt-3 leading-relaxed whitespace-pre-line">{{ assessment.description }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Meta metrics grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 shrink-0">
+                <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-center min-w-[120px]">
+                    <span class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Passing Score</span>
+                    <span class="text-lg font-bold text-slate-900 dark:text-white">{{ assessment.passing_percentage }}%</span>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-center min-w-[120px]">
+                    <span class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Time Limit</span>
+                    <span class="text-lg font-bold text-slate-900 dark:text-white">
+                        {% if assessment.time_limit_minutes %}{{ assessment.time_limit_minutes }} min{% else %}None{% endif %}
+                    </span>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-center min-w-[120px]">
+                    <span class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Attempts Left</span>
+                    <span class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ attempts_left }}</span>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-3 text-center min-w-[120px]">
+                    <span class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Best Score</span>
+                    <span class="text-lg font-bold {% if best_attempt and best_attempt.passed %}text-emerald-600 dark:text-emerald-400{% else %}text-slate-900 dark:text-white{% endif %}">
+                        {% if best_attempt %}{{ best_attempt.score_percentage }}%{% else %}—{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Assessment or Notice -->
+    {% if can_attempt %}
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 sm:p-8 shadow-sm mb-8">
+        <div class="flex items-center justify-between pb-5 border-b border-slate-200 dark:border-slate-800 mb-6">
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">Questions &amp; Tasks</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Carefully answer each section before submitting.</p>
+            </div>
+            {% if assessment.time_limit_minutes %}
+            <div id="assessmentTimerCard" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-mono font-bold">
+                <span>⏱ Time Remaining:</span>
+                <span id="assessmentTimeDisplay">{{ assessment.time_limit_minutes }}:00</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <form id="assessmentForm" method="POST" action="{% url 'assessment-submit' slug=course.slug assessment_id=assessment.id %}" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" name="time_taken_seconds" id="timeTakenSeconds" value="0">
+
+            {% for question in questions %}
+            <div class="p-5 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+                <div class="flex items-start justify-between gap-4 mb-3">
+                    <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        <span class="text-blue-600 dark:text-blue-400 font-bold mr-1">Q{{ forloop.counter }}.</span>
+                        {{ question.prompt }}
+                    </p>
+                    <span class="shrink-0 text-xs px-2 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono">
+                        {{ question.points }} pt{{ question.points|pluralize }}
+                    </span>
+                </div>
+
+                <!-- 1. Multiple Choice & True/False -->
+                {% if question.question_type == 'multiple_choice' or question.question_type == 'true_false' %}
+                <div class="space-y-2 mt-3">
+                    {% for choice in question.choices.all %}
+                    <label class="flex items-center space-x-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer text-xs text-slate-700 dark:text-slate-200 transition">
+                        <input type="radio" name="question_{{ question.id }}" value="{{ choice.id }}" class="text-blue-600 focus:ring-blue-500">
+                        <span>{{ choice.text }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <!-- 2. Multiple Select -->
+                {% elif question.question_type == 'multiple_select' %}
+                <p class="text-[11px] text-blue-600 dark:text-blue-400 font-semibold mb-2">Select all correct options that apply:</p>
+                <div class="space-y-2">
+                    {% for choice in question.choices.all %}
+                    <label class="flex items-center space-x-3 p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-400 cursor-pointer text-xs text-slate-700 dark:text-slate-200 transition">
+                        <input type="checkbox" name="question_{{ question.id }}" value="{{ choice.id }}" class="rounded text-blue-600 focus:ring-blue-500">
+                        <span>{{ choice.text }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <!-- 3. Fill in the Blank -->
+                {% elif question.question_type == 'fill_in_blank' %}
+                <div class="mt-3">
+                    <input type="text" name="question_{{ question.id }}" placeholder="Type your answer here..."
+                           class="w-full sm:w-2/3 px-3.5 py-2 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- 4. Short Answer & Technical Open Responses -->
+                {% elif question.question_type == 'short_answer' %}
+                <div class="mt-3">
+                    <textarea name="question_{{ question.id }}" rows="3" placeholder="Provide your concise explanation..."
+                              class="w-full px-3.5 py-2 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed"></textarea>
+                </div>
+
+                <!-- 5. Coding Problem / Practical Lab / File / Project -->
+                {% else %}
+                <div class="mt-3">
+                    <textarea name="question_{{ question.id }}" rows="4" placeholder="Enter code snippet, command output or solution notes..."
+                              class="w-full px-3.5 py-2 text-xs font-mono rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed"></textarea>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div class="pt-4 flex items-center justify-between">
+                <a href="{% url 'course-detail' slug=course.slug %}" class="text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                    &larr; Cancel and return to course
+                </a>
+                <button type="submit" onclick="return confirm('Are you ready to submit your assessment?');"
+                        class="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition">
+                    Submit Assessment
+                </button>
+            </div>
+        </form>
+    </div>
+    {% else %}
+    <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl p-6 mb-8 text-sm text-amber-900 dark:text-amber-200">
+        <div class="flex items-start gap-3">
+            <span class="text-lg">ℹ️</span>
+            <div>
+                <h3 class="font-bold text-base mb-1">Assessment Not Available for New Attempts</h3>
+                <p class="leading-relaxed">{{ eligibility_reason }}</p>
+                <div class="mt-4">
+                    <a href="{% url 'course-detail' slug=course.slug %}" class="inline-flex items-center text-xs font-semibold text-amber-800 dark:text-amber-300 underline hover:no-underline">
+                        Return to course syllabus &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Attempts History Table -->
+    {% if attempts %}
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden mb-10">
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Attempt History</h2>
+            <span class="text-xs text-slate-500">{{ attempts.count }} Attempt{{ attempts.count|pluralize }} Recorded</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 dark:bg-slate-950 text-slate-500 font-semibold border-b border-slate-200 dark:border-slate-800">
+                    <tr>
+                        <th class="py-3 px-6">Attempt #</th>
+                        <th class="py-3 px-6">Date &amp; Time</th>
+                        <th class="py-3 px-6">Score</th>
+                        <th class="py-3 px-6">Status</th>
+                        <th class="py-3 px-6">Points</th>
+                        <th class="py-3 px-6">Time Taken</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                    {% for att in attempts %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td class="py-3.5 px-6 font-mono font-medium text-slate-900 dark:text-white">#{{ att.attempt_number }}</td>
+                        <td class="py-3.5 px-6 text-slate-600 dark:text-slate-400">{{ att.completed_at|date:"M d, Y H:i" }}</td>
+                        <td class="py-3.5 px-6 font-mono font-bold">{{ att.score_percentage }}%</td>
+                        <td class="py-3.5 px-6">
+                            {% if att.passed %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                Passed
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                Not Passed
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-6 text-slate-600 dark:text-slate-400">{{ att.points_earned }} pts</td>
+                        <td class="py-3.5 px-6 text-slate-600 dark:text-slate-400 font-mono">
+                            {% if att.time_taken_seconds %}{{ att.time_taken_seconds }}s{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if can_attempt and assessment.time_limit_minutes %}
+<script>
+(function() {
+    let totalSeconds = {{ assessment.time_limit_minutes }} * 60;
+    let elapsedSeconds = 0;
+    const display = document.getElementById('assessmentTimeDisplay');
+    const inputHidden = document.getElementById('timeTakenSeconds');
+    const form = document.getElementById('assessmentForm');
+
+    const timer = setInterval(function() {
+        elapsedSeconds++;
+        inputHidden.value = elapsedSeconds;
+        const remaining = totalSeconds - elapsedSeconds;
+
+        if (remaining <= 0) {
+            clearInterval(timer);
+            display.textContent = '00:00 - Time Expired';
+            alert('Time limit reached! Submitting your answers now.');
+            form.submit();
+        } else {
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            display.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+    }, 1000);
+})();
+</script>
+{% endif %}
+{% endblock %}

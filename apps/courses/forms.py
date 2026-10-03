@@ -1,4 +1,5 @@
 from django import forms
+from django.db import models
 from django.core.validators import FileExtensionValidator
 from django.utils import timezone
 from django.utils.text import slugify
@@ -54,46 +55,79 @@ class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
         fields = (
-            'title', 'slug', 'subject', 'description', 'duration_months',
-            'is_published', 'is_official', 'thumbnail', 'price', 'billing_period',
+            'title', 'slug', 'subject', 'description', 'level', 'language', 'duration_months',
+            'access_type', 'membership_tier_required', 'is_published', 'is_official',
+            'thumbnail', 'price', 'billing_period', 'exam_required', 'exam_voucher_price',
         )
         widgets = {
             'title': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'Course Title'}),
             'slug': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'Auto-generated from title if blank'}),
             'subject': forms.Select(attrs={'class': INPUT}),
             'description': forms.Textarea(attrs={'class': TEXTAREA, 'rows': 4}),
+            'level': forms.Select(attrs={'class': INPUT}),
+            'language': forms.Select(attrs={'class': INPUT}),
             'duration_months': forms.NumberInput(attrs={'class': INPUT}),
-            'is_published': forms.CheckboxInput(attrs={'class': 'accent-cyan-500'}),
-            'is_official': forms.CheckboxInput(attrs={'class': 'accent-cyan-500'}),
+            'access_type': forms.Select(attrs={'class': INPUT}),
+            'membership_tier_required': forms.Select(attrs={'class': INPUT}),
+            'is_published': forms.CheckboxInput(attrs={'class': 'accent-blue-600'}),
+            'is_official': forms.CheckboxInput(attrs={'class': 'accent-blue-600'}),
             'thumbnail': forms.ClearableFileInput(attrs={'class': INPUT}),
             'price': forms.NumberInput(
                 attrs={'class': INPUT, 'min': '0', 'step': '100',
                        'placeholder': '0 = free course'}
             ),
             'billing_period': forms.Select(attrs={'class': INPUT}),
+            'exam_required': forms.CheckboxInput(attrs={'class': 'accent-blue-600'}),
+            'exam_voucher_price': forms.NumberInput(attrs={'class': INPUT, 'min': '0', 'step': '100'}),
         }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        # A blank price simply means "free" rather than a validation error.
+        # Optional fields with sensible defaults for robust form submissions
         self.fields['price'].required = False
         self.fields['slug'].required = False
+        self.fields['duration_months'].required = False
+        self.fields['exam_voucher_price'].required = False
+        if 'subject' in self.fields:
+            self.fields['subject'].required = False
+        if 'level' in self.fields:
+            self.fields['level'].required = False
+            self.fields['level'].initial = Course.Level.ALL_LEVELS
+        if 'language' in self.fields:
+            self.fields['language'].required = False
+            self.fields['language'].initial = Course.Language.BURMESE
+        if 'access_type' in self.fields:
+            self.fields['access_type'].required = False
+            self.fields['access_type'].initial = Course.AccessType.FREE
+        if 'membership_tier_required' in self.fields:
+            self.fields['membership_tier_required'].required = False
+            self.fields['membership_tier_required'].initial = Course.MembershipTierRequired.STANDARD
+        if 'billing_period' in self.fields:
+            self.fields['billing_period'].required = False
+            self.fields['billing_period'].initial = Course.BillingPeriod.ONE_TIME
 
-        # If user is not admin and course is not already official, hide or disable is_official
+        # If user is not admin, hide administrative publication fields
         is_user_admin = bool(self.user and getattr(self.user, 'is_admin', False))
-        if not is_user_admin and 'is_official' in self.fields:
-            if not getattr(self.instance, 'is_official', False):
+        if not is_user_admin:
+            if 'is_official' in self.fields:
                 self.fields['is_official'].widget = forms.HiddenInput()
                 self.fields['is_official'].required = False
-            else:
-                self.fields['is_official'].disabled = True
+            if 'is_published' in self.fields:
+                self.fields['is_published'].widget = forms.HiddenInput()
+                self.fields['is_published'].required = False
 
     def clean_is_official(self):
         is_user_admin = bool(self.user and getattr(self.user, 'is_admin', False))
         if not is_user_admin:
             return False
         return self.cleaned_data.get('is_official', False)
+
+    def clean_is_published(self):
+        is_user_admin = bool(self.user and getattr(self.user, 'is_admin', False))
+        if not is_user_admin:
+            return getattr(self.instance, 'is_published', False) if self.instance.pk else False
+        return self.cleaned_data.get('is_published', False)
 
     def clean_slug(self):
         slug = (self.cleaned_data.get('slug') or '').strip()
@@ -122,6 +156,61 @@ class CourseForm(forms.ModelForm):
         if price > 1_000_000_000:
             raise forms.ValidationError("That price looks too large for a single course.")
         return price
+
+    def clean_level(self):
+        return self.cleaned_data.get('level') or Course.Level.ALL_LEVELS
+
+    def clean_language(self):
+        return self.cleaned_data.get('language') or Course.Language.BURMESE
+
+    def clean_access_type(self):
+        return self.cleaned_data.get('access_type') or Course.AccessType.FREE
+
+    def clean_membership_tier_required(self):
+        return self.cleaned_data.get('membership_tier_required') or Course.MembershipTierRequired.STANDARD
+
+    def clean_billing_period(self):
+        return self.cleaned_data.get('billing_period') or Course.BillingPeriod.ONE_TIME
+
+    def clean_duration_months(self):
+        return self.cleaned_data.get('duration_months') or 1
+
+    def clean_exam_voucher_price(self):
+        return self.cleaned_data.get('exam_voucher_price') or 0
+
+
+class CourseReviewForm(forms.Form):
+    class Action(models.TextChoices):
+        APPROVE = 'approve', 'Approve Curriculum'
+        PUBLISH = 'publish', 'Approve & Publish Immediately'
+        REQUEST_CHANGES = 'request_changes', 'Request Changes'
+        REJECT = 'reject', 'Reject Course'
+        ARCHIVE = 'archive', 'Archive Course'
+
+    action = forms.ChoiceField(
+        choices=Action.choices,
+        widget=forms.Select(attrs={'class': INPUT}),
+    )
+    admin_review_notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': TEXTAREA,
+            'rows': 4,
+            'placeholder': 'Provide feedback or reasons for the instructor (mandatory if rejecting or requesting changes)...'
+        }),
+        help_text="Feedback provided to the instructor."
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        action = cleaned_data.get('action')
+        notes = (cleaned_data.get('admin_review_notes') or '').strip()
+
+        if action in [self.Action.REJECT, self.Action.REQUEST_CHANGES] and not notes:
+            self.add_error('admin_review_notes', 'Review notes are required when rejecting or requesting changes.')
+
+        return cleaned_data
+
 
 
 class ModuleForm(forms.ModelForm):

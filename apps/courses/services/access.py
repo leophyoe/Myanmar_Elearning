@@ -2,8 +2,189 @@
 Centralized access control services for Courses and Learning Material.
 Evaluates enrollment, membership entitlements, direct course purchases, and institutional partner privileges.
 """
-from apps.courses.models import Course, Enrollment
+from decimal import Decimal
+from django.utils import timezone
+from apps.courses.models import Course, Enrollment, Lesson
 from apps.billing.models import active_payment_for, active_subscription_for
+
+
+def can_view_course(user, course: Course) -> bool:
+    """
+    Determines whether a course is visible in public directory or detail preview.
+    - Published courses are publicly visible to all visitors.
+    - Draft/Pending/Rejected courses are only visible to platform admins,
+      the course author, or staff of the affiliated partner institution.
+    """
+    if course.status == Course.Status.PUBLISHED and getattr(course, 'is_published', False):
+        return True
+
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+
+    if getattr(user, 'is_admin', False):
+        return True
+
+    if course.owner_id and course.owner_id == user.id:
+        return True
+
+    if course.partner_institution_id:
+        from apps.partner.models import PartnerMembership
+        if PartnerMembership.objects.filter(
+            institution_id=course.partner_institution_id,
+            user=user,
+            status=PartnerMembership.Status.ACTIVE
+        ).exists():
+            return True
+
+    return False
+
+
+def can_manage_course(user, course: Course) -> bool:
+    """
+    Determines whether a user has editorial control to edit curriculum, modules, or lessons.
+    - Platform administrators can edit any course.
+    - Official platform courses can ONLY be managed by administrators.
+    - Courses under administrative review (PENDING_REVIEW) are locked against modification.
+    - Instructors can manage their own non-official courses.
+    - Partner organization managers can manage courses belonging to their institution.
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False
+
+    if getattr(user, 'is_admin', False):
+        return True
+
+    if getattr(course, 'is_official', False):
+        return False
+
+    if course.status == Course.Status.PENDING_REVIEW:
+        return False
+
+    if course.owner_id and course.owner_id == user.id:
+        return True
+
+    if course.partner_institution_id:
+        from apps.partner.models import PartnerMembership
+        return PartnerMembership.objects.filter(
+            institution_id=course.partner_institution_id,
+            user=user,
+            role__in=[
+                PartnerMembership.Role.ADMIN,
+                PartnerMembership.Role.STAFF,
+                PartnerMembership.Role.INSTRUCTOR
+            ],
+            status=PartnerMembership.Status.ACTIVE
+        ).exists()
+
+    return False
+
+
+def can_submit_for_review(user, course: Course) -> tuple[bool, str]:
+    """
+    Validates whether a course can transition from DRAFT or REJECTED to PENDING_REVIEW.
+    Requirements:
+    1. User must own the course or manage its partner institution.
+    2. Course must not already be in review or published.
+    3. Course must contain at least 1 module.
+    4. Course must contain at least 1 lesson.
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False, "Login required."
+
+    if course.status == Course.Status.PENDING_REVIEW:
+        return False, "Course is already under editorial review."
+
+    if course.status == Course.Status.PUBLISHED:
+        return False, "Course is already published."
+
+    # Ownership check
+    is_owner = bool(course.owner_id and course.owner_id == user.id)
+    is_admin = bool(getattr(user, 'is_admin', False))
+    is_partner_manager = False
+    if course.partner_institution_id:
+        from apps.partner.models import PartnerMembership
+        is_partner_manager = PartnerMembership.objects.filter(
+            institution_id=course.partner_institution_id,
+            user=user,
+            status=PartnerMembership.Status.ACTIVE
+        ).exists()
+
+    if not (is_owner or is_admin or is_partner_manager):
+        return False, "You do not have permission to submit this course for review."
+
+    # Curriculum completeness validation
+    if not course.modules.exists():
+        return False, "Course must have at least one module before submitting for review."
+
+    if not Lesson.objects.filter(module__course=course).exists():
+        return False, "Course must contain at least one lesson before submitting for review."
+
+    return True, ""
+
+
+def can_review_course(user, course: Course) -> bool:
+    """
+    Checks if a user has administrative authority to approve, publish, or reject a course.
+    """
+    return bool(user and getattr(user, 'is_authenticated', False) and getattr(user, 'is_admin', False))
+
+
+def can_enroll_course(user, course: Course) -> tuple[bool, str]:
+    """
+    Checks if a user is eligible to enroll in a course.
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False, "Please sign in to enrol in this course."
+
+    if Enrollment.objects.filter(course=course, student=user, status=Enrollment.Status.ACTIVE).exists():
+        return False, "Already actively enrolled in this course."
+
+    if course.access_type == Course.AccessType.PARTNER_ONLY:
+        from apps.partner.models import PartnerStudent, CohortStudent
+        is_affiliated = False
+        if course.partner_institution_id:
+            if PartnerStudent.objects.filter(
+                institution_id=course.partner_institution_id,
+                student=user,
+                status=PartnerStudent.Status.ACTIVE
+            ).exists():
+                is_affiliated = True
+            elif CohortStudent.objects.filter(
+                cohort__institution_id=course.partner_institution_id,
+                cohort__course=course,
+                student=user,
+                cohort__is_active=True
+            ).exists():
+                is_affiliated = True
+
+        if not is_affiliated:
+            return False, "This course is restricted to enrolled partner institution students."
+
+    # If course is paid, user must have an active payment or an active qualifying subscription
+    if not getattr(course, 'is_free', False) and (getattr(course, 'price', 0) or 0) > 0:
+        has_payment = False
+        has_sub = False
+        payment = active_payment_for(user, course)
+        if payment and payment.is_current:
+            has_payment = True
+        sub = active_subscription_for(user)
+        if sub and sub.is_current:
+            plan = sub.plan
+            plan_type = getattr(plan, 'plan_type', '')
+            if getattr(course, 'is_premium', False) or course.access_type == Course.AccessType.PREMIUM:
+                has_sub = bool(getattr(plan, 'has_premium_courses', False) or plan_type == 'premium')
+            else:
+                has_sub = bool(
+                    getattr(plan, 'has_all_standard_courses', False) or
+                    getattr(plan, 'has_premium_courses', False) or
+                    plan_type in ('standard', 'premium')
+                )
+
+        if not has_payment and not has_sub:
+            return False, f"{course.title} is a paid course — subscribe to a membership plan or complete checkout first."
+
+    return True, ""
+
 
 
 def can_access_course(user, course: Course) -> bool:
@@ -11,31 +192,33 @@ def can_access_course(user, course: Course) -> bool:
     Determines whether a user has full learning access to a given course.
     Rules:
     1. Unauthenticated users cannot access course contents.
-    2. Platform Administrators and Instructors (Teachers) have universal access.
-    3. Student must have an ACTIVE enrollment.
-    4. If course is free (is_free or price <= 0), access is granted once actively enrolled.
-    5. Direct Course Payment: Approved and unexpired payment unlocks the course.
-    6. Membership Subscription Tier:
-       - Starter Tier: Free courses only.
-       - Standard Tier: All standard courses across all disciplines.
-       - Premium Tier: All courses, including premium and cyber range courses.
-    7. Institutional Partner: If course has a partner institution, enrolled partner students
-       or cohort students have access.
+    2. Platform Administrators have universal access.
+    3. Course Author has universal access to their own course.
+    4. Enrolled Student must have an ACTIVE enrollment.
+    5. Free courses: Once actively enrolled, access is granted.
+    6. Direct Course Payment: Approved and unexpired payment unlocks the course.
+    7. Membership Subscription Tier:
+       - Standard courses unlocked by Standard or Premium plans.
+       - Premium courses unlocked exclusively by Premium plan.
+    8. Institutional Partner: Students affiliated with the course's partner institution have access.
     """
-    if not getattr(user, 'is_authenticated', False):
+    if not user or not getattr(user, 'is_authenticated', False):
         return False
 
-    if getattr(user, 'is_teacher', False) or getattr(user, 'is_admin', False):
+    if getattr(user, 'is_admin', False):
         return True
 
-    # Active enrollment check
+    if course.owner_id and course.owner_id == user.id:
+        return True
+
+    # Active or completed enrollment check
     if not Enrollment.objects.filter(
-        course=course, student=user, status=Enrollment.Status.ACTIVE
+        course=course, student=user, status__in=[Enrollment.Status.ACTIVE, Enrollment.Status.COMPLETED]
     ).exists():
         return False
 
     # Free course check
-    if getattr(course, 'is_free', False) or (getattr(course, 'price', None) is not None and course.price <= 0):
+    if getattr(course, 'is_free', False) or course.access_type == Course.AccessType.FREE or (getattr(course, 'price', None) is not None and course.price <= 0):
         return True
 
     # 1. Direct course purchase check
@@ -46,27 +229,102 @@ def can_access_course(user, course: Course) -> bool:
     # 2. Subscription tier access check
     sub = active_subscription_for(user)
     if sub and sub.is_current:
-        if getattr(course, 'is_premium', False):
-            if getattr(sub.plan, 'has_premium_courses', False):
+        plan = sub.plan
+        plan_type = getattr(plan, 'plan_type', '')
+        if getattr(course, 'is_premium', False) or course.access_type == Course.AccessType.PREMIUM:
+            if getattr(plan, 'has_premium_courses', False) or plan_type == 'premium':
                 return True
-        elif getattr(sub.plan, 'has_all_standard_courses', False):
+        elif getattr(plan, 'has_all_standard_courses', False) or getattr(plan, 'has_premium_courses', False) or plan_type in ('standard', 'premium'):
             return True
 
     # 3. Partner institutional affiliation check
-    if getattr(course, 'partner_institution_id', None):
+    if getattr(course, 'partner_institution_id', None) or course.access_type == Course.AccessType.PARTNER_ONLY:
         from apps.partner.models import PartnerStudent, CohortStudent
-        if PartnerStudent.objects.filter(
-            institution_id=course.partner_institution_id,
-            student=user,
-            status=PartnerStudent.Status.ACTIVE
-        ).exists():
-            return True
-        if CohortStudent.objects.filter(
-            cohort__institution_id=course.partner_institution_id,
-            cohort__course=course,
-            student=user,
-            cohort__is_active=True
-        ).exists():
-            return True
+        if course.partner_institution_id:
+            if PartnerStudent.objects.filter(
+                institution_id=course.partner_institution_id,
+                student=user,
+                status=PartnerStudent.Status.ACTIVE
+            ).exists():
+                return True
+            if CohortStudent.objects.filter(
+                cohort__institution_id=course.partner_institution_id,
+                cohort__course=course,
+                student=user,
+                cohort__is_active=True
+            ).exists():
+                return True
 
     return False
+
+
+def can_start_course(user, course: Course) -> tuple[bool, str]:
+    """
+    Returns whether a user can begin coursework immediately.
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False, "Login required to start learning."
+    if can_access_course(user, course):
+        return True, "Enrolled with active entitlement."
+    return False, "Course access entitlement required."
+
+
+def can_take_course_exam(user, course: Course) -> tuple[bool, str]:
+    """
+    Checks if student has fulfilled prerequisites to sit for the course exam.
+    Course-specific exam rules remain authoritative (e.g. separate voucher fees).
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False, "Sign in to take the examination."
+    if getattr(user, 'is_admin', False):
+        return True, "Platform administrator access."
+    if course.owner_id and course.owner_id == user.id:
+        return True, "Course author access."
+    if not can_access_course(user, course):
+        return False, "Active course enrollment and completion required."
+
+    voucher_price = getattr(course, 'exam_voucher_price', None)
+    if voucher_price and voucher_price > Decimal('0.00'):
+        from apps.billing.models import Payment
+        has_voucher = Payment.objects.filter(
+            student=user,
+            course=course,
+            payment_type=Payment.PaymentType.EXAM_VOUCHER,
+            status=Payment.Status.SUCCESS,
+        ).exists()
+        if not has_voucher:
+            return False, "Course-specific exam rules are authoritative: separate exam voucher fee required."
+
+    return True, "Eligible to sit for examination."
+
+
+def can_claim_certificate(user, course: Course) -> tuple[bool, str]:
+    """
+    Checks if student has fulfilled prerequisites to claim a completion certificate.
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False, "Sign in to claim certificate."
+    if not getattr(course, 'certificate_eligible', True):
+        return False, "Course is not eligible for certificate issuance."
+    if not can_access_course(user, course):
+        return False, "Active course enrollment required."
+    return True, "Eligible to claim certificate."
+
+
+def enroll_student_in_course(user, course: Course, source: str = None, partner_institution=None) -> Enrollment:
+    """
+    Enrolls a student in a course, setting status to ACTIVE and tracking source channel.
+    """
+    if not source:
+        source = Enrollment.Source.FREE if course.is_free else Enrollment.Source.SELF
+
+    enrollment, _ = Enrollment.objects.update_or_create(
+        course=course,
+        student=user,
+        defaults={
+            'status': Enrollment.Status.ACTIVE,
+            'source': source,
+            'partner_institution': partner_institution or course.partner_institution,
+        }
+    )
+    return enrollment

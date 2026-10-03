@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from django.conf import settings
 from apps.common.models import BaseModel
@@ -145,6 +146,21 @@ class Course(BaseModel):
         APPROVED = 'approved', 'Approved'
         PUBLISHED = 'published', 'Published'
         ARCHIVED = 'archived', 'Archived'
+        REJECTED = 'rejected', 'Rejected'
+
+    class OwnerType(models.TextChoices):
+        PLATFORM = 'platform', 'Myanmar E-Learning Platform'
+        INSTRUCTOR = 'instructor', 'Instructor'
+        PARTNER = 'partner', 'Partner Organization'
+
+    class AccessType(models.TextChoices):
+        FREE = 'free', 'Free'
+        STARTER = 'starter', 'Starter Tier'
+        STANDARD = 'standard', 'Standard Tier'
+        PREMIUM = 'premium', 'Premium Tier'
+        PARTNER_ONLY = 'partner_only', 'Partner Organization Only'
+        PAID = 'paid', 'Paid (Direct Purchase)'
+        INSTRUCTOR_COURSE = 'instructor_course', 'Instructor Course'
 
     class MembershipTierRequired(models.TextChoices):
         STARTER = 'starter', 'Starter (Free / Exploratory)'
@@ -168,6 +184,20 @@ class Course(BaseModel):
         default=Status.PUBLISHED,
         db_index=True,
         help_text="Course editorial lifecycle state."
+    )
+    owner_type = models.CharField(
+        max_length=20,
+        choices=OwnerType.choices,
+        default=OwnerType.PLATFORM,
+        db_index=True,
+        help_text="Course ownership classification (Platform, Instructor, or Partner)."
+    )
+    access_type = models.CharField(
+        max_length=20,
+        choices=AccessType.choices,
+        default=AccessType.STANDARD,
+        db_index=True,
+        help_text="Primary access entitlement required for course."
     )
     membership_tier_required = models.CharField(
         max_length=16,
@@ -229,6 +259,25 @@ class Course(BaseModel):
     )
     thumbnail = models.ImageField(upload_to='courses/', null=True, blank=True)
 
+    # Editorial Review fields
+    admin_review_notes = models.TextField(
+        blank=True,
+        help_text="Editorial feedback or review notes from administrators."
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_courses',
+        help_text="Administrator who conducted editorial review."
+    )
+    reviewed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp of the latest editorial review."
+    )
+
     # Commercial settings — teachers price their own courses; the platform keeps
     # settings.PAYMENT_PLATFORM_COMMISSION_RATE of every approved payment.
     owner = models.ForeignKey(
@@ -260,8 +309,37 @@ class Course(BaseModel):
     partner_revenue_share_pct = models.DecimalField(
         max_digits=5,
         decimal_places=2,
-        default=25.00,
-        help_text="Partner revenue share percentage (e.g. 25.00% for partner, 75.00% for platform/author)."
+        default=75.00,
+        help_text="Partner revenue share percentage (e.g. 75.00% for partner, 25.00% for MEL).",
+    )
+    discount_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Promotional discounted price for marketing campaigns.",
+    )
+    partner_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Special discounted price for students affiliated with partner institution.",
+    )
+    special_price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Special temporary price override.",
+    )
+    partner_discount_allowed = models.BooleanField(
+        default=True,
+        help_text="Allow affiliated partner students to receive discounted partner pricing.",
+    )
+    public_preview = models.BooleanField(
+        default=True,
+        help_text="Allow public guests to preview course outline.",
     )
 
     class Meta:
@@ -270,20 +348,215 @@ class Course(BaseModel):
     def __str__(self):
         return self.title
 
+    @property
+    def exam_available(self):
+        return self.exam_required or self.quizzes.filter(quiz_type='exam').exists()
+
+    @property
+    def exam_fee(self):
+        return self.exam_voucher_price
+
+    @property
+    def certificate_available(self):
+        return self.certificate_eligible
+
+    @property
+    def membership_required(self):
+        return self.access_type in [self.AccessType.STANDARD, self.AccessType.PREMIUM]
+
+    @property
+    def instructor_price(self):
+        return self.price
+
+    def get_effective_price(self, user=None):
+        """Returns pricing breakdown dictionary for course and given user."""
+        return self.calculate_price_for_user(user)
+
+    def calculate_price_for_user(self, user=None):
+        """
+        Single server-side source of truth for course pricing.
+        Zero trust: never rely on client parameters.
+        Evaluates in order:
+        1. Free course check (price == 0 or access_type == FREE)
+        2. Active user membership tier coverage (Standard / Premium) -> 0 MMK
+        3. Partner student affiliation discount -> partner_price
+        4. Special temporary price override -> special_price
+        5. Promotional discount price -> discount_price
+        6. Standard course price -> price
+        """
+        # 1. Base free check
+        if self.is_free or self.access_type == self.AccessType.FREE:
+            return {
+                'final_price': Decimal('0.00'),
+                'original_price': self.price or Decimal('0.00'),
+                'is_free': True,
+                'pricing_tier': 'free',
+                'discount_amount': Decimal('0.00'),
+                'currency': self.currency,
+                'reason': 'This course is free.',
+            }
+
+        # 2. Check student membership subscription
+        if user and getattr(user, 'is_authenticated', False):
+            from apps.billing.models import active_subscription_for
+            sub = active_subscription_for(user)
+            if sub and sub.is_current:
+                # If course requires Standard and user has Standard or Premium
+                if self.access_type == self.AccessType.STANDARD and sub.plan.has_all_standard_courses:
+                    return {
+                        'final_price': Decimal('0.00'),
+                        'original_price': self.price,
+                        'is_free': True,
+                        'pricing_tier': 'membership',
+                        'discount_amount': self.price,
+                        'currency': self.currency,
+                        'reason': f"Covered by your {sub.plan.name} Membership.",
+                    }
+                # If course requires Premium and user has Premium
+                if self.access_type == self.AccessType.PREMIUM and sub.plan.has_premium_courses:
+                    return {
+                        'final_price': Decimal('0.00'),
+                        'original_price': self.price,
+                        'is_free': True,
+                        'pricing_tier': 'membership',
+                        'discount_amount': self.price,
+                        'currency': self.currency,
+                        'reason': f"Covered by your {sub.plan.name} Membership.",
+                    }
+
+        # 3. Special temporary price override (takes precedence over partner and promotional pricing)
+        if self.special_price is not None:
+            effective_price = max(self.special_price, Decimal('0.00'))
+            discount = max(self.price - effective_price, Decimal('0.00'))
+            return {
+                'final_price': effective_price,
+                'original_price': self.price,
+                'is_free': effective_price <= 0,
+                'pricing_tier': 'special',
+                'discount_amount': discount,
+                'currency': self.currency,
+                'reason': 'Special limited-time pricing.',
+            }
+
+        # 4. Check partner student affiliation
+        if user and getattr(user, 'is_authenticated', False) and self.partner_institution and self.partner_price is not None:
+            from apps.partner.models import PartnerStudent, PartnerMembership
+            is_partner_student = PartnerStudent.objects.filter(
+                institution=self.partner_institution, student=user, status=PartnerStudent.Status.ACTIVE
+            ).exists() or PartnerMembership.objects.filter(
+                institution=self.partner_institution, user=user, status=PartnerMembership.Status.ACTIVE
+            ).exists()
+            if is_partner_student:
+                effective_price = max(self.partner_price, Decimal('0.00'))
+                discount = max(self.price - effective_price, Decimal('0.00'))
+                return {
+                    'final_price': effective_price,
+                    'original_price': self.price,
+                    'is_free': effective_price <= 0,
+                    'pricing_tier': 'partner',
+                    'discount_amount': discount,
+                    'currency': self.currency,
+                    'reason': f"Partner institution pricing ({self.partner_institution.name}).",
+                }
+
+        # 5. Check promotional discount price
+        if self.discount_price is not None:
+            effective_price = max(self.discount_price, Decimal('0.00'))
+            discount = max(self.price - effective_price, Decimal('0.00'))
+            return {
+                'final_price': effective_price,
+                'original_price': self.price,
+                'is_free': effective_price <= 0,
+                'pricing_tier': 'discount',
+                'discount_amount': discount,
+                'currency': self.currency,
+                'reason': 'Promotional discount pricing.',
+            }
+
+        # 6. Standard list price
+        return {
+            'final_price': self.price,
+            'original_price': self.price,
+            'is_free': False,
+            'pricing_tier': 'standard',
+            'discount_amount': Decimal('0.00'),
+            'currency': self.currency,
+            'reason': 'Standard course price.',
+        }
+
     def save(self, *args, **kwargs):
         if self.owner and hasattr(self.owner, 'is_admin') and self.owner.is_admin:
             self.is_official = True
         elif self.owner is None:
             self.is_official = True
+
+        if self.partner_institution:
+            self.owner_type = self.OwnerType.PARTNER
+        elif self.owner and hasattr(self.owner, 'is_teacher') and self.owner.is_teacher and not (hasattr(self.owner, 'is_admin') and self.owner.is_admin):
+            self.owner_type = self.OwnerType.INSTRUCTOR
+        elif self.is_official_platform_course:
+            self.owner_type = self.OwnerType.PLATFORM
+
         if self.status == self.Status.PUBLISHED:
             self.is_published = True
-        elif self.status in (self.Status.DRAFT, self.Status.PENDING_REVIEW, self.Status.ARCHIVED):
+        elif self.status in (self.Status.DRAFT, self.Status.PENDING_REVIEW, self.Status.ARCHIVED, self.Status.REJECTED):
             self.is_published = False
+
+        if self.is_free and self.access_type == self.AccessType.PAID:
+            self.access_type = self.AccessType.FREE
+
         super().save(*args, **kwargs)
 
     @property
     def is_free(self):
         return self.price is None or self.price <= 0
+
+    @property
+    def instructor(self):
+        return self.owner
+
+    @property
+    def difficulty(self):
+        return self.level
+
+    @property
+    def duration_hours(self):
+        return (self.duration_months or 1) * 10
+
+    @property
+    def tagline(self):
+        desc = self.description or ""
+        return (desc[:120] + "...") if len(desc) > 120 else desc
+
+    @property
+    def is_featured(self):
+        return self.is_official or self.is_premium
+
+    def can_publish(self, user=None):
+        """
+        Validates whether a user can publish this course.
+        - Platform admins can publish any course.
+        - Unverified teachers CANNOT publish courses.
+        - Verified instructors can publish/submit courses.
+        """
+        if user is None:
+            user = self.owner
+        if not user:
+            return False
+        if getattr(user, 'is_admin', False):
+            return True
+        if getattr(user, 'is_teacher', False):
+            teacher_profile = getattr(user, 'teacher_profile', None)
+            return bool(teacher_profile and getattr(teacher_profile, 'is_verified', False))
+        return False
+
+    @property
+    def exam_available(self):
+        return bool(self.exam_required or self.quizzes.filter(quiz_type='course_exam').exists())
+
+    @property
+    def certificate_available(self):
+        return bool(self.certificate_eligible)
 
     @property
     def is_official_platform_course(self):
@@ -322,6 +595,10 @@ class Module(BaseModel):
 
     def __str__(self):
         return f"{self.code}: {self.title}"
+
+    @property
+    def description(self):
+        return self.summary
 
 
 class LessonType(models.TextChoices):
@@ -388,6 +665,31 @@ class Lesson(BaseModel):
     def has_document(self):
         return bool(self.document_file)
 
+    @property
+    def duration_minutes(self):
+        return self.estimated_minutes
+
+    @property
+    def content(self):
+        return self.content_markdown
+
+    @property
+    def is_preview(self):
+        return getattr(self, '_is_preview', False) or (self.order == 1)
+
+    @is_preview.setter
+    def is_preview(self, value):
+        self._is_preview = bool(value)
+
+    @property
+    def slug(self):
+        from django.utils.text import slugify
+        return slugify(self.title) or f"lesson-{self.id}"
+
+    @property
+    def attachment_url(self):
+        return self.document_file.url if self.document_file else None
+
 
 class Topic(BaseModel):
     """
@@ -407,34 +709,147 @@ class Topic(BaseModel):
 
 class Quiz(BaseModel):
     """
-    Multiple-choice knowledge evaluation for a lesson or module.
+    Knowledge and competency evaluation for a course, module, or lesson.
+    Supports quizzes, practice exams, course exams, final exams, practical assessments, and projects.
     """
-    class QuizType(models.TextChoices):
-        QUIZ = 'quiz', 'Module/Lesson Quiz'
-        EXAM = 'exam', 'Proctored Final Exam'
+    class AssessmentType(models.TextChoices):
+        QUIZ = 'quiz', 'Quiz'
         PRACTICE_EXAM = 'practice_exam', 'Practice Exam'
+        COURSE_EXAM = 'course_exam', 'Course Exam'
+        FINAL_EXAM = 'final_exam', 'Final Exam'
         PRACTICAL = 'practical', 'Practical Assessment'
+        ASSIGNMENT = 'assignment', 'Assignment'
+        PROJECT = 'project', 'Project Assessment'
+        EXAM = 'exam', 'Course Exam'
 
-    lesson = models.OneToOneField(Lesson, on_delete=models.CASCADE, related_name='quiz')
+    # Backwards compatibility alias
+    QuizType = AssessmentType
+
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Draft'
+        PUBLISHED = 'published', 'Published'
+        ARCHIVED = 'archived', 'Archived'
+
+    course = models.ForeignKey(
+        'courses.Course',
+        on_delete=models.CASCADE,
+        related_name='quizzes',
+        null=True,
+        blank=True,
+        help_text="Course to which this assessment belongs.",
+    )
+    module = models.ForeignKey(
+        'courses.Module',
+        on_delete=models.SET_NULL,
+        related_name='quizzes',
+        null=True,
+        blank=True,
+        help_text="Optional module to which this assessment belongs.",
+    )
+    lesson = models.OneToOneField(
+        'courses.Lesson',
+        on_delete=models.SET_NULL,
+        related_name='quiz',
+        null=True,
+        blank=True,
+        help_text="Optional lesson if this assessment is directly attached to a lesson unit.",
+    )
     title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, help_text="Overview, instructions, or exam guidelines.")
     quiz_type = models.CharField(
-        max_length=20,
-        choices=QuizType.choices,
-        default=QuizType.QUIZ,
+        max_length=32,
+        choices=AssessmentType.choices,
+        default=AssessmentType.QUIZ,
         db_index=True,
     )
-    passing_percentage = models.PositiveSmallIntegerField(default=75)
-    max_attempts = models.PositiveSmallIntegerField(default=3)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PUBLISHED,
+        db_index=True,
+        help_text="Editorial status of this assessment.",
+    )
+    time_limit_minutes = models.PositiveIntegerField(
+        default=0,
+        help_text="Time limit in minutes (0 = untimed)."
+    )
+    passing_percentage = models.PositiveSmallIntegerField(
+        default=75,
+        help_text="Passing score percentage required (0-100)."
+    )
+    max_attempts = models.PositiveSmallIntegerField(
+        default=3,
+        help_text="Maximum allowed attempts (0 = unlimited)."
+    )
+    randomize_questions = models.BooleanField(
+        default=False,
+        help_text="Randomize question presentation order per attempt."
+    )
+    randomize_choices = models.BooleanField(
+        default=False,
+        help_text="Randomize choice options per question."
+    )
+    available_from = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Start of assessment availability window."
+    )
+    available_until = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Deadline after which no new attempts are accepted."
+    )
+    is_required = models.BooleanField(
+        default=True,
+        help_text="Whether passing this assessment is required for course completion."
+    )
+
+    class Meta:
+        ordering = ['title']
 
     def __str__(self):
-        return f"Quiz: {self.title} ({self.lesson.title})"
+        return f"{self.get_quiz_type_display()}: {self.title}"
+
+    @property
+    def is_exam(self):
+        return self.quiz_type in (
+            self.AssessmentType.COURSE_EXAM,
+            self.AssessmentType.FINAL_EXAM,
+            self.AssessmentType.EXAM,
+        )
 
 
 class Question(BaseModel):
+    class QuestionType(models.TextChoices):
+        MULTIPLE_CHOICE = 'multiple_choice', 'Multiple Choice (Single Answer)'
+        MULTIPLE_SELECT = 'multiple_select', 'Multiple Select (Multi-Choice)'
+        TRUE_FALSE = 'true_false', 'True / False'
+        FILL_IN_BLANK = 'fill_in_blank', 'Fill in the Blank'
+        SHORT_ANSWER = 'short_answer', 'Short Answer'
+        CODING = 'coding', 'Coding Problem'
+        PRACTICAL_LAB = 'practical_lab', 'Hands-on Lab Exercise'
+        FILE_SUBMISSION = 'file_submission', 'File Submission'
+        PROJECT_EVALUATION = 'project_evaluation', 'Project Evaluation'
+
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
     order = models.PositiveSmallIntegerField(default=1)
     prompt = models.TextField()
+    question_type = models.CharField(
+        max_length=32,
+        choices=QuestionType.choices,
+        default=QuestionType.MULTIPLE_CHOICE,
+        db_index=True,
+    )
     points = models.PositiveSmallIntegerField(default=10)
+    correct_text_answer = models.CharField(
+        max_length=512,
+        blank=True,
+        help_text="Expected answer for Fill in the Blank or exact Short Answer (pipe '|' separated for accepted variants)."
+    )
+    rubric_criteria = models.TextField(
+        blank=True,
+        help_text="Grading criteria for short answer, coding, or practical evaluations."
+    )
     explanation = models.TextField(blank=True, help_text="Explanatory feedback shown after attempt")
 
     class Meta:
@@ -451,6 +866,14 @@ class Choice(BaseModel):
 
     def __str__(self):
         return f"{'[✓]' if self.is_correct else '[ ]'} {self.text[:50]}"
+
+    @property
+    def order(self):
+        return getattr(self, '_order', 1)
+
+    @order.setter
+    def order(self, val):
+        self._order = val
 
 
 class QuizAttempt(BaseModel):
@@ -481,6 +904,22 @@ class QuizAttempt(BaseModel):
 
     def __str__(self):
         return f"{self.student.username} - {self.quiz.title} (Attempt #{self.attempt_number}: {self.score_percentage}%)"
+
+
+class Assessment(Quiz):
+    """Proxy model providing a domain-neutral alias for Quiz."""
+    class Meta:
+        proxy = True
+        verbose_name = 'Assessment'
+        verbose_name_plural = 'Assessments'
+
+
+class AssessmentAttempt(QuizAttempt):
+    """Proxy model providing a domain-neutral alias for QuizAttempt."""
+    class Meta:
+        proxy = True
+        verbose_name = 'Assessment Attempt'
+        verbose_name_plural = 'Assessment Attempts'
 
 
 class Assignment(BaseModel):
@@ -546,8 +985,31 @@ class Enrollment(BaseModel):
         COMPLETED = 'completed', 'Completed'
         DROPPED = 'dropped', 'Dropped'
 
+    class Source(models.TextChoices):
+        SELF = 'self', 'Self Enrolled'
+        PAID = 'paid', 'Direct Payment'
+        FREE = 'free', 'Free Access'
+        PARTNER = 'partner', 'Partner Assigned'
+        INSTRUCTOR = 'instructor', 'Instructor Enrolled'
+        ADMIN = 'admin', 'Administrator Enrolled'
+
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='enrollments')
+    source = models.CharField(
+        max_length=20,
+        choices=Source.choices,
+        default=Source.SELF,
+        db_index=True,
+        help_text="Source channel through which this enrollment occurred."
+    )
+    partner_institution = models.ForeignKey(
+        'partner.Institution',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='institutional_enrollments',
+        help_text="Partner institution associated with this enrollment if applicable."
+    )
     status = models.CharField(
         max_length=16,
         choices=Status.choices,

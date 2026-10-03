@@ -11,6 +11,7 @@ from .views import (
     AuthLoginAPIView,
     AuthRegisterAPIView,
     UserProfileAPIView,
+    PublicInstructorProfileView,
 )
 
 urlpatterns = [
@@ -24,6 +25,7 @@ urlpatterns = [
     path('dashboard/', StudentDashboardView.as_view(), name='dashboard'),
     path('profile/', UserProfileView.as_view(), name='profile'),
     path('apply-instructor/', InstructorApplyView.as_view(), name='apply-instructor'),
+    path('instructors/<str:username>/', PublicInstructorProfileView.as_view(), name='public-instructor-profile'),
 
     # REST API endpoints (Mobile Apps & Single-Page Clients)
     path('api/login/', AuthLoginAPIView.as_view(), name='api-auth-login'),

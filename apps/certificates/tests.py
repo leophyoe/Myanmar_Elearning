@@ -96,3 +96,40 @@ class CertificateServiceTests(TestCase):
         self.assertNotContains(resp, self.student.email)
         self.assertNotContains(resp, "eval@example.com")
 
+    def test_generic_certificate_attributes_and_program_title(self):
+        cert = issue_certificate_for_enrollment(self.enrollment)
+        # Universal properties:
+        self.assertEqual(cert.certificate_id, cert.certificate_code)
+        self.assertEqual(cert.verification_code, cert.certificate_code)
+        self.assertEqual(cert.course_name, self.course.title)
+        self.assertEqual(cert.program, cert.program_title)
+        self.assertEqual(cert.issue_date, cert.issued_at)
+        # Not hardcoded to Cyber Security
+        self.assertEqual(cert.program_title, 'Python Fundamentals')
+        self.assertNotEqual(cert.program_title, 'Diploma in Cyber Security')
+
+    def test_certificate_revocation_and_unrevocation(self):
+        cert = issue_certificate_for_enrollment(self.enrollment)
+        self.assertFalse(cert.is_revoked)
+
+        # Revoke certificate
+        cert.revoke(reason="Academic plagiarism detected on final assessment.")
+        self.assertTrue(cert.is_revoked)
+        self.assertEqual(cert.revocation_reason, "Academic plagiarism detected on final assessment.")
+
+        # Canonical verify view shows REVOKED status
+        canonical_url = reverse('canonical-verify', kwargs={'code': cert.certificate_code})
+        resp = self.client.get(canonical_url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'REVOKED')
+
+        # Unrevoke certificate
+        cert.unrevoke()
+        self.assertFalse(cert.is_revoked)
+        self.assertEqual(cert.revocation_reason, "")
+
+        resp_valid = self.client.get(canonical_url)
+        self.assertEqual(resp_valid.status_code, 200)
+        self.assertContains(resp_valid, 'VALID')
+        self.assertContains(resp_valid, 'OFFICIALLY VERIFIED CREDENTIAL')
+

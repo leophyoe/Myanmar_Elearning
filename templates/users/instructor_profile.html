@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}{{ instructor.get_full_name|default:instructor.username }} — MEL Certified Instructor{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 py-10">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <!-- Breadcrumbs -->
+        <nav class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+            <a href="{% url 'landing-page' %}" class="hover:text-blue-600">Home</a>
+            <span>/</span>
+            <span class="text-slate-700">Instructors</span>
+            <span>/</span>
+            <span class="text-blue-600 font-semibold">{{ instructor.username }}</span>
+        </nav>
+
+        <!-- Instructor Header Card -->
+        <div class="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                <div class="w-20 h-20 rounded-full bg-blue-600 text-white font-bold text-2xl flex items-center justify-center shrink-0 shadow">
+                    {{ instructor.username|slice:":1"|upper }}
+                </div>
+                <div class="space-y-1 flex-1">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <h1 class="text-2xl font-bold text-slate-900">{{ instructor.get_full_name|default:instructor.username }}</h1>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                            {{ teacher_profile.get_level_display|default:"Associate Instructor" }}
+                        </span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            ✓ Verified Faculty
+                        </span>
+                    </div>
+                    <p class="text-sm font-medium text-slate-600">{{ teacher_profile.title|default:"Lecturer" }} · {{ teacher_profile.department|default:"Faculty of Computing" }}</p>
+                    <p class="text-xs text-slate-400">MEL ID: {{ instructor.account_id }}</p>
+                </div>
+            </div>
+
+            {% if teacher_profile.bio %}
+            <div class="mt-6 pt-6 border-t border-slate-100">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Biography</h2>
+                <p class="text-sm text-slate-700 leading-relaxed">{{ teacher_profile.bio }}</p>
+            </div>
+            {% endif %}
+
+            {% if teacher_profile.qualifications %}
+            <div class="mt-4 pt-4 border-t border-slate-100">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Academic Qualifications & Credentials</h2>
+                <p class="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{{ teacher_profile.qualifications }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Social / Academic Links -->
+            <div class="mt-6 flex flex-wrap gap-4 text-xs font-medium">
+                {% if teacher_profile.website %}
+                <a href="{{ teacher_profile.website }}" target="_blank" rel="noopener" class="text-blue-600 hover:underline flex items-center gap-1">
+                    <span>🌐 Website</span>
+                </a>
+                {% endif %}
+                {% if teacher_profile.github_url %}
+                <a href="{{ teacher_profile.github_url }}" target="_blank" rel="noopener" class="text-slate-700 hover:text-black flex items-center gap-1">
+                    <span>💻 GitHub</span>
+                </a>
+                {% endif %}
+                {% if teacher_profile.linkedin_url %}
+                <a href="{{ teacher_profile.linkedin_url }}" target="_blank" rel="noopener" class="text-blue-700 hover:underline flex items-center gap-1">
+                    <span>🔗 LinkedIn</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Published Courses Section -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold text-slate-900">Authored Courses</h2>
+                <span class="text-xs text-slate-500">{{ published_courses|length }} published curriculum</span>
+            </div>
+
+            {% if published_courses %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for course in published_courses %}
+                <div class="bg-white border border-slate-200 rounded-xl p-5 hover:border-blue-400 transition shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between text-xs text-slate-500 mb-2">
+                            <span>{{ course.subject.title|default:"Computer Science" }}</span>
+                            <span class="font-semibold text-blue-600">{{ course.get_level_display }}</span>
+                        </div>
+                        <h3 class="font-bold text-base text-slate-900 leading-snug mb-2">
+                            <a href="{% url 'course-detail' slug=course.slug %}" class="hover:text-blue-600">
+                                {{ course.title }}
+                            </a>
+                        </h3>
+                        <p class="text-xs text-slate-600 line-clamp-3 mb-4">{{ course.short_description|default:course.description }}</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                        <span class="text-sm font-bold text-slate-900">
+                            {% if course.is_free %}
+                            <span class="text-emerald-600">Free</span>
+                            {% else %}
+                            {{ course.price|floatformat:0 }} {{ course.currency }}
+                            {% endif %}
+                        </span>
+                        <a href="{% url 'course-detail' slug=course.slug %}" class="text-xs font-semibold px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                            View Syllabus
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-500 text-sm">
+                No published courses available for this instructor at this time.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

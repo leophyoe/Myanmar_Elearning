@@ -1,0 +1,25 @@
+{# Reusable Clean Card Component #}
+<div class="bg-white border border-[#E2E8F0] rounded-xl shadow-sm {% if extra_classes %}{{ extra_classes }}{% endif %}">
+    {% if title or header_action %}
+    <div class="px-5 py-4 border-b border-[#E2E8F0] flex items-center justify-between">
+        <div>
+            {% if title %}<h3 class="text-sm sm:text-base font-semibold text-[#0F172A]">{{ title }}</h3>{% endif %}
+            {% if subtitle %}<p class="text-xs text-[#64748B] mt-0.5">{{ subtitle }}</p>{% endif %}
+        </div>
+        {% if header_action %}
+        <div class="shrink-0 ml-3">
+            {{ header_action|safe }}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    <div class="p-5">
+        {{ content|safe }}
+    </div>
+    {% if footer %}
+    <div class="px-5 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC] rounded-b-xl text-xs text-[#64748B]">
+        {{ footer|safe }}
+    </div>
+    {% endif %}
+</div>
+

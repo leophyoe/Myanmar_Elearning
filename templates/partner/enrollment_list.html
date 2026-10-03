@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Partner Student Enrollments - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <a href="{% url 'partner-dashboard' %}" class="text-xs text-blue-600 hover:underline inline-flex items-center gap-1 font-medium mb-1">
+                <span>&larr;</span> Back to Partner Portal
+            </a>
+            <h1 class="text-2xl font-extrabold text-slate-900">
+                Partner Student Enrollments & Progress
+            </h1>
+            <p class="text-xs text-slate-500 mt-1">
+                Object-level verified roster of students enrolled in your institution's courses.
+            </p>
+        </div>
+    </div>
+
+    {% if enrollments %}
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <tr>
+                    <th class="py-3 px-4">Student</th>
+                    <th class="py-3 px-4">Course</th>
+                    <th class="py-3 px-4">Channel / Source</th>
+                    <th class="py-3 px-4">Enrolled Date</th>
+                    <th class="py-3 px-4">Progress</th>
+                    <th class="py-3 px-4">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for enrollment in enrollments %}
+                <tr class="hover:bg-slate-50/70 transition">
+                    <td class="py-3 px-4 font-bold text-slate-900">
+                        {{ enrollment.student.get_full_name|default:enrollment.student.username }}
+                        <span class="block text-[11px] font-normal text-slate-400">@{{ enrollment.student.username }}</span>
+                    </td>
+                    <td class="py-3 px-4 font-semibold text-slate-800">
+                        {{ enrollment.course.title }}
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
+                            {{ enrollment.get_source_display }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-slate-500">
+                        {{ enrollment.enrolled_at|date:"M d, Y" }}
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div class="bg-blue-600 h-full rounded-full" style="width: {{ enrollment.progress_pct }}%"></div>
+                            </div>
+                            <span class="font-mono text-[11px] font-bold text-slate-700">{{ enrollment.progress_pct }}%</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="inline-block px-2 py-0.5 rounded font-semibold text-[11px]
+                            {% if enrollment.status == 'active' %}bg-emerald-50 text-emerald-700
+                            {% elif enrollment.status == 'completed' %}bg-blue-50 text-blue-700
+                            {% else %}bg-slate-100 text-slate-600{% endif %}">
+                            {{ enrollment.get_status_display }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center rounded-xl bg-white border border-slate-200">
+        <h3 class="text-base font-bold text-slate-900 mb-1">No Student Enrollments Found</h3>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto">
+            No students are currently enrolled in your institution's courses.
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Course Editorial Review Cockpit - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <a href="{% url 'manage-home' %}" class="text-xs text-blue-600 hover:underline inline-flex items-center gap-1 font-medium mb-1">
+                <span>&larr;</span> Back to Authoring Cockpit
+            </a>
+            <h1 class="text-2xl font-extrabold text-slate-900">
+                Editorial Review Submissions
+            </h1>
+            <p class="text-xs text-slate-500 mt-1">
+                Inspect and evaluate curricula submitted by instructors and partner organizations before publication.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="text-xs px-3 py-1 rounded-full bg-amber-100 text-amber-800 font-bold">
+                {{ pending_courses.count }} Pending Review
+            </span>
+        </div>
+    </div>
+
+    {% if pending_courses %}
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <tr>
+                    <th class="py-3 px-4">Course Title & Discipline</th>
+                    <th class="py-3 px-4">Author / Partner</th>
+                    <th class="py-3 px-4">Access & Price</th>
+                    <th class="py-3 px-4">Curriculum Scope</th>
+                    <th class="py-3 px-4">Last Updated</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for course in pending_courses %}
+                <tr class="hover:bg-slate-50/70 transition">
+                    <td class="py-4 px-4">
+                        <div class="font-bold text-slate-900 text-sm">{{ course.title }}</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">
+                            {% if course.subject %}{{ course.subject.title }} · {% endif %}
+                            Level: {{ course.get_level_display }} · {{ course.get_language_display }}
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="font-medium text-slate-800">
+                            {{ course.publisher_display_name }}
+                        </div>
+                        {% if course.partner_institution %}
+                        <div class="text-[11px] text-blue-600">
+                            Partner: {{ course.partner_institution.name }}
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
+                            {{ course.get_access_type_display }}
+                        </span>
+                        <div class="text-[11px] text-slate-500 mt-1">
+                            {% if course.is_free %}Free{% else %}{{ course.price }} {{ course.currency }}{% endif %}
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="font-semibold text-slate-800">{{ course.modules.count }} Modules</div>
+                        <div class="text-[11px] text-slate-400">Total lessons across curriculum</div>
+                    </td>
+                    <td class="py-4 px-4 text-slate-500">
+                        {{ course.updated_at|date:"M d, Y H:i" }}
+                    </td>
+                    <td class="py-4 px-4 text-right">
+                        <a href="{% url 'course-review-action' slug=course.slug %}"
+                           class="inline-block px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition shadow-sm text-xs">
+                            Review & Decide →
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center rounded-xl bg-white border border-slate-200">
+        <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 text-xl font-bold">
+            ✓
+        </div>
+        <h3 class="text-base font-bold text-slate-900 mb-1">Queue is Clear</h3>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto">
+            There are currently no courses awaiting editorial review. Any newly submitted courses from instructors or partners will appear here.
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

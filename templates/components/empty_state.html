@@ -1,0 +1,16 @@
+{# Reusable Empty State Component #}
+<div class="p-10 sm:p-14 text-center rounded-xl bg-white border border-[#E2E8F0] shadow-sm my-4">
+    <div class="w-12 h-12 mx-auto rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center text-xl mb-3.5">
+        {% if icon %}{{ icon|safe }}{% else %}📂{% endif %}
+    </div>
+    <h3 class="text-base font-semibold text-[#0F172A]">{{ title|default:"No records found" }}</h3>
+    <p class="text-xs sm:text-sm text-[#64748B] max-w-sm mx-auto mt-1 leading-relaxed">{{ description|default:"There are currently no items to display in this view." }}</p>
+    {% if action_url and action_text %}
+    <div class="mt-5">
+        <a href="{{ action_url }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-semibold transition shadow-sm">
+            <span>{{ action_text }}</span>
+        </a>
+    </div>
+    {% endif %}
+</div>
+

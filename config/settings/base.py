@@ -33,6 +33,7 @@ THIRD_PARTY_APPS = []
 try:
     import rest_framework
     THIRD_PARTY_APPS.append('rest_framework')
+    THIRD_PARTY_APPS.append('rest_framework.authtoken')
 except ImportError:
     pass
 
@@ -59,6 +60,7 @@ LOCAL_APPS = [
     'apps.terminal',
     'apps.vpn',
     'apps.partner',
+    'apps.api',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -136,14 +138,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # REST Framework Configuration
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'apps.api.authentication.BearerOrTokenAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'apps.api.pagination.StandardResultsSetPagination',
     'PAGE_SIZE': 20,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/minute',
+        'user': '300/minute',
+        'auth': '20/minute',
+        'assessment': '60/minute',
+    },
 }
 
 # Redis & Channels Configuration
@@ -174,6 +189,7 @@ PLATFORM_CURRENCY = os.environ.get('PLATFORM_CURRENCY', 'MMK')
 # The platform keeps this fraction of every approved payment; the rest goes to
 # the teacher who owns the course.
 PAYMENT_PLATFORM_COMMISSION_RATE = float(os.environ.get('PAYMENT_PLATFORM_COMMISSION_RATE', 0.25))
+PARTNER_DEFAULT_REVENUE_SHARE_PCT = float(os.environ.get('PARTNER_DEFAULT_REVENUE_SHARE_PCT', 75.0))
 PAYMENT_RECEIPT_MAX_MB = int(os.environ.get('PAYMENT_RECEIPT_MAX_MB', 10))
 LAB_DEFAULT_DURATION_MINUTES = int(os.environ.get('LAB_DEFAULT_DURATION_MINUTES', 90))
 LAB_MAX_EXTENSIONS = int(os.environ.get('LAB_MAX_EXTENSIONS', 2))

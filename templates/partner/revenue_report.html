@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Partner Revenue & Financial Accounting — {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <!-- Header with Breadcrumb and Institution Selector -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-cyan-400 bg-cyan-950/60 border border-cyan-800 rounded-full px-3 py-1">
+                    Financial Accounting
+                </span>
+                <span class="text-xs text-slate-500">•</span>
+                <a href="{% url 'partner-portal' %}" class="text-xs text-slate-400 hover:text-cyan-300">Partner Portal</a>
+            </div>
+            <h1 class="text-3xl font-extrabold text-white mt-2">Institutional Revenue Dashboard</h1>
+            <p class="text-sm text-slate-400 mt-1">
+                Audited transaction records, dynamic partner revenue split, enrollments, and settlement balances for
+                <span class="text-white font-semibold">{{ selected_institution.name|default:"Your Institution" }}</span>.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+            {% if institutions.count > 1 %}
+            <form method="GET" class="flex items-center gap-2">
+                <select name="institution_id" onchange="this.form.submit()"
+                        class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-500">
+                    {% for inst in institutions %}
+                    <option value="{{ inst.id }}" {% if inst == selected_institution %}selected{% endif %}>
+                        {{ inst.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
+            {% endif %}
+
+            <a href="{% url 'partner-courses' %}" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition">
+                Partner Courses
+            </a>
+            <a href="{% url 'partner-enrollments' %}" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                Student Roster
+            </a>
+        </div>
+    </div>
+
+    {% if summary %}
+    <!-- Financial Metric Cards (MEL Design System) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <!-- Gross Revenue -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Gross Sales Revenue</div>
+            <div class="text-2xl font-black text-white font-mono">
+                {{ summary.gross_revenue|floatformat:0|intcomma }} <span class="text-xs text-slate-500">MMK</span>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-2">Total invoiced course sales</div>
+        </div>
+
+        <!-- Partner Share -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-emerald-900/40 shadow-lg">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-emerald-400 mb-1">Partner Share Earnings</div>
+            <div class="text-2xl font-black text-emerald-300 font-mono">
+                {{ summary.partner_share|floatformat:0|intcomma }} <span class="text-xs text-emerald-600">MMK</span>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-2">Configured revenue share accrued</div>
+        </div>
+
+        <!-- Platform MEL Share -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-cyan-400 mb-1">Platform Share (MEL)</div>
+            <div class="text-2xl font-black text-cyan-300 font-mono">
+                {{ summary.mel_share|floatformat:0|intcomma }} <span class="text-xs text-cyan-600">MMK</span>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-2">Infrastructure & exam operations</div>
+        </div>
+
+        <!-- Outstanding Settleable Balance -->
+        <div class="p-6 rounded-2xl bg-slate-900 border border-amber-900/40 shadow-lg">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-amber-400 mb-1">Outstanding Balance</div>
+            <div class="text-2xl font-black text-amber-300 font-mono">
+                {{ summary.outstanding_balance|floatformat:0|intcomma }} <span class="text-xs text-amber-600">MMK</span>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-2">Pending payout settlement</div>
+        </div>
+    </div>
+
+    <!-- Secondary Metric Indicators -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+        <div class="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 flex justify-between items-center">
+            <div>
+                <span class="text-xs text-slate-400">Total Course Sales</span>
+                <div class="text-xl font-bold text-white mt-0.5">{{ summary.total_sales }} transactions</div>
+            </div>
+            <span class="p-2.5 rounded-xl bg-slate-800 text-slate-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+            </span>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 flex justify-between items-center">
+            <div>
+                <span class="text-xs text-slate-400">Total Student Enrollments</span>
+                <div class="text-xl font-bold text-white mt-0.5">{{ summary.total_enrollments }} active students</div>
+            </div>
+            <span class="p-2.5 rounded-xl bg-slate-800 text-cyan-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+            </span>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-900/70 border border-slate-800 flex justify-between items-center">
+            <div>
+                <span class="text-xs text-slate-400">Total Refunded Amount</span>
+                <div class="text-xl font-bold text-purple-300 mt-0.5 font-mono">
+                    {{ summary.total_refunds|floatformat:0|intcomma }} MMK
+                </div>
+            </div>
+            <span class="p-2.5 rounded-xl bg-slate-800 text-purple-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                </svg>
+            </span>
+        </div>
+    </div>
+
+    <!-- Audited Financial Ledger Table -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-lg">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-slate-800">
+            <div>
+                <h2 class="text-lg font-bold text-white">Audited Financial Transaction Ledger</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Itemized transaction record for course purchases and revenue allocations.</p>
+            </div>
+            <span class="text-xs px-3 py-1 rounded-full bg-slate-800 text-slate-300 font-mono">
+                {{ summary.records.count }} Recorded Records
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-300">
+                <thead class="text-xs uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Date</th>
+                        <th class="py-3 px-4">Course</th>
+                        <th class="py-3 px-4">Student</th>
+                        <th class="py-3 px-4 text-right">Gross</th>
+                        <th class="py-3 px-4 text-right">Partner Share</th>
+                        <th class="py-3 px-4 text-right">MEL Share</th>
+                        <th class="py-3 px-4 text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for record in summary.records %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3 px-4 text-xs text-slate-400 whitespace-nowrap font-mono">
+                            {{ record.created_at|date:"d M Y, H:i" }}
+                        </td>
+                        <td class="py-3 px-4 font-semibold text-white">
+                            {{ record.course.title }}
+                        </td>
+                        <td class="py-3 px-4 text-slate-300 text-xs">
+                            {{ record.payment.student.username }}
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono font-bold text-white whitespace-nowrap">
+                            {{ record.gross_amount|floatformat:0|intcomma }} MMK
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono text-emerald-400 font-bold whitespace-nowrap">
+                            {{ record.partner_amount|floatformat:0|intcomma }} MMK
+                            <span class="text-[10px] text-slate-500 font-normal block">({{ record.partner_share_pct }}%)</span>
+                        </td>
+                        <td class="py-3 px-4 text-right font-mono text-cyan-300 whitespace-nowrap">
+                            {{ record.platform_amount|floatformat:0|intcomma }} MMK
+                            <span class="text-[10px] text-slate-500 font-normal block">({{ record.platform_share_pct }}%)</span>
+                        </td>
+                        <td class="py-3 px-4 text-center whitespace-nowrap">
+                            <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase border
+                                {% if record.status == 'settled' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                                {% elif record.status == 'refunded' %}bg-purple-950 text-purple-300 border-purple-800
+                                {% else %}bg-amber-950 text-amber-300 border-amber-800{% endif %}">
+                                {{ record.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-10 text-center text-slate-500">
+                            No revenue transaction records found for this partner institution yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="p-12 rounded-3xl bg-slate-900 border border-slate-800 text-center">
+        <p class="text-sm text-slate-400 mb-2">No active partner institutions found under your account.</p>
+        <p class="text-xs text-slate-500">Please contact platform administrators to assign partner organizational credentials.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

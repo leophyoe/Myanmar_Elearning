@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.urls import reverse_lazy, reverse
 
-from apps.common.permissions import RoleRequiredMixin, TeacherRequiredMixin
+from apps.common.permissions import RoleRequiredMixin, TeacherRequiredMixin, AdminRequiredMixin
 from apps.billing.models import active_payment_for, Payment
 from .models import (
     Subject, Course, Module, Lesson, LessonType, Quiz, Question, Choice,
@@ -16,16 +16,23 @@ from .models import (
     QuizAttempt,
 )
 from .forms import (
-    SubjectForm, CourseForm, ModuleForm, LessonForm,
+    SubjectForm, CourseForm, CourseReviewForm, ModuleForm, LessonForm,
     QuizForm, QuestionFormSet, AssignmentForm, AssignmentSubmitForm,
     SubmissionGradeForm, LiveSessionForm,
 )
 
 
 # ----------------------------------------------------------------------
-# Helpers
+# Helpers & Access Control
 # ----------------------------------------------------------------------
-from apps.courses.services.access import can_access_course
+from apps.courses.services.access import (
+    can_view_course, can_manage_course, can_submit_for_review,
+    can_review_course, can_enroll_course, can_access_course,
+    can_start_course, can_take_course_exam, enroll_student_in_course,
+)
+from apps.courses.selectors import (
+    get_published_courses, get_instructor_courses, get_pending_review_courses,
+)
 
 
 def course_progress_pct(user, course):
@@ -75,25 +82,17 @@ class CourseListView(ListView):
     context_object_name = 'courses'
 
     def get_queryset(self):
-        qs = Course.objects.filter(is_published=True).select_related('subject', 'owner').prefetch_related('modules__lessons')
-
         category_slug = self.request.GET.get('category')
-        if category_slug:
-            qs = qs.filter(subject__slug=category_slug)
-
         level = self.request.GET.get('level')
-        if level:
-            qs = qs.filter(level=level)
-
+        access_type = self.request.GET.get('access')
         query = self.request.GET.get('q')
-        if query:
-            from django.db.models import Q
-            qs = qs.filter(
-                Q(title__icontains=query) |
-                Q(description__icontains=query) |
-                Q(subject__title__icontains=query)
-            )
-        return qs
+
+        return get_published_courses(
+            subject_slug=category_slug,
+            level=level,
+            access_type=access_type,
+            search_query=query,
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -101,6 +100,7 @@ class CourseListView(ListView):
         context['categories'] = Subject.objects.filter(is_active=True).order_by('order')
         context['selected_category'] = self.request.GET.get('category', '')
         context['selected_level'] = self.request.GET.get('level', '')
+        context['selected_access'] = self.request.GET.get('access', '')
         context['search_query'] = self.request.GET.get('q', '')
         return context
 
@@ -112,6 +112,12 @@ class CourseDetailView(DetailView):
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
 
+    def get_object(self, queryset=None):
+        course = super().get_object(queryset=queryset)
+        if not can_view_course(self.request.user, course):
+            raise Http404("Course not found or is not currently publicly visible.")
+        return course
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         course = self.get_object()
@@ -119,6 +125,12 @@ class CourseDetailView(DetailView):
         context['total_lessons'] = Lesson.objects.filter(module__course=course).count()
 
         user = self.request.user
+        context['can_manage'] = can_manage_course(user, course)
+        can_submit, submit_reason = can_submit_for_review(user, course)
+        context['can_submit_for_review'] = can_submit
+        context['submit_reason'] = submit_reason
+        context['can_review'] = can_review_course(user, course)
+
         if user.is_authenticated:
             context['completed_lesson_ids'] = set(
                 UserProgress.objects.filter(
@@ -131,10 +143,14 @@ class CourseDetailView(DetailView):
                 enrollment and enrollment.status == Enrollment.Status.ACTIVE
             )
             context['progress_pct'] = course_progress_pct(user, course) if enrollment else 0
-            context['can_manage'] = bool(
-                user.is_admin or (user.is_teacher and course.owner == user and not course.is_official)
-            )
             context['has_access'] = can_access_course(user, course)
+            can_enroll, enroll_reason = can_enroll_course(user, course)
+            context['can_enroll'] = can_enroll
+            context['enroll_reason'] = enroll_reason
+            can_exam, exam_reason = can_take_course_exam(user, course)
+            context['can_take_exam'] = can_exam
+            context['exam_reason'] = exam_reason
+
             context['is_purchased'] = False
             context['pending_payment'] = None
             if not course.is_free:
@@ -157,6 +173,19 @@ class CourseDetailView(DetailView):
                 if (user.is_teacher or user.is_admin or context['has_access'])
                 else []
             )
+        else:
+            context['is_enrolled'] = False
+            context['has_access'] = False
+            can_enroll, enroll_reason = can_enroll_course(user, course)
+            context['can_enroll'] = can_enroll
+            context['enroll_reason'] = enroll_reason
+            context['progress_pct'] = 0
+            context['can_take_exam'] = False
+            context['exam_reason'] = "Sign in to take the examination."
+            context['live_sessions'] = []
+
+        first_module = course.modules.first()
+        context['first_lesson'] = first_module.lessons.first() if first_module else None
         return context
 
 
@@ -172,11 +201,7 @@ class ModuleDetailView(LoginRequiredMixin, DetailView):
         context['course'] = course
         context['assignments'] = self.object.assignments.all().order_by('due_date')
         user = self.request.user
-        context['can_manage'] = bool(
-            user.is_authenticated and (
-                user.is_admin or (user.is_teacher and course.owner == user and not course.is_official)
-            )
-        )
+        context['can_manage'] = can_manage_course(user, course)
         return context
 
 
@@ -215,13 +240,7 @@ class LessonDetailView(LoginRequiredMixin, DetailView):
         )
         context['progress'] = progress
         context['labs'] = lesson.labs.filter(is_active=True)
-        context['can_manage'] = bool(
-            self.request.user.is_authenticated and (
-                self.request.user.is_admin or (
-                    self.request.user.is_teacher and course.owner == self.request.user and not course.is_official
-                )
-            )
-        )
+        context['can_manage'] = can_manage_course(self.request.user, course)
         context['assignments'] = lesson.module.assignments.all().order_by('due_date')
         if self.request.user.is_authenticated:
             context['my_submissions'] = {
@@ -240,48 +259,44 @@ class LessonDetailView(LoginRequiredMixin, DetailView):
 # Enrollment
 # ----------------------------------------------------------------------
 class EnrollView(LoginRequiredMixin, View):
-    """POST-only course enrolment."""
+    """POST-only course enrollment using CourseAccessService."""
 
     def post(self, request, slug):
-        course = get_object_or_404(Course, slug=slug, is_published=True)
+        course = get_object_or_404(Course, slug=slug)
 
-        is_staff = request.user.is_teacher or request.user.is_admin
-        if not course.is_free and not is_staff:
-            payment = active_payment_for(request.user, course)
-            has_payment = bool(payment and payment.is_current)
+        is_eligible, reason = can_enroll_course(request.user, course)
+        if not is_eligible:
+            if "already actively enrolled" in reason.lower():
+                messages.info(request, reason)
+                return redirect('course-detail', slug=slug)
 
-            from apps.billing.models import active_subscription_for
-            sub = active_subscription_for(request.user)
-            has_sub = False
-            if sub and sub.is_current:
-                if getattr(course, 'is_premium', False):
-                    has_sub = bool(sub.plan.has_premium_courses)
-                else:
-                    has_sub = bool(sub.plan.has_all_standard_courses)
-
-            if not has_payment and not has_sub:
-                messages.info(
-                    request,
-                    f"{course.title} is a paid course — subscribe to a membership plan or complete checkout first "
-                    f"({course.price} {course.currency} / "
-                    f"{course.get_billing_period_display()})."
-                )
+            if any(k in reason.lower() for k in ("checkout", "payment", "membership", "subscribe", "paid")):
+                messages.info(request, reason)
                 return redirect('checkout', slug=slug)
 
-        enrollment, created = Enrollment.objects.get_or_create(
-            course=course, student=request.user,
-            defaults={'status': Enrollment.Status.ACTIVE},
-        )
-        if not created:
-            if enrollment.status == Enrollment.Status.DROPPED:
-                enrollment.status = Enrollment.Status.ACTIVE
-                enrollment.save(update_fields=['status'])
-                messages.success(request, f"Welcome back to {course.title}!")
-            else:
-                messages.info(request, f"You are already enrolled in {course.title}.")
-        else:
-            messages.success(request, f"Enrolled in {course.title}. Happy learning!")
+            messages.error(request, reason)
+            return redirect('course-detail', slug=slug)
 
+        # Classify enrollment source
+        source = Enrollment.Source.SELF
+        if course.is_free:
+            source = Enrollment.Source.FREE
+        elif course.access_type == Course.AccessType.PARTNER_ONLY:
+            source = Enrollment.Source.PARTNER
+        elif active_payment_for(request.user, course):
+            source = Enrollment.Source.PAID
+        elif getattr(request.user, 'is_admin', False):
+            source = Enrollment.Source.ADMIN
+        elif getattr(request.user, 'is_teacher', False):
+            source = Enrollment.Source.INSTRUCTOR
+
+        enroll_student_in_course(
+            user=request.user,
+            course=course,
+            source=source,
+            partner_institution=course.partner_institution,
+        )
+        messages.success(request, f"Successfully enrolled in {course.title}. Happy learning!")
         return redirect('course-detail', slug=slug)
 
 
@@ -446,6 +461,71 @@ class QuizSubmitView(LoginRequiredMixin, View):
         return redirect('lesson-detail', lesson_id=lesson.id)
 
 
+class AssessmentDetailView(LoginRequiredMixin, View):
+    """
+    Renders an Assessment / Exam page for independent, course-level, or proctored assessments.
+    """
+    template_name = 'courses/assessment_detail.html'
+
+    def get(self, request, slug, assessment_id):
+        course = get_object_or_404(Course, slug=slug)
+        assessment = get_object_or_404(Quiz, id=assessment_id)
+        if not can_access_course(request.user, course):
+            messages.info(request, "Please enrol in this course first.")
+            return redirect('course-detail', slug=slug)
+
+        from apps.courses.services.assessment import check_assessment_attempt_eligibility
+        can_attempt, reason = check_assessment_attempt_eligibility(request.user, assessment)
+        attempts = assessment.attempts.filter(student=request.user)
+        best_attempt = attempts.order_by('-score_percentage').first()
+        questions = list(assessment.questions.all().prefetch_related('choices'))
+        if assessment.randomize_questions:
+            import random
+            random.shuffle(questions)
+
+        return render(request, self.template_name, {
+            'course': course,
+            'assessment': assessment,
+            'questions': questions,
+            'can_attempt': can_attempt,
+            'eligibility_reason': reason,
+            'attempts': attempts,
+            'best_attempt': best_attempt,
+            'attempts_left': max(assessment.max_attempts - attempts.count(), 0) if assessment.max_attempts > 0 else 'Unlimited',
+        })
+
+
+class AssessmentSubmitView(LoginRequiredMixin, View):
+    """
+    Evaluates submissions for independent or course-level assessments / exams.
+    """
+    def post(self, request, slug, assessment_id):
+        course = get_object_or_404(Course, slug=slug)
+        assessment = get_object_or_404(Quiz, id=assessment_id)
+
+        from apps.courses.services.assessment import grade_assessment_attempt, check_assessment_attempt_eligibility
+        can_attempt, reason = check_assessment_attempt_eligibility(request.user, assessment)
+        if not can_attempt:
+            messages.error(request, reason)
+            return redirect('assessment-detail', slug=slug, assessment_id=assessment.id)
+
+        time_taken = request.POST.get('time_taken_seconds', 0)
+        attempt, _ = grade_assessment_attempt(assessment, request.user, request.POST, time_taken_seconds=time_taken)
+
+        if attempt.passed:
+            messages.success(
+                request,
+                f"Congratulations! You passed {assessment.title} with a score of {attempt.score_percentage}%!"
+            )
+        else:
+            messages.error(
+                request,
+                f"You scored {attempt.score_percentage}%. The passing threshold is {assessment.passing_percentage}%."
+            )
+
+        return redirect('assessment-detail', slug=slug, assessment_id=assessment.id)
+
+
 # ----------------------------------------------------------------------
 # Teacher / Administrator authoring (Phase 2)
 # ----------------------------------------------------------------------
@@ -522,11 +602,26 @@ class CourseCreateView(TeacherRequiredMixin, CreateView):
         return kwargs
 
     def form_valid(self, form):
-        form.instance.owner = self.request.user
+        course = form.save(commit=False)
+        course.owner = self.request.user
+
         if self.request.user.is_admin:
-            form.instance.is_official = True
-        messages.success(self.request, f"Course “{form.cleaned_data['title']}” created.")
-        return super().form_valid(form)
+            course.is_official = form.cleaned_data.get('is_official', True)
+            if form.cleaned_data.get('is_published'):
+                course.status = Course.Status.PUBLISHED
+                course.is_published = True
+            else:
+                course.status = Course.Status.DRAFT
+                course.is_published = False
+        else:
+            course.is_official = False
+            course.owner_type = Course.OwnerType.INSTRUCTOR
+            course.status = Course.Status.DRAFT
+            course.is_published = False
+
+        course.save()
+        messages.success(self.request, f"Course “{course.title}” created in Draft status.")
+        return redirect('course-edit', slug=course.slug)
 
 
 class CourseUpdateView(TeacherRequiredMixin, UpdateView):
@@ -537,7 +632,7 @@ class CourseUpdateView(TeacherRequiredMixin, UpdateView):
     success_url = reverse_lazy('manage-home')
 
     def get_queryset(self):
-        # Admins edit everything; teachers only their own non-official courses.
+        # Admins edit everything; instructors only their own non-official courses.
         if self.request.user.is_admin:
             return Course.objects.all()
         return Course.objects.filter(
@@ -545,18 +640,142 @@ class CourseUpdateView(TeacherRequiredMixin, UpdateView):
             is_official=False,
         )
 
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        course = self.get_object()
+        if not request.user.is_admin and course.status == Course.Status.PENDING_REVIEW:
+            messages.warning(
+                request,
+                f"Course “{course.title}” is currently under review by administrators and cannot be modified."
+            )
+            return redirect('manage-home')
+        return super().dispatch(request, *args, **kwargs)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        course = self.object
+        context['modules'] = course.modules.all().prefetch_related('lessons')
+        context['total_lessons'] = Lesson.objects.filter(module__course=course).count()
+        can_submit, submit_reason = can_submit_for_review(self.request.user, course)
+        context['can_submit_for_review'] = can_submit
+        context['submit_reason'] = submit_reason
+        return context
+
     def form_valid(self, form):
-        if not form.instance.owner_id:
-            form.instance.owner = self.request.user
-        if self.request.user.is_admin and (form.instance.owner is None or form.instance.owner.is_admin):
-            form.instance.is_official = True
-        messages.success(self.request, "Course updated.")
-        return super().form_valid(form)
+        course = form.save(commit=False)
+        if not course.owner_id:
+            course.owner = self.request.user
+
+        if self.request.user.is_admin:
+            if course.owner is None or course.owner.is_admin:
+                course.is_official = True
+        else:
+            course.is_official = False
+            # Instructors cannot publish directly: if edited, course remains draft/rejected
+            if course.status not in [Course.Status.DRAFT, Course.Status.REJECTED]:
+                course.status = Course.Status.DRAFT
+            course.is_published = False
+
+        course.save()
+        messages.success(self.request, f"Course “{course.title}” updated.")
+        return redirect('course-edit', slug=course.slug)
+
+
+class CourseSubmitReviewView(TeacherRequiredMixin, View):
+    """
+    POST-only: Instructor or Partner submits a Draft or Rejected course for editorial review.
+    Status transitions: DRAFT / REJECTED -> PENDING_REVIEW.
+    """
+    def post(self, request, slug):
+        course = get_object_or_404(Course, slug=slug)
+        can_submit, reason = can_submit_for_review(request.user, course)
+        if not can_submit:
+            messages.error(request, reason)
+            return redirect('course-edit', slug=course.slug)
+
+        course.status = Course.Status.PENDING_REVIEW
+        course.is_published = False
+        course.save(update_fields=['status', 'is_published'])
+        messages.success(
+            request,
+            f"Course “{course.title}” has been submitted for administrative review! An administrator will review your curriculum."
+        )
+        return redirect('manage-home')
+
+
+class CourseReviewListView(AdminRequiredMixin, ListView):
+    """
+    Administrator interface: Lists courses awaiting editorial review.
+    """
+    template_name = 'courses/manage/review_list.html'
+    context_object_name = 'pending_courses'
+
+    def get_queryset(self):
+        return get_pending_review_courses()
+
+
+class CourseReviewActionView(AdminRequiredMixin, View):
+    """
+    Administrator review action: Inspect curriculum and Approve, Publish, Reject, or Request Changes.
+    """
+    template_name = 'courses/manage/review_detail.html'
+
+    def get(self, request, slug):
+        course = get_object_or_404(Course, slug=slug)
+        form = CourseReviewForm(initial={'admin_review_notes': course.admin_review_notes})
+        modules = course.modules.all().prefetch_related('lessons')
+        return render(request, self.template_name, {
+            'course': course,
+            'modules': modules,
+            'total_lessons': Lesson.objects.filter(module__course=course).count(),
+            'form': form,
+        })
+
+    def post(self, request, slug):
+        course = get_object_or_404(Course, slug=slug)
+        form = CourseReviewForm(request.POST)
+        if not form.is_valid():
+            modules = course.modules.all().prefetch_related('lessons')
+            return render(request, self.template_name, {
+                'course': course,
+                'modules': modules,
+                'total_lessons': Lesson.objects.filter(module__course=course).count(),
+                'form': form,
+            })
+
+        action = form.cleaned_data['action']
+        notes = form.cleaned_data.get('admin_review_notes', '').strip()
+
+        course.admin_review_notes = notes
+        course.reviewed_by = request.user
+        course.reviewed_at = timezone.now()
+
+        if action == CourseReviewForm.Action.APPROVE:
+            course.status = Course.Status.APPROVED
+            course.is_published = False
+            messages.success(request, f"Course “{course.title}” approved.")
+        elif action == CourseReviewForm.Action.PUBLISH:
+            course.status = Course.Status.PUBLISHED
+            course.is_published = True
+            messages.success(request, f"Course “{course.title}” approved and published!")
+        elif action in [CourseReviewForm.Action.REJECT, CourseReviewForm.Action.REQUEST_CHANGES]:
+            course.status = Course.Status.REJECTED
+            course.is_published = False
+            messages.warning(request, f"Course “{course.title}” returned with review notes.")
+        elif action == CourseReviewForm.Action.ARCHIVE:
+            course.status = Course.Status.ARCHIVED
+            course.is_published = False
+            messages.info(request, f"Course “{course.title}” archived.")
+
+        course.save()
+        return redirect('course-review-list')
+
 
 
 class ModuleCreateView(TeacherRequiredMixin, CreateView):

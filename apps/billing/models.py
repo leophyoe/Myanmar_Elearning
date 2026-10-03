@@ -53,6 +53,11 @@ class SubscriptionPlan(BaseModel):
     def __str__(self):
         return f"{self.name} ({self.get_plan_type_display()})"
 
+    @property
+    def annual_savings(self):
+        diff = (self.monthly_price * Decimal('12')) - self.yearly_price
+        return diff if diff > 0 else Decimal('0.00')
+
     @classmethod
     def ensure_default_plans(cls):
         """Seed the 3 official membership tiers."""
@@ -160,26 +165,92 @@ class UserSubscription(BaseModel):
             return True
         return self.end_date >= timezone.localdate()
 
+    def renew(self, billing_cycle=None):
+        """Extends subscription end date."""
+        cycle = billing_cycle or self.billing_cycle
+        days = 365 if cycle == self.BillingCycle.YEARLY else 30
+        base = self.end_date if (self.end_date and self.end_date >= timezone.localdate()) else timezone.localdate()
+        self.end_date = base + timezone.timedelta(days=days)
+        self.is_active = True
+        self.status = self.Status.ACTIVE
+        self.save(update_fields=['end_date', 'is_active', 'status', 'updated_at'])
+
+    def cancel(self, reason=''):
+        """Cancels auto-renew and deactivates subscription."""
+        self.is_active = False
+        self.auto_renew = False
+        self.status = self.Status.CANCELLED
+        self.save(update_fields=['is_active', 'auto_renew', 'status', 'updated_at'])
+
+    def expire(self):
+        """Marks subscription expired."""
+        self.is_active = False
+        self.status = self.Status.EXPIRED
+        self.save(update_fields=['is_active', 'status', 'updated_at'])
+
+    def upgrade(self, new_plan, billing_cycle=None, payment_reference=''):
+        """Upgrades subscription to a higher tier plan."""
+        cycle = billing_cycle or self.billing_cycle
+        days = 365 if cycle == self.BillingCycle.YEARLY else 30
+        now_date = timezone.localdate()
+        self.plan = new_plan
+        self.billing_cycle = cycle
+        self.start_date = now_date
+        self.end_date = now_date + timezone.timedelta(days=days)
+        self.is_active = True
+        self.status = self.Status.ACTIVE
+        if payment_reference:
+            self.payment_reference = payment_reference
+        self.save(update_fields=['plan', 'billing_cycle', 'start_date', 'end_date', 'is_active', 'status', 'payment_reference', 'updated_at'])
+        return self
+
+    def downgrade(self, new_plan, billing_cycle=None, payment_reference=''):
+        """Downgrades subscription to a lower tier plan or Starter."""
+        cycle = billing_cycle or self.billing_cycle
+        now_date = timezone.localdate()
+        self.plan = new_plan
+        self.billing_cycle = cycle
+        self.start_date = now_date
+        if new_plan.plan_type == SubscriptionPlan.PlanType.STARTER or cycle == self.BillingCycle.LIFETIME:
+            self.end_date = None
+        else:
+            days = 365 if cycle == self.BillingCycle.YEARLY else 30
+            self.end_date = now_date + timezone.timedelta(days=days)
+        self.is_active = True
+        self.status = self.Status.ACTIVE
+        if payment_reference:
+            self.payment_reference = payment_reference
+        self.save(update_fields=['plan', 'billing_cycle', 'start_date', 'end_date', 'is_active', 'status', 'payment_reference', 'updated_at'])
+        return self
+
 
 class Payment(BaseModel):
     """
-    A manual payment submitted by a student (KBZ Pay / Wave Pay / bank transfer)
-    and reviewed by an administrator.
-
-    Can be for an individual Course OR a SubscriptionPlan.
-    Approval activates the student's enrolment on the course or provisions their subscription.
+    Payment abstraction model for manual and gateway payments.
+    Can be for a Course, SubscriptionPlan, Exam Voucher, or Certificate Fee.
     """
+
+    class PaymentType(models.TextChoices):
+        COURSE_PURCHASE = 'course_purchase', 'Course Purchase'
+        SUBSCRIPTION = 'subscription', 'Subscription'
+        EXAM_VOUCHER = 'exam_voucher', 'Exam Voucher'
+        CERTIFICATE_FEE = 'certificate_fee', 'Certificate Fee'
 
     class Status(models.TextChoices):
         PENDING = 'pending', 'Awaiting review'
+        PROCESSING = 'processing', 'Processing'
+        SUCCESS = 'success', 'Success'
+        FAILED = 'failed', 'Failed'
+        CANCELLED = 'cancelled', 'Cancelled'
+        REFUNDED = 'refunded', 'Refunded'
         APPROVED = 'approved', 'Approved'
         REJECTED = 'rejected', 'Rejected'
-        REFUNDED = 'refunded', 'Refunded'
 
     class Method(models.TextChoices):
         KBZ_PAY = 'kbz_pay', 'KBZ Pay'
         WAVE_PAY = 'wave_pay', 'Wave Pay'
         BANK_TRANSFER = 'bank_transfer', 'Bank transfer'
+        SANDBOX = 'sandbox', 'Sandbox Gateway'
         OTHER = 'other', 'Other'
 
     student = models.ForeignKey(
@@ -193,6 +264,10 @@ class Payment(BaseModel):
         SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='payments'
     )
+    payment_type = models.CharField(
+        max_length=32, choices=PaymentType.choices, default=PaymentType.COURSE_PURCHASE, db_index=True
+    )
+    provider = models.CharField(max_length=32, default='manual_transfer', db_index=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=8, default='MMK')
     platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -222,6 +297,10 @@ class Payment(BaseModel):
         max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True
     )
     rejection_reason = models.TextField(blank=True)
+    refunded_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    refund_reason = models.TextField(blank=True)
+    refunded_at = models.DateTimeField(null=True, blank=True)
+
     reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='reviewed_payments',
@@ -234,10 +313,11 @@ class Payment(BaseModel):
             models.Index(fields=['status', 'created_at']),
             models.Index(fields=['student', 'course']),
             models.Index(fields=['student', 'plan']),
+            models.Index(fields=['payment_type', 'status']),
         ]
 
     def __str__(self):
-        item = self.course.title if self.course else (self.plan.name if self.plan else 'General')
+        item = self.course.title if self.course else (self.plan.name if self.plan else self.get_payment_type_display())
         return f'{self.amount} {self.currency} - {self.student.username} / {item}'
 
     @classmethod
@@ -248,19 +328,183 @@ class Payment(BaseModel):
         return fee, amount - fee
 
     @property
+    def is_successful(self):
+        return self.status in [self.Status.SUCCESS, self.Status.APPROVED]
+
+    @property
+    def is_pending(self):
+        return self.status == self.Status.PENDING
+
+    @property
+    def is_processing(self):
+        return self.status == self.Status.PROCESSING
+
+    @property
+    def is_refunded(self):
+        return self.status == self.Status.REFUNDED
+
+    @property
+    def is_failed(self):
+        return self.status in [self.Status.FAILED, self.Status.REJECTED]
+
+    @property
+    def is_cancelled(self):
+        return self.status == self.Status.CANCELLED
+
+    def mark_processing(self):
+        if self.status == self.Status.REFUNDED:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Refunded payment cannot be moved to processing.")
+        self.status = self.Status.PROCESSING
+        self.save(update_fields=['status', 'updated_at'])
+
+    def mark_success(self, reviewer=None):
+        if self.status == self.Status.REFUNDED:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Refunded payment cannot be marked as success.")
+        self.status = self.Status.SUCCESS
+        self.reviewed_by = reviewer
+        self.reviewed_at = timezone.now()
+        self.save(update_fields=['status', 'reviewed_by', 'reviewed_at', 'updated_at'])
+
+    def mark_failed(self, reason='', status=None):
+        if self.status in [self.Status.SUCCESS, self.Status.APPROVED]:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Settled successful payment cannot be marked failed. Process a refund instead.")
+        self.status = status or self.Status.FAILED
+        self.rejection_reason = reason
+        self.save(update_fields=['status', 'rejection_reason', 'updated_at'])
+
+    def mark_cancelled(self, reason=''):
+        if self.status in [self.Status.SUCCESS, self.Status.APPROVED]:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Settled successful payment cannot be cancelled. Process a refund instead.")
+        self.status = self.Status.CANCELLED
+        self.rejection_reason = reason
+        self.save(update_fields=['status', 'rejection_reason', 'updated_at'])
+
+    def mark_refunded(self, amount=None, reason=''):
+        if self.status not in [self.Status.SUCCESS, self.Status.APPROVED]:
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Only successful/approved payments can be marked as refunded.")
+        self.status = self.Status.REFUNDED
+        self.refunded_amount = amount or self.amount
+        self.refund_reason = reason
+        self.refunded_at = timezone.now()
+        self.save(update_fields=['status', 'refunded_amount', 'refund_reason', 'refunded_at', 'updated_at'])
+
+    @property
     def is_current(self):
-        """Approved and not expired (monthly payments carry a period_end)."""
-        if self.status != self.Status.APPROVED:
+        """Approved or successful and not expired (monthly payments carry a period_end)."""
+        if not self.is_successful:
             return False
         if self.period_end is None:
             return True
         return self.period_end >= timezone.localdate()
 
 
+class PartnerRevenueRecord(BaseModel):
+    """
+    Audited financial ledger record recording partner earnings split.
+    """
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'Pending Settlement'
+        SETTLED = 'settled', 'Settled'
+        REFUNDED = 'refunded', 'Refunded'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    payment = models.ForeignKey(
+        Payment, on_delete=models.CASCADE, related_name='partner_revenue_records'
+    )
+    partner_institution = models.ForeignKey(
+        'partner.Institution', on_delete=models.CASCADE, related_name='revenue_records'
+    )
+    course = models.ForeignKey(
+        'courses.Course', on_delete=models.SET_NULL, null=True, blank=True, related_name='partner_revenue_records'
+    )
+    gross_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    partner_share_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=75.00,
+        help_text="Partner entitlement percentage."
+    )
+    platform_share_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=25.00,
+        help_text="MEL platform commission percentage."
+    )
+    partner_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    platform_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PENDING, db_index=True
+    )
+    refunded_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    settled_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['partner_institution', 'status']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        course_name = self.course.title if self.course else "Institutional Course"
+        return f"{self.partner_institution.name} - {course_name} ({self.partner_amount} MMK)"
+
+
+class Invoice(BaseModel):
+    """
+    Official student invoice and tax-deductible receipt for payment verification.
+    """
+    class Status(models.TextChoices):
+        ISSUED = 'issued', 'Issued'
+        PAID = 'paid', 'Paid'
+        REFUNDED = 'refunded', 'Refunded'
+        VOIDED = 'voided', 'Voided'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    invoice_number = models.CharField(max_length=64, unique=True, db_index=True)
+    payment = models.OneToOneField(
+        Payment, on_delete=models.CASCADE, related_name='invoice'
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='invoices'
+    )
+    item_title = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=8, default='MMK')
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.PAID, db_index=True
+    )
+    billing_name = models.CharField(max_length=255, blank=True)
+    billing_email = models.EmailField(blank=True)
+    issue_date = models.DateField(default=timezone.localdate)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.invoice_number} ({self.amount} {self.currency}) - {self.student.username}"
+
+    @classmethod
+    def generate_invoice_number(cls):
+        import secrets
+        token = secrets.token_hex(4).upper()
+        year = timezone.localdate().year
+        return f"INV-{year}-{token}"
+
+
 def active_payment_for(user, course):
-    """The approved, unexpired payment that unlocks ``course`` for ``user``."""
+    """The approved / successful, unexpired payment that unlocks ``course`` for ``user``."""
+    if not getattr(user, 'is_authenticated', False):
+        return None
     return (
-        Payment.objects.filter(student=user, course=course, status=Payment.Status.APPROVED)
+        Payment.objects.filter(
+            student=user,
+            course=course,
+            status__in=[Payment.Status.APPROVED, Payment.Status.SUCCESS]
+        )
         .order_by('-created_at')
         .first()
     )
@@ -279,3 +523,32 @@ def active_subscription_for(user):
     if sub and sub.is_current:
         return sub
     return None
+
+
+def has_paid_exam_voucher(user, course):
+    """Checks whether the student holds an approved/successful exam voucher for ``course``."""
+    if not getattr(user, 'is_authenticated', False):
+        return False
+    if not getattr(course, 'exam_required', False) or getattr(course, 'exam_voucher_price', 0) <= 0:
+        return True
+    return Payment.objects.filter(
+        student=user,
+        course=course,
+        payment_type=Payment.PaymentType.EXAM_VOUCHER,
+        status__in=[Payment.Status.APPROVED, Payment.Status.SUCCESS]
+    ).exists()
+
+
+def has_paid_certificate_fee(user, course):
+    """Checks whether the student has paid the certificate issuance fee for ``course``."""
+    if not getattr(user, 'is_authenticated', False):
+        return False
+    if getattr(course, 'certificate_fee', 0) <= 0:
+        return True
+    return Payment.objects.filter(
+        student=user,
+        course=course,
+        payment_type=Payment.PaymentType.CERTIFICATE_FEE,
+        status__in=[Payment.Status.APPROVED, Payment.Status.SUCCESS]
+    ).exists()
+

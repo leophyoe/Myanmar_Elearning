@@ -32,6 +32,109 @@
         </div>
     </div>
 
+    {% if pending_invitations %}
+    <div class="mb-8 p-5 rounded-xl bg-blue-900/30 border border-blue-700/50 space-y-3">
+        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>🏛️</span> Institutional Partnership Invitations
+        </h2>
+        <div class="space-y-2">
+            {% for inv in pending_invitations %}
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-slate-900 border border-slate-800 rounded-lg gap-3">
+                <div>
+                    <p class="text-sm font-semibold text-white">{{ inv.institution.name }} wants to associate you with their organization.</p>
+                    <p class="text-xs text-slate-400">
+                        {{ inv.class_group|default:"Cohort affiliation" }}
+                        {% if inv.invitation_note %} · Note: {{ inv.invitation_note }}{% endif %}
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <form method="post" action="{% url 'partner-invitation-accept' pk=inv.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-lg transition shadow-sm">
+                            Accept
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'partner-invitation-decline' pk=inv.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-lg transition">
+                            Decline
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if student_recognitions %}
+    <div class="mb-8 p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">🎖️</span>
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Student Honors & Merit Recognition</h3>
+                <div class="flex flex-wrap items-center gap-2 mt-1">
+                    {% for rec in student_recognitions %}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-950/60 border border-amber-800 text-amber-300">
+                        <span>★</span> {{ rec.title }}
+                        <span class="text-[10px] text-amber-400/80 font-mono">({{ rec.credential_code }})</span>
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Membership Status Card -->
+    <div class="mb-8 p-5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-lg {% if membership_subscription and membership_subscription.plan.plan_type == 'premium' %}bg-amber-600/20 text-amber-400 border border-amber-600/30{% elif membership_subscription and membership_subscription.plan.plan_type == 'standard' %}bg-blue-600/20 text-blue-400 border border-blue-600/30{% else %}bg-slate-800 text-slate-300 border border-slate-700{% endif %} flex items-center justify-center font-bold text-lg shrink-0">
+                {% if membership_subscription and membership_subscription.plan.plan_type == 'premium' %}👑{% elif membership_subscription and membership_subscription.plan.plan_type == 'standard' %}⭐{% else %}🌱{% endif %}
+            </div>
+            <div>
+                <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Membership</div>
+                <div class="flex items-center gap-2 mt-0.5">
+                    <span class="text-base font-bold text-white">
+                        {% if membership_subscription %}{{ membership_subscription.plan.name }} Membership{% else %}Starter (Free){% endif %}
+                    </span>
+                    <span class="text-xs text-slate-400">
+                        {% if membership_subscription %}
+                            {% if membership_subscription.plan.plan_type == 'starter' %}Free{% else %}{{ membership_subscription.amount|default:membership_subscription.plan.monthly_price|floatformat:0 }} MMK / {{ membership_subscription.billing_cycle }}{% endif %}
+                        {% else %}
+                            Free
+                        {% endif %}
+                    </span>
+                </div>
+                {% if membership_subscription and membership_subscription.end_date %}
+                <div class="text-[11px] text-slate-400 mt-0.5">
+                    Renews: <span class="text-slate-300 font-mono">{{ membership_subscription.end_date|date:"M d, Y" }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+            {% if membership_subscription and membership_subscription.plan.plan_type != 'starter' %}
+                <a href="{% url 'billing:my-subscription' %}" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700">
+                    Manage Membership
+                </a>
+                {% if membership_subscription.plan.plan_type != 'premium' %}
+                    <a href="{% url 'billing:subscribe' plan_type='premium' %}" class="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition shadow-sm">
+                        Upgrade to Premium
+                    </a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'course-list' %}" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700">
+                    Explore Courses
+                </a>
+                <a href="{% url 'billing:pricing' %}" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition shadow-sm">
+                    Upgrade
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Overview Metrics Grid -->
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <!-- Progress Metric -->

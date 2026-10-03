@@ -1,0 +1,31 @@
+{# Reusable Clean Slide-out Sheet / Drawer Component #}
+<div id="{{ id|default:'melSheet' }}" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+    <!-- Backdrop Overlay -->
+    <div class="fixed inset-0 bg-slate-900/50 transition-opacity" onclick="closeSheet('{{ id|default:'melSheet' }}')"></div>
+
+    <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+        <!-- Sheet Surface -->
+        <div class="w-screen max-w-md bg-white border-l border-[#E2E8F0] shadow-xl flex flex-col justify-between">
+            <div class="p-6 overflow-y-auto">
+                <div class="flex items-center justify-between pb-4 border-b border-[#E2E8F0]">
+                    <h2 class="text-base font-semibold text-[#0F172A]">{{ title }}</h2>
+                    <button type="button" class="text-slate-400 hover:text-slate-600 focus:outline-none" onclick="closeSheet('{{ id|default:'melSheet' }}')">
+                        <span class="sr-only">Close sheet</span>
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="mt-4 text-sm text-[#64748B]">
+                    {{ content|safe }}
+                </div>
+            </div>
+            {% if footer %}
+            <div class="p-4 border-t border-[#E2E8F0] bg-[#F8FAFC]">
+                {{ footer|safe }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+

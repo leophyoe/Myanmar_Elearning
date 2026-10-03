@@ -1,3 +1,4 @@
+from django.shortcuts import redirect
 from django.views.generic import TemplateView, View
 from django.http import JsonResponse
 from django.db import connection
@@ -5,6 +6,12 @@ import os
 
 class LandingPageView(TemplateView):
     template_name = 'landing.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            from apps.users.views import role_dashboard_url
+            return redirect(role_dashboard_url(request.user))
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

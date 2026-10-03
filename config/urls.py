@@ -14,6 +14,9 @@ urlpatterns = [
     # System Health Check
     path('api/health/', HealthCheckView.as_view(), name='api-health'),
 
+    # Universal REST API Gateway (Android / iOS / Web)
+    path('api/v1/', include('apps.api.urls')),
+
     # Public Canonical Verification
     path('verify/<str:code>/', CertificateVerificationView.as_view(), name='canonical-verify'),
 
@@ -34,8 +37,9 @@ urlpatterns = [
     path('certificates/', include('apps.certificates.urls')),
     path('projects/', include('apps.projects.urls')),
     path('analytics/', include('apps.analytics.urls')),
+    path('billing/', include(('apps.billing.urls', 'billing'), namespace='billing')),
     path('billing/', include('apps.billing.urls')),
-    path('pricing/', RedirectView.as_view(pattern_name='pricing', permanent=False)),
+    path('pricing/', RedirectView.as_view(pattern_name='billing:pricing', permanent=False), name='pricing-redirect'),
     path('partner/', include('apps.partner.urls')),
     path('console/', include('apps.console.urls')),
     path('portfolio/', include('apps.portfolio.urls')),

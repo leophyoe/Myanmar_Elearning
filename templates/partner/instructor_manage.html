@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Partner Instructors - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <a href="{% url 'partner-dashboard' %}" class="text-xs text-blue-600 hover:underline inline-flex items-center gap-1 font-medium mb-1">
+                <span>&larr;</span> Back to Partner Portal
+            </a>
+            <h1 class="text-2xl font-extrabold text-slate-900">
+                Institutional Instructors
+            </h1>
+            <p class="text-xs text-slate-500 mt-1">
+                Authorize and manage faculty instructors associated with your educational organization.
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Add Instructor Form -->
+        <div class="rounded-xl bg-white border border-slate-200 shadow-sm p-6 h-fit">
+            <h2 class="text-base font-bold text-slate-900 mb-4 pb-2 border-b border-slate-100">
+                + Add Institutional Instructor
+            </h2>
+
+            <form method="POST" class="space-y-4 text-xs">
+                {% csrf_token %}
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Organization / Institution</label>
+                    <select name="institution_id" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600" required>
+                        {% for inst in institutions %}
+                        <option value="{{ inst.id }}">{{ inst.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Username</label>
+                    <input type="text" name="username" placeholder="Username of registered user"
+                           class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-600" required>
+                    <p class="text-[11px] text-slate-400 mt-1">
+                        User must have an active Myanmar E-Learning account.
+                    </p>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-sm">
+                    Assign Faculty Instructor
+                </button>
+            </form>
+        </div>
+
+        <!-- Current Instructors List -->
+        <div class="lg:col-span-2">
+            <div class="rounded-xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-200 bg-slate-50">
+                    <h3 class="text-sm font-bold text-slate-800">Assigned Faculty Members</h3>
+                </div>
+
+                <table class="w-full text-left text-xs text-slate-600">
+                    <thead class="bg-slate-50/50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                        <tr>
+                            <th class="py-3 px-4">Instructor</th>
+                            <th class="py-3 px-4">Institution</th>
+                            <th class="py-3 px-4">Role</th>
+                            <th class="py-3 px-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for membership in memberships %}
+                        <tr class="hover:bg-slate-50/70 transition">
+                            <td class="py-3.5 px-4">
+                                <div class="font-bold text-slate-900">
+                                    {{ membership.user.get_full_name|default:membership.user.username }}
+                                </div>
+                                <span class="text-[11px] text-slate-400">@{{ membership.user.username }} · {{ membership.user.email }}</span>
+                            </td>
+                            <td class="py-3.5 px-4 font-medium text-slate-800">
+                                {{ membership.institution.name }}
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <span class="inline-block px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold text-[11px]">
+                                    {{ membership.get_role_display }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <span class="inline-block px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium text-[11px]">
+                                    {{ membership.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="p-8 text-center text-xs text-slate-400">
+                                No faculty instructors assigned yet. Use the form to assign instructors.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

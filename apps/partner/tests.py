@@ -177,3 +177,153 @@ class PartnerArchitectureAndServicesTests(TestCase):
         self.assertEqual(split['partner_percentage'], Decimal('25.00'))
         self.assertEqual(split['platform_author_percentage'], Decimal('75.00'))
 
+
+class PartnerCoursePermissionAndObjectLevelAuthorizationTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        from apps.courses.models import Subject, Course, Enrollment
+
+        Subject.ensure_default_subjects()
+        self.subject = Subject.objects.first()
+
+        self.partner_a = User.objects.create_user(
+            username='partner_a_user', email='a@ytu.edu.mm', password='password123',
+            role=UserRole.PARTNER
+        )
+        self.partner_b = User.objects.create_user(
+            username='partner_b_user', email='b@miit.edu.mm', password='password123',
+            role=UserRole.PARTNER
+        )
+        self.student = User.objects.create_user(
+            username='test_student', email='student@example.com', password='password123',
+            role=UserRole.STUDENT
+        )
+        self.inst_a = Institution.objects.create(
+            name='Institution Alpha',
+            slug='inst-alpha',
+            contact_person=self.partner_a,
+            is_verified=True,
+        )
+        self.inst_b = Institution.objects.create(
+            name='Institution Beta',
+            slug='inst-beta',
+            contact_person=self.partner_b,
+            is_verified=True,
+        )
+
+        self.course_a = Course.objects.create(
+            title='Course for Institution Alpha',
+            slug='course-alpha',
+            subject=self.subject,
+            owner=self.partner_a,
+            partner_institution=self.inst_a,
+            owner_type=Course.OwnerType.PARTNER,
+            status=Course.Status.DRAFT,
+            is_published=False,
+            price=0,
+        )
+        self.course_b = Course.objects.create(
+            title='Course for Institution Beta',
+            slug='course-beta',
+            subject=self.subject,
+            owner=self.partner_b,
+            partner_institution=self.inst_b,
+            owner_type=Course.OwnerType.PARTNER,
+            status=Course.Status.DRAFT,
+            is_published=False,
+            price=0,
+        )
+
+    def test_partner_course_list_object_level_authorization(self):
+        """Partner A only sees Course A; cannot see Course B."""
+        self.client.force_login(self.partner_a)
+        res = self.client.get(reverse('partner-courses'))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Course for Institution Alpha')
+        self.assertNotContains(res, 'Course for Institution Beta')
+
+    def test_partner_creates_institutional_course(self):
+        """Partner can create a course for their assigned institution."""
+        self.client.force_login(self.partner_a)
+        post_data = {
+            'partner_institution': self.inst_a.id,
+            'title': 'Alpha Embedded Systems',
+            'slug': 'alpha-embedded',
+            'subject': self.subject.id,
+            'description': 'Microcontroller programming.',
+            'level': 'intermediate',
+            'language': 'my',
+            'duration_months': 3,
+            'access_type': 'partner_only',
+            'price': 0,
+        }
+        res = self.client.post(reverse('partner-course-create'), post_data)
+        self.assertEqual(res.status_code, 302)
+
+        from apps.courses.models import Course
+        new_course = Course.objects.get(slug='alpha-embedded')
+        self.assertEqual(new_course.partner_institution, self.inst_a)
+        self.assertEqual(new_course.owner_type, Course.OwnerType.PARTNER)
+        self.assertEqual(new_course.status, Course.Status.DRAFT)
+        self.assertFalse(new_course.is_published)
+
+    def test_partner_cannot_create_course_for_another_institution(self):
+        """Partner A cannot create courses for Institution B."""
+        self.client.force_login(self.partner_a)
+        post_data = {
+            'partner_institution': self.inst_b.id,
+            'title': 'Hacked Course',
+            'slug': 'hacked-course',
+            'subject': self.subject.id,
+            'description': 'Attempting cross-tenant creation.',
+            'price': 0,
+        }
+        res = self.client.post(reverse('partner-course-create'), post_data)
+        # Form validation or dispatch will reject unauthorized institution choice
+        self.assertNotEqual(res.status_code, 302)
+        from apps.courses.models import Course
+        self.assertFalse(Course.objects.filter(slug='hacked-course').exists())
+
+    def test_partner_enrollment_list_object_level_authorization(self):
+        """Partner A can only view student enrollments belonging to their courses."""
+        from apps.courses.models import Enrollment
+        Enrollment.objects.create(
+            course=self.course_a, student=self.student,
+            source=Enrollment.Source.PARTNER, partner_institution=self.inst_a
+        )
+
+        self.client.force_login(self.partner_a)
+        res = self.client.get(reverse('partner-enrollments'))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'Course for Institution Alpha')
+        self.assertNotContains(res, 'Course for Institution Beta')
+
+        # Partner B cannot see Institution A enrollments
+        self.client.force_login(self.partner_b)
+        res = self.client.get(reverse('partner-enrollments'))
+        self.assertEqual(res.status_code, 200)
+        self.assertNotContains(res, 'Course for Institution Alpha')
+
+    def test_partner_adds_instructor_to_organization(self):
+        """Partner can add faculty instructor to their institution."""
+        new_teacher = User.objects.create_user(
+            username='faculty_prof', email='prof@ytu.edu.mm', password='password123',
+            role=UserRole.STUDENT
+        )
+        self.client.force_login(self.partner_a)
+        res = self.client.post(reverse('partner-instructors'), {
+            'institution_id': str(self.inst_a.id),
+            'username': 'faculty_prof',
+        })
+        self.assertEqual(res.status_code, 302)
+
+        from apps.partner.models import PartnerMembership
+        membership = PartnerMembership.objects.filter(
+            institution=self.inst_a, user=new_teacher, role=PartnerMembership.Role.TEACHER
+        ).first()
+        self.assertIsNotNone(membership)
+        self.assertEqual(membership.status, PartnerMembership.Status.ACTIVE)
+        new_teacher.refresh_from_db()
+        self.assertTrue(new_teacher.is_teacher)
+
+

@@ -3,7 +3,7 @@ from django.views import View
 from django.contrib.auth import login
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import CreateView, TemplateView
+from django.views.generic import CreateView, TemplateView, DetailView
 from django.urls import reverse, reverse_lazy
 from django.contrib import messages
 from rest_framework.views import APIView
@@ -206,6 +206,7 @@ class StudentDashboardView(LoginRequiredMixin, TemplateView):
             'earned_badges': badges,
             'earned_certificates': certificates,
             'total_points': getattr(user, 'profile', None).score if hasattr(user, 'profile') else getattr(user, 'student_profile', None).points if hasattr(user, 'student_profile') else 0,
+            'membership_subscription': getattr(user, 'active_subscription', None) or (lambda u: __import__('apps.billing.services', fromlist=['active_subscription_for']).active_subscription_for(u))(user),
         })
         return context
 
@@ -318,3 +319,34 @@ class UserProfileAPIView(APIView):
     def get(self, request):
         serializer = UserProfileSerializer(request.user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PublicInstructorProfileView(DetailView):
+    """
+    Public profile for verified instructors.
+    Accessible at /auth/instructors/<str:username>/
+    Only accessible if the instructor is verified (teacher_profile.is_verified == True).
+    Unverified teachers or non-teachers raise Http404.
+    """
+    model = User
+    template_name = 'users/instructor_profile.html'
+    context_object_name = 'instructor'
+    slug_field = 'username'
+    slug_url_kwarg = 'username'
+
+    def get_queryset(self):
+        return User.objects.filter(
+            teacher_profile__is_verified=True
+        ).select_related('teacher_profile')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        instructor = self.object
+        context['teacher_profile'] = getattr(instructor, 'teacher_profile', None)
+        from apps.courses.models import Course
+        context['published_courses'] = Course.objects.filter(
+            owner=instructor,
+            status=Course.Status.PUBLISHED,
+            is_published=True
+        ).select_related('subject')
+        return context

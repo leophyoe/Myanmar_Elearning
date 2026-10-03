@@ -11,6 +11,9 @@
         </div>
         <div class="flex flex-wrap gap-2">
             {% if user.is_admin %}
+            <a href="{% url 'course-review-list' %}" class="text-xs px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold transition shadow-sm">
+                Editorial Review Queue
+            </a>
             <a href="{% url 'subject-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Subject</a>
             {% endif %}
             <a href="{% url 'course-create' %}" class="text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">+ Course</a>
@@ -69,18 +72,23 @@
                         <span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 uppercase font-bold">
                             {{ course.subject.title|default:"Unassigned" }}
                         </span>
-                        <span class="px-1.5 py-0.5 rounded font-bold uppercase
-                            {% if course.is_published %}bg-emerald-950 text-emerald-300 border border-emerald-800
-                            {% else %}bg-amber-950 text-amber-300 border border-amber-800{% endif %}">
-                            {{ course.is_published|yesno:"Published,Draft" }}
+                        <span class="px-2 py-0.5 rounded font-bold uppercase
+                            {% if course.status == 'published' %}bg-emerald-950 text-emerald-300 border border-emerald-800
+                            {% elif course.status == 'pending_review' %}bg-amber-950 text-amber-300 border border-amber-800
+                            {% elif course.status == 'rejected' %}bg-red-950 text-red-300 border border-red-800
+                            {% else %}bg-slate-800 text-slate-300 border border-slate-700{% endif %}">
+                            {{ course.get_status_display }}
+                        </span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
+                            {{ course.get_access_type_display }}
                         </span>
                     </div>
                     <h3 class="text-lg font-bold text-white mt-1.5">{{ course.title }}</h3>
                 </div>
-                <div class="flex gap-2 text-xs">
-                    <a href="{% url 'course-edit' slug=course.slug %}" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">Edit Course</a>
+                <div class="flex items-center gap-2 text-xs">
+                    <a href="{% url 'course-edit' slug=course.slug %}" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">Edit</a>
                     <a href="{% url 'module-create' %}?course={{ course.id }}" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200">+ Module</a>
-                    <a href="{% url 'course-detail' slug=course.slug %}" class="px-3 py-1.5 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300">Preview</a>
+                    <a href="{% url 'course-detail' slug=course.slug %}" class="px-3 py-1.5 rounded bg-blue-950 hover:bg-blue-900 border border-blue-800 text-blue-300">View Page</a>
                 </div>
             </div>
 

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Application Submitted — Myanmar E-Learning{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full bg-white border border-slate-200 rounded-xl p-8 text-center shadow-sm space-y-4">
+        <div class="w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto text-2xl">
+            🏛️
+        </div>
+        <h1 class="text-xl font-bold text-slate-900">Partner Application Under Review</h1>
+        <p class="text-xs text-slate-600 leading-relaxed">
+            Your application to establish an educational partnership has been received. Our administration will review your institutional credentials and contact your representative within 2-3 business days.
+        </p>
+        <div class="pt-4 border-t border-slate-100 flex justify-center gap-3">
+            <a href="{% url 'landing-page' %}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition">
+                Return Home
+            </a>
+            <a href="{% url 'dashboard' %}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition">
+                My Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

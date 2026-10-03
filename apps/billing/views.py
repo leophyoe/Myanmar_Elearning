@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -14,7 +15,10 @@ from rest_framework.views import APIView
 from apps.common.permissions import RoleRequiredMixin
 from apps.courses.models import Course, Enrollment
 from .forms import PaymentDecisionForm, PaymentSubmitForm, SubscriptionSubmitForm
-from .models import Payment, SubscriptionPlan, UserSubscription, active_payment_for, active_subscription_for
+from .models import (
+    Payment, SubscriptionPlan, UserSubscription, Invoice,
+    active_payment_for, active_subscription_for
+)
 from .serializers import (
     SubscriptionPlanSerializer, UserSubscriptionSerializer, SubscriptionCheckoutSerializer
 )
@@ -50,7 +54,12 @@ class PricingView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         SubscriptionPlan.ensure_default_plans()
-        context['plans'] = SubscriptionPlan.objects.filter(is_active=True).order_by('order')
+        plans = SubscriptionPlan.objects.filter(is_active=True).order_by('order')
+        context['plans'] = plans
+        plans_by_type = {p.plan_type: p for p in plans}
+        context['starter_plan'] = plans_by_type.get('starter')
+        context['standard_plan'] = plans_by_type.get('standard')
+        context['premium_plan'] = plans_by_type.get('premium')
         if self.request.user.is_authenticated:
             context['current_subscription'] = active_subscription_for(self.request.user)
         return context
@@ -170,8 +179,11 @@ class CheckoutView(LoginRequiredMixin, View):
         return get_object_or_404(Course, slug=self.kwargs['slug'], is_published=True)
 
     def _render(self, request, course, form=None, status=200):
+        pricing = course.calculate_price_for_user(request.user)
         return render(request, self.template_name, {
             'course': course,
+            'pricing': pricing,
+            'effective_price': pricing['final_price'],
             'form': form or PaymentSubmitForm(),
             'currency': course.currency,
             'pending': Payment.objects.filter(
@@ -183,8 +195,9 @@ class CheckoutView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         course = self.get_course()
-        if course.is_free:
-            messages.info(request, 'This course is free — enrol directly.')
+        pricing = course.calculate_price_for_user(request.user)
+        if pricing['is_free']:
+            messages.info(request, pricing.get('reason') or 'This course is free — enrol directly.')
             return redirect('course-detail', slug=course.slug)
         if not request.user.is_student:
             messages.info(request, 'Staff accounts do not purchase courses.')
@@ -197,7 +210,12 @@ class CheckoutView(LoginRequiredMixin, View):
 
     def post(self, request, *args, **kwargs):
         course = self.get_course()
-        if course.is_free or not request.user.is_student:
+        if not request.user.is_student:
+            return redirect('course-detail', slug=course.slug)
+
+        pricing = course.calculate_price_for_user(request.user)
+        if pricing['is_free']:
+            messages.info(request, 'Course is free or covered by active membership. Enrol directly.')
             return redirect('course-detail', slug=course.slug)
 
         existing = Payment.objects.filter(
@@ -214,20 +232,22 @@ class CheckoutView(LoginRequiredMixin, View):
             ))
             return self._render(request, course, form, status=200)
 
+        effective_price = pricing['final_price']
         payment = form.save(commit=False)
         payment.student = request.user
         payment.course = course
         payment.plan = None
-        payment.amount = course.price
+        payment.payment_type = Payment.PaymentType.COURSE_PURCHASE
+        payment.amount = effective_price
         payment.currency = course.currency
         payment.billing_period = course.billing_period
-        payment.platform_fee, payment.teacher_amount = Payment.split(course.price)
+        payment.platform_fee, payment.teacher_amount = Payment.split(effective_price)
         payment.status = Payment.Status.PENDING
         payment.save()
 
         messages.success(
             request,
-            f'Payment of {course.price} {course.currency} submitted — an administrator '
+            f'Payment of {effective_price:,.0f} {course.currency} submitted — an administrator '
             f'will review it shortly.'
         )
         return redirect('course-detail', slug=course.slug)
@@ -307,51 +327,23 @@ class PaymentReviewView(AdminRequiredMixin, View):
             payment.reviewed_at = timezone.now()
 
             if form.cleaned_data['action'] == PaymentDecisionForm.ACTION_REJECT:
-                payment.status = Payment.Status.REJECTED
-                payment.rejection_reason = form.cleaned_data['rejection_reason'].strip()
-                payment.save()
+                payment.mark_failed(
+                    reason=form.cleaned_data['rejection_reason'].strip() or 'Rejected by administrator.',
+                    status=Payment.Status.REJECTED,
+                )
                 messages.warning(
                     request, f'Payment from {payment.student.username} rejected.'
                 )
             else:
+                from apps.billing.services import fulfill_payment
                 payment.status = Payment.Status.APPROVED
                 payment.period_start = timezone.localdate()
-
-                if payment.plan:
-                    # Subscription payment approval
-                    if payment.billing_period == UserSubscription.BillingCycle.YEARLY:
-                        period_end = payment.period_start + timezone.timedelta(days=365)
-                    else:
-                        period_end = payment.period_start + timezone.timedelta(days=30)
-                    payment.period_end = period_end
-                    payment.save()
-
-                    UserSubscription.objects.filter(user=payment.student, is_active=True).update(is_active=False)
-                    UserSubscription.objects.create(
-                        user=payment.student,
-                        plan=payment.plan,
-                        billing_cycle=payment.billing_period,
-                        start_date=payment.period_start,
-                        end_date=period_end,
-                        is_active=True,
-                    )
-                    messages.success(
-                        request,
-                        f'Subscription approved! {payment.student.username} now has active {payment.plan.name} membership until {period_end}.'
-                    )
-                else:
-                    # Course payment approval
-                    payment.period_end = _next_period_end(payment.course, payment.period_start)
-                    payment.save()
-
-                    Enrollment.objects.get_or_create(
-                        course=payment.course, student=payment.student,
-                        defaults={'status': Enrollment.Status.ACTIVE},
-                    )
-                    messages.success(
-                        request,
-                        f'Payment approved — {payment.student.username} now has access to {payment.course.title}.'
-                    )
+                payment.save(update_fields=['status', 'period_start', 'reviewed_by', 'reviewed_at', 'updated_at'])
+                fulfill_payment(payment)
+                messages.success(
+                    request,
+                    f'Payment approved and fulfilled successfully for {payment.student.username}.'
+                )
 
         return redirect('payment-list')
 
@@ -454,3 +446,165 @@ class SubscribeAPIView(APIView):
             'currency': payment.currency,
             'plan': plan.name,
         }, status=status.HTTP_202_ACCEPTED)
+
+
+class InvoiceDetailView(LoginRequiredMixin, View):
+    """
+    Renders official printable invoice receipt.
+    Accessible only to the student who owns the invoice or administrators/staff.
+    """
+    def get(self, request, invoice_id):
+        invoice = get_object_or_404(Invoice, id=invoice_id)
+        is_admin_user = (
+            getattr(request.user, 'is_staff', False) or
+            getattr(request.user, 'is_admin', False) or
+            (hasattr(request.user, 'has_role') and request.user.has_role('admin'))
+        )
+        if invoice.student != request.user and not is_admin_user:
+            return HttpResponseForbidden("You do not have permission to view this invoice.")
+
+        return render(request, 'billing/invoice_detail.html', {
+            'invoice': invoice,
+            'PLATFORM_NAME': 'Myanmar E-Learning',
+        })
+
+
+class CancelSubscriptionView(LoginRequiredMixin, View):
+    """
+    Allows a student to cancel their active subscription.
+    """
+    def post(self, request):
+        reason = request.POST.get('reason', '').strip()
+        from apps.billing.services import cancel_subscription
+        sub = cancel_subscription(request.user, reason=reason)
+        if sub:
+            messages.success(request, f"Your {sub.plan.name} subscription has been cancelled.")
+        else:
+            messages.info(request, "No active subscription found to cancel.")
+        return redirect('my-subscription')
+
+
+class PaymentRefundView(AdminRequiredMixin, View):
+    """
+    Processes an administrative refund for a settled payment:
+    - Revokes course enrollment or subscription
+    - Reverses partner revenue ledger record
+    - Updates invoice status to REFUNDED
+    """
+    def post(self, request, payment_id):
+        payment = get_object_or_404(Payment, id=payment_id)
+        reason = request.POST.get('refund_reason', '').strip() or 'Administrative refund'
+        amount_str = request.POST.get('refund_amount', '').strip()
+        refund_amount = Decimal(amount_str) if amount_str else payment.amount
+
+        try:
+            from apps.billing.services import process_refund
+            process_refund(payment, amount=refund_amount, reason=reason, user=request.user)
+            messages.success(request, f"Payment #{payment.id} successfully refunded ({refund_amount:,.0f} {payment.currency}).")
+        except Exception as e:
+            messages.error(request, f"Refund failed: {str(e)}")
+
+        return redirect(request.META.get('HTTP_REFERER') or reverse('payment-list'))
+
+
+class PlatformRevenueReportView(AdminRequiredMixin, TemplateView):
+    """
+    Consolidated financial dashboard for MEL platform administrators:
+    - Total Gross Platform Revenue
+    - Platform Fee Retained (MEL Share)
+    - Instructor Payout Entitlements
+    - Partner Institutional Revenue Split
+    - Total Refunds Issued
+    - Breakdown by Course Purchases, Subscriptions, Exam Vouchers, Certificate Fees
+    - Full Transaction Ledger & Exportable Audit Records
+    """
+    template_name = 'billing/platform_revenue_report.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from apps.billing.services import get_platform_revenue_summary
+        from apps.billing.models import PartnerRevenueRecord
+        context['summary'] = get_platform_revenue_summary()
+        context['recent_payments'] = Payment.objects.select_related(
+            'student', 'course', 'plan', 'reviewed_by'
+        ).order_by('-created_at')[:50]
+        context['partner_records'] = PartnerRevenueRecord.objects.select_related(
+            'partner_institution', 'course', 'payment'
+        ).order_by('-created_at')[:50]
+        return context
+
+
+class PartnerRevenueSettlementView(AdminRequiredMixin, View):
+    """Marks pending partner revenue records as SETTLED upon bank/transfer disbursement."""
+    def post(self, request, record_id):
+        from apps.billing.models import PartnerRevenueRecord
+        from apps.billing.services import settle_partner_revenue_record
+        record = get_object_or_404(PartnerRevenueRecord, id=record_id)
+        settle_partner_revenue_record(record, settled_by=request.user)
+        messages.success(
+            request,
+            f"Settlement recorded for {record.partner_institution.name} ({record.partner_amount:,.0f} MMK)."
+        )
+        return redirect(request.META.get('HTTP_REFERER') or reverse('platform-revenue-report'))
+
+
+class CancelSubscriptionAPIView(APIView):
+    """
+    POST /billing/api/my-subscription/cancel/
+    Cancels current student's active subscription.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        reason = request.data.get('reason', '')
+        from apps.billing.services import cancel_subscription
+        sub = cancel_subscription(request.user, reason=reason)
+        if sub:
+            return Response({'message': f'Subscription {sub.plan.name} cancelled successfully.'}, status=status.HTTP_200_OK)
+        return Response({'message': 'No active subscription found to cancel.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class PaymentWebhookAPIView(APIView):
+    """
+    POST /billing/api/webhook/<provider_code>/
+    Secure provider callback / webhook endpoint.
+    Verifies payload signature, validates reference, and idempotently fulfills payment.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, provider_code):
+        from apps.billing.providers.registry import get_payment_provider
+        from apps.billing.services import fulfill_payment
+        provider = get_payment_provider(provider_code)
+        verification = provider.verify_webhook(request.data, dict(request.headers))
+        if not verification.get('verified'):
+            return Response({'error': 'Webhook signature invalid'}, status=status.HTTP_400_BAD_REQUEST)
+
+        ref = request.data.get('reference') or request.data.get('transaction_id')
+        payment_id = request.data.get('payment_id')
+
+        query = Payment.objects.none()
+        if payment_id:
+            query = Payment.objects.filter(id=payment_id)
+        elif ref:
+            query = Payment.objects.filter(reference=ref)
+
+        payment = query.first()
+        if not payment:
+            return Response({'error': 'Payment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        event_status = request.data.get('status', 'success').lower()
+        if event_status in ['success', 'completed', 'paid']:
+            if not payment.is_successful:
+                payment.mark_success()
+                fulfill_payment(payment)
+        elif event_status in ['failed', 'error']:
+            payment.mark_failed(reason=request.data.get('message', 'Provider reported failure'))
+        elif event_status in ['cancelled']:
+            payment.mark_cancelled(reason=request.data.get('message', 'Provider reported cancellation'))
+        elif event_status in ['processing']:
+            payment.mark_processing()
+
+        return Response({'status': 'ok', 'payment_status': payment.status}, status=status.HTTP_200_OK)
+
+

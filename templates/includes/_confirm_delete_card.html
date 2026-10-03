@@ -1,0 +1,33 @@
+<!-- Reusable Confirmation / Delete Modal (Section 17) -->
+<div id="{{ modal_id|default:'confirmModal' }}" class="mel-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="{{ modal_id|default:'confirmModal' }}Title">
+    <div class="mel-modal">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-[8px] bg-[#FEE2E2] flex items-center justify-center text-[#DC2626] shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h3 id="{{ modal_id|default:'confirmModal' }}Title" class="text-base font-bold text-[#0F172A]">
+                    {{ modal_title|default:'Confirm Action' }}
+                </h3>
+                <p class="text-xs text-[#64748B] mt-1.5 leading-relaxed">
+                    {{ modal_message|default:'Are you sure you want to proceed? This action cannot be undone.' }}
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-[#E2E8F0]">
+            <button type="button" class="mel-btn-outline text-xs px-3 py-1.5" onclick="this.closest('.mel-modal-backdrop').classList.remove('active')">
+                Cancel
+            </button>
+            <form method="POST" action="{{ action_url|default:'#' }}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="mel-btn-danger text-xs px-3 py-1.5">
+                    {{ confirm_label|default:'Confirm Delete' }}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+

@@ -126,9 +126,24 @@
         </div>
     </div>
 
+    <!-- Inside-Page Tab Bar Navigation -->
+    <div class="mel-tab-bar mb-8" role="tablist">
+        <a href="#tab-syllabus" class="mel-tab-item active">
+            <span>📚 Curriculum Syllabus</span>
+        </a>
+        <a href="#tab-overview" class="mel-tab-item">
+            <span>📋 Course Overview</span>
+        </a>
+        {% if live_sessions %}
+        <a href="#tab-live" class="mel-tab-item">
+            <span>📹 Live Classes ({{ live_sessions|length }})</span>
+        </a>
+        {% endif %}
+    </div>
+
     <!-- Live sessions (only rendered when the viewer may see the course) -->
     {% if live_sessions %}
-    <div class="mb-8 p-6 rounded-2xl bg-slate-900 border border-cyan-900/60">
+    <div id="tab-live" class="mb-8 p-6 rounded-2xl bg-slate-900 border border-slate-800">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-bold text-white">Upcoming live sessions</h2>
             <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 uppercase font-bold">

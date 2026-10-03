@@ -1,0 +1,122 @@
+<!-- Top App Bar / Header (64px) -->
+<header class="mel-header border-b border-slate-800 bg-slate-900 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <!-- Left: Mobile Toggle & Brand -->
+        <div class="flex items-center gap-3">
+            <button type="button" id="melMobileMenuBtn" class="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 focus:outline-none" aria-label="Open Navigation Menu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+
+            <a href="{% url 'landing-page' %}" class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-lg bg-sky-600 flex items-center justify-center font-bold text-white shadow-sm shrink-0">
+                    M
+                </div>
+                <div class="hidden sm:block">
+                    <span class="font-bold text-base text-white tracking-wide leading-tight block">MYANMAR E-LEARNING</span>
+                    <span class="text-[10px] text-sky-400 font-semibold tracking-wider uppercase block">Education Platform</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Middle: Global Quick Links / Active Breadcrumb -->
+        <div class="hidden lg:flex items-center gap-6 text-xs font-medium text-slate-300">
+            <a href="{% url 'course-list' %}" class="hover:text-white transition">All Courses</a>
+            <a href="{% url 'pricing' %}" class="hover:text-white transition">Pricing Plans</a>
+            <a href="{% url 'leaderboard' %}" class="hover:text-white transition">Leaderboard</a>
+            <a href="{% url 'certificate-lookup' %}" class="hover:text-white transition">Credential Lookup</a>
+        </div>
+
+        <!-- Right: Actions, Toggles & User Profile -->
+        <div class="flex items-center gap-2 sm:gap-3">
+            <!-- Language Toggle -->
+            {% include 'includes/language_toggle.html' %}
+
+            <!-- Theme Toggle -->
+            {% include 'includes/theme_toggle.html' %}
+
+            {% if user.is_authenticated %}
+                {% if is_teacher and not is_admin %}
+                    <a href="{% url 'teacher-dashboard' %}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        <span>Instructor Hub</span>
+                    </a>
+                {% endif %}
+
+                <!-- User Profile & Overflow Menu -->
+                <div class="relative ml-1 mel-overflow-menu" id="userMenuContainer">
+                    <button type="button" class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-800 transition focus:outline-none" id="userMenuBtn">
+                        <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                            {{ user.username|slice:":1"|upper }}
+                        </div>
+                        <div class="hidden sm:flex flex-col text-left">
+                            <span class="text-xs font-semibold text-white leading-tight truncate max-w-[120px]">{{ user.username }}</span>
+                            <span class="text-[10px] text-slate-400 leading-tight uppercase font-medium">{{ user_role_display|default:user.role }}</span>
+                        </div>
+                        <svg class="w-3.5 h-3.5 text-slate-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+
+                    <!-- Dropdown Content -->
+                    <div class="mel-overflow-dropdown right-0 w-48 mt-1 py-1 rounded-lg bg-slate-900 border border-slate-800 shadow-xl text-xs">
+                        <div class="px-4 py-2 border-b border-slate-800">
+                            <p class="font-semibold text-white truncate">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="text-[10px] text-slate-400 truncate">{{ user.email }}</p>
+                        </div>
+
+                        <a href="{{ DASHBOARD_URL }}" class="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                            <span>📊</span>
+                            <span>My Dashboard</span>
+                        </a>
+                        <a href="{% url 'profile' %}" class="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                            <span>👤</span>
+                            <span>Account Profile</span>
+                        </a>
+                        <a href="{% url 'portfolio-detail' username=user.username %}" class="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                            <span>📁</span>
+                            <span>Public Portfolio</span>
+                        </a>
+
+                        {% if is_admin %}
+                        <div class="border-t border-slate-800 my-1"></div>
+                        <a href="{% url 'console-home' %}" class="flex items-center gap-2 px-4 py-2 text-sky-400 hover:bg-slate-800 transition">
+                            <span>⚙️</span>
+                            <span>Admin Console</span>
+                        </a>
+                        <a href="{% url 'manage-home' %}" class="flex items-center gap-2 px-4 py-2 text-emerald-400 hover:bg-slate-800 transition">
+                            <span>🛠️</span>
+                            <span>Content Studio</span>
+                        </a>
+                        {% elif is_teacher %}
+                        <div class="border-t border-slate-800 my-1"></div>
+                        <a href="{% url 'my-courses' %}" class="flex items-center gap-2 px-4 py-2 text-emerald-400 hover:bg-slate-800 transition">
+                            <span>📚</span>
+                            <span>My Teaching</span>
+                        </a>
+                        <a href="{% url 'teacher-dashboard' %}" class="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                            <span>📊</span>
+                            <span>Instructor Hub</span>
+                        </a>
+                        {% endif %}
+
+                        <div class="border-t border-slate-800 my-1"></div>
+                        <form method="POST" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-2 text-rose-400 hover:bg-slate-800 transition">
+                                <span>🚪</span>
+                                <span>Sign Out</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'login' %}" class="px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium text-slate-200 hover:bg-slate-800 transition">
+                        Sign In
+                    </a>
+                    <a href="{% url 'register' %}" class="px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-xs font-semibold text-white shadow-sm transition">
+                        Get Started
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</header>

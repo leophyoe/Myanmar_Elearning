@@ -96,6 +96,37 @@ class MultiDisciplinaryCoursesTests(TestCase):
         self.assertTrue(can_access_course(self.student, self.prem_course))
         self.assertTrue(can_access_course(self.student, self.std_course))
 
+    def test_partner_affiliated_course_access(self):
+        from apps.partner.models import Institution, PartnerStudent
+        institution = Institution.objects.create(
+            name='Partner University',
+            slug='partner-uni',
+            email='partner@uni.edu.mm'
+        )
+        partner_course = Course.objects.create(
+            title='Enterprise Cloud Architecture',
+            slug='enterprise-cloud',
+            subject=self.py_subject,
+            description='Enterprise cloud and systems course.',
+            level=Course.Level.INTERMEDIATE,
+            price=Decimal('50000'),
+            owner=self.teacher,
+            partner_institution=institution,
+            is_published=True,
+        )
+
+        # Student enrolled, but without subscription or direct payment or partner affiliation
+        Enrollment.objects.create(course=partner_course, student=self.student, status=Enrollment.Status.ACTIVE)
+        self.assertFalse(can_access_course(self.student, partner_course))
+
+        # Affiliate student with partner institution
+        PartnerStudent.objects.create(
+            institution=institution,
+            student=self.student,
+            status=PartnerStudent.Status.ACTIVE
+        )
+        self.assertTrue(can_access_course(self.student, partner_course))
+
     def test_course_list_filters(self):
         client = Client()
         # Filter by category

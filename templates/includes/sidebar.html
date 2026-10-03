@@ -1,0 +1,155 @@
+<!-- Desktop Application Sidebar (250px) -->
+<aside class="mel-sidebar hidden md:flex flex-col justify-between p-4" aria-label="Main Navigation">
+    <div class="space-y-6">
+        <!-- Brand & Platform Identity -->
+        <div class="flex items-center gap-3 px-2 py-1">
+            <div class="w-8 h-8 rounded-lg bg-sky-600 flex items-center justify-center font-bold text-white shadow-sm shrink-0">
+                M
+            </div>
+            <div class="min-w-0">
+                <span class="font-bold text-sm tracking-wide text-white block truncate">MYANMAR E-LEARNING</span>
+                <span class="text-[10px] text-slate-400 block tracking-wider uppercase">Education SaaS</span>
+            </div>
+        </div>
+
+        <!-- Navigation Sections -->
+        <nav class="space-y-1">
+            <!-- Academic & Core Learning -->
+            <div class="px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                Curriculum
+            </div>
+            <a href="{% url 'course-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">📚</span>
+                <span>Courses &amp; Tracks</span>
+            </a>
+            <a href="{% url 'pricing' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">💎</span>
+                <span>Plans &amp; Pricing</span>
+            </a>
+            <a href="{% url 'certificate-lookup' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">📜</span>
+                <span>Verify Certificates</span>
+            </a>
+
+            <!-- Student Specific -->
+            {% if user.is_authenticated and is_student %}
+            <div class="pt-4 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                My Learning
+            </div>
+            <a href="{{ DASHBOARD_URL }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">📊</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="{% url 'my-courses' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">🎓</span>
+                <span>My Courses</span>
+            </a>
+            <a href="{% url 'project-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">🎯</span>
+                <span>Capstone Projects</span>
+            </a>
+            <a href="{% url 'lab-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">🧪</span>
+                <span>Docker Labs</span>
+            </a>
+            <a href="{% url 'ctf-board' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">🚩</span>
+                <span>CTF Challenges</span>
+            </a>
+            <a href="{% url 'payment-history' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">💳</span>
+                <span>My Payments</span>
+            </a>
+            {% endif %}
+
+            <!-- Instructor Specific -->
+            {% if user.is_authenticated and is_teacher and not is_admin %}
+            <div class="pt-4 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                Instructor Hub
+            </div>
+            <a href="{% url 'teacher-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">📊</span>
+                <span>Instructor Hub</span>
+            </a>
+            <a href="{% url 'my-courses' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">📚</span>
+                <span>My Teaching</span>
+            </a>
+            <a href="{% url 'manage-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">🛠️</span>
+                <span>Manage Courses</span>
+            </a>
+            <a href="{% url 'submission-list' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm">📝</span>
+                    <span>Grading Queue</span>
+                </div>
+                {% if ungraded_count %}
+                <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300 border border-amber-800">{{ ungraded_count }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'live-session-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">📹</span>
+                <span>Live Classes</span>
+            </a>
+            {% endif %}
+
+            <!-- Institutional Partner Portal -->
+            {% if user.is_authenticated %}
+            <div class="pt-4 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                Partnerships
+            </div>
+            <a href="{% url 'partner-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">🏛️</span>
+                <span>Partner Portal</span>
+            </a>
+            {% endif %}
+
+            <!-- Admin Specific -->
+            {% if user.is_authenticated and is_admin %}
+            <div class="pt-4 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                Administration
+            </div>
+            <a href="{% url 'console-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">⚙️</span>
+                <span>Admin Console</span>
+            </a>
+            <a href="{% url 'manage-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">🛠️</span>
+                <span>Content Studio</span>
+            </a>
+            <a href="{% url 'payment-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">💰</span>
+                <span>Payment Approvals</span>
+            </a>
+            <a href="{% url 'console-log-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">📋</span>
+                <span>Audit Logs</span>
+            </a>
+            <a href="{% url 'cyber-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">🛡️</span>
+                <span>Cyber Range Ops</span>
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+
+    <!-- User Mini Profile / VPN Quick Status -->
+    <div class="pt-4 border-t border-slate-800 space-y-3">
+        {% if user.is_authenticated %}
+        <div class="flex items-center justify-between px-2 text-xs">
+            <a href="{% url 'vpn-dashboard' %}" class="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>VPN Access</span>
+            </a>
+            <a href="{% url 'portfolio-detail' username=user.username %}" class="text-sky-400 hover:underline text-[11px]">
+                Portfolio
+            </a>
+        </div>
+        {% endif %}
+        <div class="flex items-center justify-between px-2 pt-1 text-[11px] text-slate-400">
+            <span>MEL v2.5</span>
+            <span>Myanmar SaaS</span>
+        </div>
+    </div>
+</aside>

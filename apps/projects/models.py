@@ -17,8 +17,24 @@ class FinalProject(BaseModel):
 
 
 class ProjectSubmission(BaseModel):
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Draft'
+        SUBMITTED = 'submitted', 'Proposal Submitted'
+        UNDER_REVIEW = 'under_review', 'Under Review'
+        APPROVED = 'approved', 'Proposal Approved'
+        REJECTED = 'rejected', 'Proposal Rejected'
+        IN_PROGRESS = 'in_progress', 'In Progress'
+        SUBMITTED_FOR_GRADING = 'submitted_for_grading', 'Submitted for Final Grading'
+        COMPLETED = 'completed', 'Completed'
+
     project = models.ForeignKey(FinalProject, on_delete=models.CASCADE, related_name='submissions')
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='project_submissions')
+    status = models.CharField(
+        max_length=32,
+        choices=Status.choices,
+        default=Status.SUBMITTED,
+        db_index=True
+    )
     proposal_text = models.TextField()
     report_file = models.FileField(upload_to='capstone_reports/', null=True, blank=True)
     github_repo_url = models.URLField(blank=True)

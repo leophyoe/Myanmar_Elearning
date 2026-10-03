@@ -1,0 +1,22 @@
+<!-- Reusable Mobile Bottom Sheet -->
+<div id="melBottomSheetBackdrop" class="mel-bottom-sheet-backdrop" aria-hidden="true">
+    <div class="mel-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="melBottomSheetTitle">
+        <!-- Bottom Sheet Handle & Header -->
+        <div class="flex flex-col items-center mb-4">
+            <div class="w-10 h-1 bg-slate-700 rounded-full mb-3 cursor-grab"></div>
+            <div class="w-full flex items-center justify-between">
+                <h3 id="melBottomSheetTitle" class="text-sm font-bold text-white">Filter &amp; Quick Actions</h3>
+                <button type="button" id="melBottomSheetCloseBtn" class="p-1 rounded-lg text-slate-400 hover:text-white" aria-label="Close sheet">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dynamic Content Slot -->
+        <div id="melBottomSheetBody">
+            {% block bottom_sheet_content %}
+            <!-- Page specific filters or actions injected here -->
+            {% endblock %}
+        </div>
+    </div>
+</div>

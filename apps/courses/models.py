@@ -249,6 +249,20 @@ class Course(BaseModel):
         choices=BillingPeriod.choices,
         default=BillingPeriod.ONE_TIME,
     )
+    partner_institution = models.ForeignKey(
+        'partner.Institution',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='partner_courses',
+        help_text="Institutional partner offering or endorsing this curriculum."
+    )
+    partner_revenue_share_pct = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=25.00,
+        help_text="Partner revenue share percentage (e.g. 25.00% for partner, 75.00% for platform/author)."
+    )
 
     class Meta:
         ordering = ['title']

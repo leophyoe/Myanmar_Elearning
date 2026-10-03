@@ -12,168 +12,143 @@
             theme: {
                 extend: {
                     colors: {
-                        cyber: {
-                            dark: '#0a0f1d',
+                        mel: {
+                            bg: '#0b0f19',
                             card: '#111827',
-                            border: '#1f293d',
-                            cyan: '#06b6d4',
-                            neon: '#00f0ff',
-                            emerald: '#10b981',
-                            accent: '#3b82f6',
-                            danger: '#ef4444',
+                            border: '#1f2937',
+                            primary: '#0284c7',
+                            accent: '#0ea5e9',
                         }
                     }
                 }
             }
         }
     </script>
-    <link rel="stylesheet" href="/static/css/cyberrange.css">
+    <link rel="stylesheet" href="/static/css/mel-design-system.css">
     {% include 'includes/theme_head.html' %}
     {% include 'includes/lang_head.html' %}
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-[#0a0f1d] text-slate-200 min-h-screen flex flex-col font-mono selection:bg-cyan-500 selection:text-black">
+<body class="bg-slate-50 text-slate-900 dark:bg-[#0b0f19] dark:text-slate-100 min-h-screen flex flex-col font-sans selection:bg-blue-600 selection:text-white">
 
-    <!-- Top Navigation Bar -->
-    <header class="border-b border-slate-800 bg-[#0c1222]/90 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <!-- Brand Logo -->
-            <a href="{% url 'landing-page' %}" class="flex items-center space-x-3 group">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition">
-                    🛡️
-                </div>
-                <div>
-                    <span class="font-bold text-lg text-white tracking-wider">MYANMAR</span>
-                    <span class="text-xs block text-cyan-400 font-semibold tracking-widest uppercase">E-Learning</span>
-                </div>
-            </a>
+    <!-- Top App Bar / Header (64px) -->
+    {% include 'includes/top_header.html' %}
 
-            <!-- Navigation Links -->
-            <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-300">
-                <a href="{% url 'course-list' %}" class="hover:text-cyan-400 transition">Courses</a>
-                <a href="{% url 'portfolio-list' %}" class="hover:text-cyan-400 transition">Portfolios</a>
-                {% if user.is_authenticated %}
-                    {% if is_teacher and not is_admin %}
-                        <a href="{% url 'my-courses' %}" class="hover:text-cyan-400 transition flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                            <span>My Teaching</span>
-                        </a>
-                        <a href="{% url 'submission-list' %}" class="hover:text-cyan-400 transition">Grading</a>
-                        <a href="{% url 'live-session-list' %}" class="hover:text-cyan-400 transition">Live Classes</a>
-                    {% elif is_admin %}
-                        <a href="{% url 'my-courses' %}" class="hover:text-cyan-400 transition">My Courses</a>
-                        <a href="{% url 'console-home' %}" class="hover:text-cyan-400 transition">Console</a>
-                        <a href="{% url 'console-log-list' %}" class="hover:text-cyan-400 transition">Audit Logs</a>
-                        <a href="{% url 'cyber-home' %}" class="hover:text-cyan-400 transition">Cyber Range</a>
-                        <a href="{% url 'manage-home' %}" class="hover:text-cyan-400 transition">Content Studio</a>
-                        <a href="{% url 'submission-list' %}" class="hover:text-cyan-400 transition">Grading</a>
-                        <a href="{% url 'payment-list' %}" class="hover:text-cyan-400 transition">Payments</a>
-                    {% elif is_student %}
-                        <a href="{% url 'my-courses' %}" class="hover:text-cyan-400 transition">My Courses</a>
-                        <a href="{% url 'payment-history' %}" class="hover:text-cyan-400 transition">Payments</a>
-                    {% endif %}
-                    <a href="{% url 'portfolio-detail' username=request.user.username %}" class="hover:text-cyan-400 transition">My Portfolio</a>
-                {% endif %}
-                <a href="{% url 'certificate-lookup' %}" class="hover:text-cyan-400 transition">Verify</a>
-                <a href="{% url 'lab-list' %}" class="hover:text-cyan-400 transition">Cyber Labs</a>
-                <a href="{% url 'ctf-board' %}" class="hover:text-cyan-400 transition">CTF Challenges</a>
-                {% if user.is_authenticated %}
-                    <a href="{% url 'vpn-dashboard' %}" class="hover:text-cyan-400 transition flex items-center space-x-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span>VPN Access</span>
-                    </a>
-                {% endif %}
-                <a href="{% url 'leaderboard' %}" class="hover:text-cyan-400 transition">Leaderboard</a>
-                <a href="{% url 'certificate-list' %}" class="hover:text-cyan-400 transition">Certificates</a>
-            </nav>
+    <!-- Mobile Navigation Drawer (Off-Canvas) -->
+    {% include 'includes/mobile_drawer.html' %}
 
-            <!-- User Auth Controls -->
-            <div class="flex items-center space-x-3">
-                {% include 'includes/language_toggle.html' %}
-                {% include 'includes/theme_toggle.html' %}
-                {% if user.is_authenticated %}
-                    <div class="hidden sm:flex flex-col text-right">
-                        <span class="text-xs text-white font-semibold">{{ user.username }}</span>
-                        <span class="text-[10px] text-cyan-400 uppercase tracking-wider px-1.5 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/50 inline-block">
-                            {{ user_role_display }}
-                        </span>
-                    </div>
+    <!-- Mobile Bottom Sheet Container -->
+    {% include 'includes/bottom_sheet.html' %}
 
-                    {% if is_admin %}
-                        <a href="{% url 'console-home' %}" class="text-xs px-3 py-1.5 rounded bg-purple-950 border border-purple-700 text-purple-300 hover:bg-purple-900 transition">
-                            Admin Console
-                        </a>
-                        <a href="{{ DASHBOARD_URL }}" class="text-xs px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
-                            Dashboard
-                        </a>
-                    {% elif is_teacher %}
-                        <a href="{% url 'teacher-dashboard' %}" class="text-xs px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                            <span>Instructor Hub</span>
-                        </a>
-                    {% else %}
-                        <a href="{{ DASHBOARD_URL }}" class="text-xs px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
-                            Dashboard
-                        </a>
-                    {% endif %}
-
-                    <a href="{% url 'profile' %}" class="text-xs text-slate-400 hover:text-white transition">
-                        Profile
-                    </a>
-
-                    <form method="POST" action="{% url 'logout' %}" class="inline">
-                        {% csrf_token %}
-                        <button type="submit" class="text-xs text-slate-400 hover:text-red-400 transition">
-                            Logout
-                        </button>
-                    </form>
-                {% else %}
-                    <a href="{% url 'login' %}" class="text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded border border-slate-700 hover:border-slate-500 transition">
-                        Sign In
-                    </a>
-                    <a href="{% url 'register' %}" class="text-xs px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold shadow-md shadow-cyan-600/30 transition">
-                        Enroll Now
-                    </a>
-                {% endif %}
-            </div>
-        </div>
-    </header>
-
-    <!-- Global Messages / Alerts -->
+    <!-- Global Messages / Notifications -->
     {% if messages %}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
         {% for message in messages %}
-            <div class="p-3 mb-2 rounded-lg text-sm border flex items-center justify-between
-                {% if message.tags == 'success' %} bg-emerald-950/80 border-emerald-700 text-emerald-200
-                {% elif message.tags == 'error' %} bg-red-950/80 border-red-700 text-red-200
-                {% elif message.tags == 'warning' %} bg-amber-950/80 border-amber-700 text-amber-200
-                {% else %} bg-cyan-950/80 border-cyan-700 text-cyan-200 {% endif %}">
+            <div class="p-3 mb-2 rounded-lg text-xs font-medium border flex items-center justify-between
+                {% if message.tags == 'success' %} bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800
+                {% elif message.tags == 'error' %} bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800
+                {% elif message.tags == 'warning' %} bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800
+                {% else %} bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800 {% endif %}">
                 <span>{{ message }}</span>
             </div>
         {% endfor %}
     </div>
     {% endif %}
 
-    <!-- Main Content Container -->
-    <main class="flex-grow">
-        {% block content %}{% endblock %}
-    </main>
+    <!-- Main Application Layout Shell -->
+    <div class="flex-grow flex min-h-[calc(100vh-64px)]">
+        {% block sidebar %}
+            {% include 'includes/sidebar.html' %}
+        {% endblock %}
 
-    <!-- Footer -->
-    <footer class="border-t border-slate-800/80 bg-[#080d19] py-8 mt-16 text-xs text-slate-500">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div class="flex items-center space-x-2">
-                <span class="text-cyan-400 font-bold">{{ PLATFORM_NAME }}</span>
-                <span>• Online Courses, Cyber Labs &amp; Certificates</span>
+        <main class="flex-1 min-w-0 w-full">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Structured Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#070b14] py-6 text-xs text-slate-500 dark:text-slate-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-2">
+                <span class="text-slate-900 dark:text-white font-semibold">{{ PLATFORM_NAME }}</span>
+                <span>• Online Education Platform &amp; Practical Cyber Labs</span>
             </div>
-            <div class="text-slate-500 text-center md:text-right">
-                All cybersecurity exercises execute strictly inside isolated Docker sandbox environments. Egress WAN disabled.
+            <div class="text-slate-500 dark:text-slate-400 text-center sm:text-right text-[11px]">
+                Isolated Docker container execution sandbox. All rights reserved.
             </div>
         </div>
     </footer>
 
     {% include 'includes/theme_script.html' %}
     {% include 'includes/lang_script.html' %}
+
+    <!-- Core Interactive UI Script for Drawer, Bottom Sheet & Dropdowns -->
+    <script>
+        (function() {
+            // Mobile Drawer Logic
+            const mobileBtn = document.getElementById('melMobileMenuBtn');
+            const drawer = document.getElementById('melDrawer');
+            const drawerBackdrop = document.getElementById('melDrawerBackdrop');
+            const drawerClose = document.getElementById('melDrawerCloseBtn');
+
+            function openDrawer() {
+                if (drawer && drawerBackdrop) {
+                    drawer.classList.add('active');
+                    drawerBackdrop.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+
+            function closeDrawer() {
+                if (drawer && drawerBackdrop) {
+                    drawer.classList.remove('active');
+                    drawerBackdrop.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            }
+
+            if (mobileBtn) mobileBtn.addEventListener('click', openDrawer);
+            if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
+            if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
+
+            // Bottom Sheet Logic (Global helper window.melBottomSheet)
+            const sheetBackdrop = document.getElementById('melBottomSheetBackdrop');
+            const sheetClose = document.getElementById('melBottomSheetCloseBtn');
+
+            window.melBottomSheet = {
+                open: function() {
+                    if (sheetBackdrop) {
+                        sheetBackdrop.classList.add('active');
+                        document.body.style.overflow = 'hidden';
+                    }
+                },
+                close: function() {
+                    if (sheetBackdrop) {
+                        sheetBackdrop.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                }
+            };
+
+            if (sheetClose) sheetClose.addEventListener('click', window.melBottomSheet.close);
+            if (sheetBackdrop) {
+                sheetBackdrop.addEventListener('click', function(e) {
+                    if (e.target === sheetBackdrop) {
+                        window.melBottomSheet.close();
+                    }
+                });
+            }
+
+            // Keyboard Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeDrawer();
+                    if (window.melBottomSheet) window.melBottomSheet.close();
+                }
+            });
+        })();
+    </script>
+
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

@@ -7,6 +7,8 @@ class BadgeCriteriaType(models.TextChoices):
     LABS_COMPLETED = 'labs_completed', 'Labs Completed Count'
     CHALLENGES_SOLVED = 'challenges_solved', 'CTF Challenges Solved Count'
     MODULE_COMPLETED = 'module_completed', 'Specific Module Completed'
+    COURSES_COMPLETED = 'courses_completed', 'Courses Completed Count'
+    PROJECTS_COMPLETED = 'projects_completed', 'Capstone Projects Completed Count'
 
 
 class Badge(BaseModel):

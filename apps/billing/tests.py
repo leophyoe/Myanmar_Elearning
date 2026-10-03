@@ -116,3 +116,45 @@ class SubscriptionAPITests(TestCase):
         sub_resp = self.client.get(reverse('api-my-subscription'))
         self.assertEqual(sub_resp.status_code, status.HTTP_200_OK)
         self.assertEqual(sub_resp.json()['plan']['plan_type'], 'starter')
+
+
+class SubscriptionLifecycleTests(TestCase):
+    def setUp(self):
+        SubscriptionPlan.ensure_default_plans()
+        self.user = User.objects.create_user(
+            username='lifecycle_student', email='lifecycle@mel.edu.mm', password='password123'
+        )
+        self.std_plan = SubscriptionPlan.objects.get(plan_type=SubscriptionPlan.PlanType.STANDARD)
+
+    def test_subscription_status_affects_is_current(self):
+        sub = UserSubscription.objects.create(
+            user=self.user,
+            plan=self.std_plan,
+            billing_cycle=UserSubscription.BillingCycle.MONTHLY,
+            status=UserSubscription.Status.ACTIVE,
+            is_active=True,
+            auto_renew=True,
+        )
+        self.assertTrue(sub.is_current)
+        self.assertTrue(sub.auto_renew)
+
+        # Cancelled subscription is not current
+        sub.status = UserSubscription.Status.CANCELLED
+        sub.save()
+        self.assertFalse(sub.is_current)
+
+        # Suspended subscription is not current
+        sub.status = UserSubscription.Status.SUSPENDED
+        sub.save()
+        self.assertFalse(sub.is_current)
+
+        # Expired subscription is not current
+        sub.status = UserSubscription.Status.EXPIRED
+        sub.save()
+        self.assertFalse(sub.is_current)
+
+        # Active status is current
+        sub.status = UserSubscription.Status.ACTIVE
+        sub.save()
+        self.assertTrue(sub.is_current)
+

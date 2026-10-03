@@ -118,6 +118,13 @@ class UserSubscription(BaseModel):
         YEARLY = 'yearly', 'Yearly'
         LIFETIME = 'lifetime', 'Lifetime Free'
 
+    class Status(models.TextChoices):
+        ACTIVE = 'active', 'Active'
+        EXPIRED = 'expired', 'Expired'
+        CANCELLED = 'cancelled', 'Cancelled'
+        PENDING = 'pending', 'Pending Approval'
+        SUSPENDED = 'suspended', 'Suspended'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='subscriptions'
@@ -128,6 +135,11 @@ class UserSubscription(BaseModel):
     billing_cycle = models.CharField(
         max_length=16, choices=BillingCycle.choices, default=BillingCycle.MONTHLY
     )
+    status = models.CharField(
+        max_length=16, choices=Status.choices, default=Status.ACTIVE, db_index=True
+    )
+    auto_renew = models.BooleanField(default=False)
+    payment_reference = models.CharField(max_length=128, blank=True)
     start_date = models.DateField(default=timezone.localdate)
     end_date = models.DateField(
         null=True, blank=True, help_text="Null for lifetime / free"
@@ -142,7 +154,7 @@ class UserSubscription(BaseModel):
 
     @property
     def is_current(self):
-        if not self.is_active:
+        if not self.is_active or self.status != self.Status.ACTIVE:
             return False
         if self.end_date is None:
             return True

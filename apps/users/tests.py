@@ -436,3 +436,63 @@ class TeacherImmediateSignInAndApprovalTests(TestCase):
         self.assertEqual(app.reviewed_by.username, 'sysadmin')
 
 
+class MultiRoleArchitectureTests(TestCase):
+    def setUp(self):
+        ensure_default_groups()
+        self.user = User.objects.create_user(
+            username='multirole_user',
+            email='multirole@mel.edu.mm',
+            password='TestPassword2026!',
+            role=UserRole.STUDENT,
+        )
+
+    def test_single_account_multiple_roles(self):
+        # Starts as student
+        self.assertTrue(self.user.has_role('student'))
+        self.assertFalse(self.user.has_role('instructor'))
+        self.assertFalse(self.user.has_role('partner'))
+        self.assertIn(UserRole.STUDENT, self.user.roles)
+
+        # Assign instructor role
+        self.user.add_role('instructor')
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.has_role('instructor'))
+        self.assertTrue(self.user.is_teacher)
+        self.assertTrue(hasattr(self.user, 'teacher_profile'))
+        self.assertTrue(self.user.groups.filter(name='Instructor').exists())
+
+        # Assign partner role
+        self.user.add_role('partner')
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.has_role('partner'))
+        self.assertTrue(self.user.is_partner)
+        self.assertTrue(self.user.groups.filter(name='Partner').exists())
+
+        # Roles property returns all active roles
+        active_roles = self.user.roles
+        self.assertIn(UserRole.STUDENT, active_roles)
+        self.assertIn(UserRole.TEACHER, active_roles)
+        self.assertIn(UserRole.PARTNER, active_roles)
+
+        # Remove partner role
+        self.user.remove_role('partner')
+        self.assertFalse(self.user.has_role('partner'))
+        self.assertTrue(self.user.has_role('instructor'))
+        self.assertTrue(self.user.has_role('student'))
+
+    def test_teacher_profile_extended_fields(self):
+        self.user.add_role('instructor')
+        tp = self.user.teacher_profile
+        tp.bio = "Senior Security Researcher & Cloud Architect"
+        tp.website = "https://leotech.edu.mm"
+        tp.github_url = "https://github.com/leophyoe"
+        tp.linkedin_url = "https://linkedin.com/in/leophyoe"
+        tp.save()
+
+        tp.refresh_from_db()
+        self.assertEqual(tp.bio, "Senior Security Researcher & Cloud Architect")
+        self.assertEqual(tp.website, "https://leotech.edu.mm")
+        self.assertEqual(tp.github_url, "https://github.com/leophyoe")
+
+
+

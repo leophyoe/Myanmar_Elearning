@@ -25,37 +25,7 @@ from .forms import (
 # ----------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------
-def can_access_course(user, course):
-    """Teachers/admins always see a course.
-
-    Students need an active enrollment, and on paid courses an approved,
-    unexpired payment or active subscription covering the course.
-    """
-    if not getattr(user, 'is_authenticated', False):
-        return False
-    if user.is_teacher or user.is_admin:
-        return True
-    if not Enrollment.objects.filter(
-        course=course, student=user, status=Enrollment.Status.ACTIVE
-    ).exists():
-        return False
-    if course.is_free:
-        return True
-
-    # 1. Direct course purchase check
-    payment = active_payment_for(user, course)
-    if payment and payment.is_current:
-        return True
-
-    # 2. Subscription tier access check
-    from apps.billing.models import active_subscription_for
-    sub = active_subscription_for(user)
-    if sub and sub.is_current:
-        if getattr(course, 'is_premium', False):
-            return bool(sub.plan.has_premium_courses)
-        return bool(sub.plan.has_all_standard_courses)
-
-    return False
+from apps.courses.services.access import can_access_course
 
 
 def course_progress_pct(user, course):

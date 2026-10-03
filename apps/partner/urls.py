@@ -6,6 +6,7 @@ from .views import (
 
 urlpatterns = [
     path('portal/', PartnerPortalDashboardView.as_view(), name='partner-portal'),
+    path('dashboard/', PartnerPortalDashboardView.as_view(), name='partner-dashboard'),
     path('directory/', InstitutionListView.as_view(), name='partner-list'),
     path('directory/<slug:slug>/', InstitutionDetailView.as_view(), name='partner-detail'),
     path('cohorts/<uuid:cohort_id>/', CohortDetailView.as_view(), name='partner-cohort-detail'),

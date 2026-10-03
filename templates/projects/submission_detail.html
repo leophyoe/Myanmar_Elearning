@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Capstone Submission — {{ submission.project.title }} — {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <a href="{% url 'project-list' %}" class="inline-flex items-center text-xs text-cyan-400 hover:text-cyan-300 font-medium transition mb-2">
+                &larr; Back to Capstone Projects
+            </a>
+            <h1 class="text-2xl font-bold text-white tracking-tight">{{ submission.project.title }}</h1>
+            <p class="text-xs text-slate-400 mt-1">Student: <strong class="text-slate-300">{{ submission.student.get_full_name|default:submission.student.username }}</strong></p>
+        </div>
+        <div>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold
+                {% if submission.status == 'completed' %}bg-emerald-950 text-emerald-300 border border-emerald-800
+                {% elif submission.status == 'approved' %}bg-cyan-950 text-cyan-300 border border-cyan-800
+                {% elif submission.status == 'rejected' %}bg-rose-950 text-rose-300 border border-rose-800
+                {% elif submission.status == 'submitted_for_grading' %}bg-purple-950 text-purple-300 border border-purple-800
+                {% else %}bg-amber-950 text-amber-300 border border-amber-800{% endif %}">
+                {{ submission.get_status_display }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Status & Progress Summary Card -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+            <span class="text-xs text-slate-400 uppercase tracking-wider block mb-1">Submitted On</span>
+            <span class="text-sm font-semibold text-white font-mono">{{ submission.created_at|date:"M d, Y" }}</span>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+            <span class="text-xs text-slate-400 uppercase tracking-wider block mb-1">Viva Voce Defense</span>
+            <span class="text-sm font-semibold text-white font-mono">
+                {% if submission.defense_date %}{{ submission.defense_date|date:"M d, Y H:i" }}{% else %}Not scheduled yet{% endif %}
+            </span>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+            <span class="text-xs text-slate-400 uppercase tracking-wider block mb-1">Final Evaluation</span>
+            <span class="text-sm font-semibold text-white font-mono">
+                {% if submission.final_grade %}{{ submission.final_grade }} (Viva: {{ submission.viva_score|default:"-" }}/20){% else %}Pending Evaluation{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- Proposal Content -->
+    <div class="p-6 rounded-xl bg-slate-900 border border-slate-800 mb-6">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Submitted Proposal</h2>
+        <div class="p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300 whitespace-pre-line leading-relaxed">
+            {{ submission.proposal_text }}
+        </div>
+        {% if submission.github_repo_url %}
+        <div class="mt-4 flex items-center gap-2 text-xs">
+            <span class="text-slate-400">Git Repository:</span>
+            <a href="{{ submission.github_repo_url }}" target="_blank" rel="noopener noreferrer" class="text-cyan-400 hover:underline font-mono">
+                {{ submission.github_repo_url }}
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Final Report Upload (if proposal is approved or in progress) -->
+    {% if submission.status in 'approved,in_progress,submitted_for_grading' %}
+    <div class="p-6 rounded-xl bg-slate-900 border border-slate-800 mb-6">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Submit Final Capstone Report &amp; Deliverables</h2>
+        <form method="POST" action="{% url 'project-submit-report' slug=submission.project.slug %}" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-2">Upload Final Report (PDF / ZIP)</label>
+                {{ report_form.report_file }}
+                {% if submission.report_file %}
+                <p class="text-xs text-emerald-400 mt-1">Current file uploaded: <a href="{{ submission.report_file.url }}" class="underline">{{ submission.report_file.name }}</a></p>
+                {% endif %}
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-2">Repository URL</label>
+                {{ report_form.github_repo_url }}
+            </div>
+            <button type="submit" class="px-5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                Upload Final Deliverables
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Evaluator Feedback -->
+    {% if submission.feedback %}
+    <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Faculty Evaluation &amp; Feedback</h2>
+        <div class="p-4 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+            {{ submission.feedback }}
+        </div>
+        {% if submission.evaluated_by %}
+        <p class="text-[11px] text-slate-500 mt-2">Evaluated by: {{ submission.evaluated_by.get_full_name|default:submission.evaluated_by.username }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

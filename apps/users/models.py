@@ -154,6 +154,19 @@ class User(AbstractUser):
         if hasattr(self, 'role_assignments'):
             self.role_assignments.filter(role=canonical_role).update(is_active=False)
 
+        group_map = {
+            UserRole.STUDENT: 'Student',
+            UserRole.TEACHER: 'Instructor',
+            UserRole.PARTNER: 'Partner',
+            UserRole.ADMIN: 'Administrator',
+        }
+        group_name = group_map.get(canonical_role)
+        if group_name and self.role != canonical_role:
+            from django.contrib.auth.models import Group
+            g = Group.objects.filter(name=group_name).first()
+            if g:
+                self.groups.remove(g)
+
     @property
     def roles(self):
         """Returns sorted list of all active role strings for the user."""
@@ -231,6 +244,42 @@ class User(AbstractUser):
     @property
     def profile(self):
         return UnifiedProfileAccessor(self)
+
+
+class UserRoleAssignment(BaseModel):
+    """
+    Dynamic role assignment allowing a single user account to hold multiple roles
+    (e.g., Student + Instructor + Partner) simultaneously without separate accounts.
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='role_assignments'
+    )
+    role = models.CharField(
+        max_length=32,
+        choices=UserRole.choices,
+        db_index=True
+    )
+    is_active = models.BooleanField(default=True, db_index=True)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    assigned_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='granted_role_assignments'
+    )
+
+    class Meta:
+        unique_together = [('user', 'role')]
+        ordering = ['-assigned_at']
+        indexes = [
+            models.Index(fields=['user', 'role', 'is_active']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.get_role_display()} ({'active' if self.is_active else 'inactive'})"
 
 
 class UnifiedProfileAccessor:
@@ -322,6 +371,10 @@ class TeacherProfile(BaseModel):
     )
     total_live_hours = models.DecimalField(max_digits=8, decimal_places=2, default=0.0)
     total_recorded_hours = models.DecimalField(max_digits=8, decimal_places=2, default=0.0)
+    bio = models.TextField(blank=True)
+    website = models.URLField(blank=True)
+    github_url = models.URLField(blank=True)
+    linkedin_url = models.URLField(blank=True)
 
     @property
     def recorded_revenue_share_pct(self):
@@ -384,6 +437,7 @@ class InstructorApplication(BaseModel):
     qualifications = models.TextField(help_text='Degrees, certifications, and teaching credentials.')
     teaching_experience = models.TextField(help_text='Previous lecturing or mentoring experience.')
     target_subjects = models.CharField(max_length=255, blank=True, help_text='Disciplines the applicant intends to teach.')
+    sample_lecture_url = models.URLField(blank=True, help_text='Link to sample teaching video or lecture.')
     status = models.CharField(
         max_length=16,
         choices=Status.choices,

@@ -3,7 +3,7 @@
     (function () {
         var theme;
         try { theme = localStorage.getItem('mel-theme'); } catch (e) {}
-        if (theme !== 'light' && theme !== 'dark') { theme = 'dark'; }
+        if (theme !== 'light' && theme !== 'dark') { theme = 'light'; }
         var el = document.documentElement;
         el.setAttribute('data-theme', theme);
         el.classList.toggle('dark', theme === 'dark');
@@ -11,3 +11,4 @@
     })();
 </script>
 <link rel="stylesheet" href="/static/css/theme.css">
+

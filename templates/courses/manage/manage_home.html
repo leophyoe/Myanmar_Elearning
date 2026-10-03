@@ -135,5 +135,11 @@
         </div>
         {% endfor %}
     </section>
+
+    <!-- Floating Action Button (FAB) for Instructor Hub Primary Action -->
+    <a href="{% url 'course-create' %}" class="mel-fab" aria-label="Create New Course" title="Create New Course">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+        <span class="mel-fab-label">+ Create Course</span>
+    </a>
 </div>
 {% endblock %}

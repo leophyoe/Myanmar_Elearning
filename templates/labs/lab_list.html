@@ -4,21 +4,99 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <!-- Active Sandbox Hero Banner (when student has a container running) -->
+    {% if active_instance %}
+    <div class="mb-8 p-5 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-900 border border-emerald-500/50 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="flex items-center space-x-3.5">
+            <span class="relative flex h-3.5 w-3.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+            </span>
+            <div>
+                <div class="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-bold">Active Container Sandbox Running</div>
+                <h3 class="text-base font-bold text-white">{{ active_instance.lab.title }}</h3>
+                <div class="text-xs text-slate-400 flex items-center space-x-2 mt-0.5">
+                    <span>Target IP: <code class="font-mono text-cyan-300 font-semibold">{{ active_instance.target_ip|default:"10.10.10.5" }}</code></span>
+                    <span>•</span>
+                    <span>Time Left: <span class="text-amber-400 font-mono font-semibold">{{ active_instance.remaining_seconds }}s</span></span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3 w-full md:w-auto">
+            <a href="{% url 'lab-detail' slug=active_instance.lab.slug %}" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex-1 md:flex-initial text-center">
+                Return to Lab Sandbox &rarr;
+            </a>
+            <form method="post" action="{% url 'lab-stop' instance_id=active_instance.id %}">
+                {% csrf_token %}
+                <button type="submit" onclick="return confirm('Stop container and release sandbox resources?');" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-red-950/80 hover:text-red-400 border border-slate-700 text-slate-300 font-semibold text-xs transition">
+                    Stop Sandbox
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Catalog Header & Stats -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 mb-8 border-b border-slate-800 gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-white tracking-wide">Hands-on Cyber Labs</h1>
-            <p class="text-xs text-slate-400 mt-1">Docker-based isolated sandboxes. No WAN routing. Practice attacks and defense safely.</p>
+            <div class="flex items-center space-x-2 text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider mb-1">
+                <span>⚡ Cyber Range Sandboxes</span>
+            </div>
+            <h1 class="text-3xl font-bold text-white tracking-wide">Hands-on Cyber Security Labs</h1>
+            <p class="text-xs text-slate-400 mt-1">Docker-based isolated sandboxes. Practice offensive exploitation and defensive incident response safely.</p>
         </div>
 
-        <!-- Filter Controls -->
-        <div class="flex flex-wrap items-center gap-2 text-xs">
-            <a href="{% url 'lab-list' %}" class="px-3 py-1.5 rounded-lg {% if not selected_category %}bg-cyan-600 text-white{% else %}bg-slate-900 border border-slate-800 text-slate-400{% endif %}">
+        <div class="flex items-center space-x-3 text-xs">
+            <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
+                Labs: <strong class="text-white">{{ total_labs_count|default:labs|length }}</strong>
+            </span>
+            <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
+                Pool: <strong class="text-amber-400 font-mono">{{ total_points_pool|default:"0" }} PTS</strong>
+            </span>
+            <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
+                Solved: <strong class="text-emerald-400 font-mono">{{ solved_lab_ids|length }}</strong>
+            </span>
+        </div>
+    </div>
+
+    <!-- Filters & Search Toolbar -->
+    <div class="mb-8 space-y-4">
+        <form method="get" class="flex flex-col md:flex-row gap-3 items-center justify-between">
+            <!-- Search Input -->
+            <div class="relative w-full md:w-80">
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Search labs by title or keyword..."
+                       class="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 placeholder-slate-500 text-xs focus:border-cyan-500 focus:outline-none transition">
+                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+
+            <!-- Difficulty Pills -->
+            <div class="flex flex-wrap items-center gap-1.5 text-xs w-full md:w-auto">
+                <span class="text-[11px] text-slate-500 mr-1 uppercase tracking-wider font-semibold">Difficulty:</span>
+                <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if search_query %}q={{ search_query }}{% endif %}"
+                   class="px-3 py-1.5 rounded-lg {% if not selected_difficulty %}bg-cyan-600 text-white font-bold{% else %}bg-slate-900 border border-slate-800 text-slate-400 hover:text-white{% endif %} transition">
+                    All
+                </a>
+                {% for diff_key, diff_label in difficulties %}
+                <a href="?difficulty={{ diff_key }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+                   class="px-3 py-1.5 rounded-lg {% if selected_difficulty == diff_key %}bg-cyan-600 text-white font-bold{% else %}bg-slate-900 border border-slate-800 text-slate-400 hover:text-white{% endif %} transition">
+                    {{ diff_label }}
+                </a>
+                {% endfor %}
+            </div>
+        </form>
+
+        <!-- Category Domain Pills -->
+        <div class="flex flex-wrap items-center gap-2 text-xs pt-2">
+            <span class="text-[11px] text-slate-500 mr-1 uppercase tracking-wider font-semibold">Domain:</span>
+            <a href="{% url 'lab-list' %}{% if selected_difficulty %}?difficulty={{ selected_difficulty }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg {% if not selected_category %}bg-slate-800 text-white font-bold border border-slate-700{% else %}bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-white{% endif %} transition">
                 All Domains
             </a>
             {% for cat_val, cat_label in categories %}
-                <a href="{% url 'lab-list' %}?category={{ cat_val }}" class="px-3 py-1.5 rounded-lg {% if selected_category == cat_val %}bg-cyan-600 text-white{% else %}bg-slate-900 border border-slate-800 text-slate-400 hover:text-white{% endif %}">
-                    {{ cat_label|truncatewords:2 }}
-                </a>
+            <a href="?category={{ cat_val }}{% if selected_difficulty %}&difficulty={{ selected_difficulty }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg {% if selected_category == cat_val %}bg-slate-800 text-cyan-300 font-bold border border-cyan-800{% else %}bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-white{% endif %} transition">
+                {{ cat_label }}
+            </a>
             {% endfor %}
         </div>
     </div>
@@ -26,37 +104,60 @@
     <!-- Labs Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for lab in labs %}
-        <div class="p-6 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between shadow-lg">
+        <div class="p-6 rounded-2xl bg-slate-900 border {% if active_instance and active_instance.lab_id == lab.id %}border-emerald-500/80 shadow-emerald-950/40{% elif lab.id in solved_lab_ids %}border-emerald-900/60{% else %}border-slate-800 hover:border-cyan-500/50{% endif %} transition flex flex-col justify-between shadow-xl relative overflow-hidden group">
+            
+            {% if active_instance and active_instance.lab_id == lab.id %}
+            <div class="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-mono font-bold px-3 py-0.5 rounded-bl-lg tracking-wider uppercase flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> RUNNING NOW
+            </div>
+            {% elif lab.id in solved_lab_ids %}
+            <div class="absolute top-0 right-0 bg-emerald-950 border-b border-l border-emerald-800 text-emerald-400 text-[10px] font-mono font-bold px-3 py-0.5 rounded-bl-lg tracking-wider uppercase">
+                ✓ SOLVED
+            </div>
+            {% endif %}
+
             <div>
-                <div class="flex justify-between items-center text-xs mb-3">
-                    <span class="px-2 py-0.5 rounded font-mono font-bold uppercase tracking-wider
-                        {% if lab.difficulty == 'easy' %} bg-emerald-950 text-emerald-400 border border-emerald-800
-                        {% elif lab.difficulty == 'medium' %} bg-amber-950 text-amber-400 border border-amber-800
-                        {% else %} bg-red-950 text-red-400 border border-red-800 {% endif %}">
-                        {{ lab.get_difficulty_display }}
-                    </span>
-                    <span class="text-amber-400 font-bold font-mono">{{ lab.points }} PTS</span>
+                <div class="flex justify-between items-center text-xs mb-3 pt-1">
+                    {% include 'labs/_lab_badge.html' with difficulty=lab.difficulty label=lab.get_difficulty_display %}
+                    {% include 'labs/_lab_badge.html' with points=lab.points %}
                 </div>
 
-                <h2 class="text-lg font-bold text-white mb-2">{{ lab.title }}</h2>
+                <h2 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-400 transition">{{ lab.title }}</h2>
                 <p class="text-xs text-slate-400 leading-relaxed mb-4 line-clamp-3">{{ lab.description }}</p>
 
-                <div class="text-[11px] text-slate-500 mb-4 space-y-1">
-                    <div>Type: <span class="text-slate-300">{{ lab.get_lab_type_display }}</span></div>
-                    <div>Category: <span class="text-slate-300">{{ lab.template.get_category_display }}</span></div>
+                <div class="text-[11px] text-slate-500 mb-4 space-y-1.5 border-t border-slate-800/80 pt-3">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Domain:</span>
+                        <span class="text-slate-300 font-medium">{{ lab.template.get_category_display }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Format:</span>
+                        <span class="text-slate-300 font-medium">{{ lab.get_lab_type_display }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Est. Time:</span>
+                        <span class="text-slate-300 font-mono">{{ lab.estimated_minutes }} mins</span>
+                    </div>
                 </div>
             </div>
 
-            <a href="{% url 'lab-detail' slug=lab.slug %}" class="w-full text-center py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-600/20 transition">
-                Configure & Launch Lab &rarr;
+            {% if active_instance and active_instance.lab_id == lab.id %}
+            <a href="{% url 'lab-detail' slug=lab.slug %}" class="w-full text-center py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-1.5">
+                <span>⚡ Resume Active Sandbox &rarr;</span>
             </a>
+            {% else %}
+            <a href="{% url 'lab-detail' slug=lab.slug %}" class="w-full text-center py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-600/20 transition flex items-center justify-center gap-1.5">
+                <span>Configure &amp; Launch Lab &rarr;</span>
+            </a>
+            {% endif %}
         </div>
         {% empty %}
-        <div class="col-span-3 text-center py-16 text-slate-500 text-sm">
-            No cyber labs found matching the selected filter.
+        <div class="col-span-3 text-center py-16 text-slate-500 text-sm bg-slate-900/40 rounded-2xl border border-slate-800">
+            <svg class="w-12 h-12 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <p>No cyber labs found matching the selected filters.</p>
+            <a href="{% url 'lab-list' %}" class="mt-2 inline-block text-xs text-cyan-400 hover:underline">Clear all filters</a>
         </div>
         {% endfor %}
     </div>
 </div>
 {% endblock %}
-

@@ -16,6 +16,7 @@ urlpatterns = [
     path('my-payments/', MyPaymentsView.as_view(), name='payment-history'),
     path('review/', PaymentListView.as_view(), name='payment-list'),
     path('review/<uuid:payment_id>/', PaymentReviewView.as_view(), name='payment-review'),
+    path('review/<uuid:payment_id>/detail/', PaymentReviewView.as_view(), name='payment-detail'),
     path('refund/<uuid:payment_id>/', PaymentRefundView.as_view(), name='payment-refund'),
     path('revenue/', PlatformRevenueReportView.as_view(), name='platform-revenue-report'),
     path('revenue/settle/<uuid:record_id>/', PartnerRevenueSettlementView.as_view(), name='partner-revenue-settle'),

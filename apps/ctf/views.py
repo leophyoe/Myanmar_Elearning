@@ -28,16 +28,34 @@ class CtfBoardView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        solved_challenge_ids = set(
-            SolvedChallenge.objects.filter(user=user).values_list('challenge_id', flat=True)
-        )
+        active_challenges = list(context['challenges'])
+        total_challenges_count = len(active_challenges)
+        total_points_available = sum(c.points for c in active_challenges)
+
+        if user.is_authenticated:
+            user_solves = SolvedChallenge.objects.filter(user=user)
+            solved_challenge_ids = set(user_solves.values_list('challenge_id', flat=True))
+            solved_count = len(solved_challenge_ids)
+            user_points_earned = sum(s.points_awarded for s in user_solves)
+        else:
+            solved_challenge_ids = set()
+            solved_count = 0
+            user_points_earned = 0
+
+        completion_pct = round((solved_count / total_challenges_count * 100), 1) if total_challenges_count else 0.0
+
         context['solved_challenge_ids'] = solved_challenge_ids
         context['categories'] = ChallengeCategory.choices
+        context['total_challenges_count'] = total_challenges_count
+        context['total_points_available'] = total_points_available
+        context['user_points_earned'] = user_points_earned
+        context['solved_count'] = solved_count
+        context['completion_pct'] = completion_pct
 
         # Group challenges by category for board layout
         grouped = {}
         for cat_key, cat_name in ChallengeCategory.choices:
-            challenges_in_cat = [c for c in context['challenges'] if c.category == cat_key]
+            challenges_in_cat = [c for c in active_challenges if c.category == cat_key]
             if challenges_in_cat:
                 grouped[cat_name] = challenges_in_cat
         context['grouped_challenges'] = grouped

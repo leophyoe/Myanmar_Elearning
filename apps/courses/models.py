@@ -1066,6 +1066,7 @@ class LiveSession(BaseModel):
         ZOOM = 'zoom', 'Zoom'
         GOOGLE_MEET = 'google_meet', 'Google Meet'
         TEAMS = 'teams', 'Microsoft Teams'
+        JITSI = 'jitsi', 'Jitsi Meet (Embedded / WebRTC)'
         OTHER = 'other', 'Other / custom link'
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='live_sessions')
@@ -1074,6 +1075,10 @@ class LiveSession(BaseModel):
         max_length=16, choices=Provider.choices, default=Provider.ZOOM
     )
     join_url = models.URLField(help_text="Direct joining URL for the session.")
+    recording_url = models.URLField(
+        blank=True, default='',
+        help_text="Link to session recording or replay (YouTube, Vimeo, Google Drive, etc.)."
+    )
     starts_at = models.DateTimeField(db_index=True)
     duration_minutes = models.PositiveIntegerField(default=60)
     notes = models.TextField(blank=True)
@@ -1086,6 +1091,57 @@ class LiveSession(BaseModel):
         return f"{self.title} ({self.get_provider_display()})"
 
     @property
+    def ends_at(self):
+        from datetime import timedelta
+        return self.starts_at + timedelta(minutes=self.duration_minutes)
+
+    @property
     def is_upcoming(self):
         from django.utils import timezone
-        return self.starts_at >= timezone.now()
+        return self.starts_at > timezone.now()
+
+    @property
+    def is_live(self):
+        from django.utils import timezone
+        now = timezone.now()
+        return self.starts_at <= now <= self.ends_at
+
+    @property
+    def is_ended(self):
+        from django.utils import timezone
+        return timezone.now() > self.ends_at
+
+    @property
+    def status(self):
+        if self.is_live:
+            return 'live'
+        elif self.is_upcoming:
+            return 'scheduled'
+        return 'ended'
+
+    @property
+    def has_replay(self):
+        return bool(self.recording_url and self.recording_url.strip())
+
+
+class LiveSessionAttendance(BaseModel):
+    """
+    Audited log of student and instructor attendance in virtual classrooms.
+    Records entry, exit, duration, and client details.
+    """
+    session = models.ForeignKey(LiveSession, on_delete=models.CASCADE, related_name='attendances')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='live_session_attendances')
+    joined_at = models.DateTimeField(auto_now_add=True)
+    left_at = models.DateTimeField(null=True, blank=True)
+    duration_seconds = models.PositiveIntegerField(default=0)
+    user_agent = models.CharField(max_length=255, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-joined_at']
+        verbose_name = 'Live Session Attendance'
+        verbose_name_plural = 'Live Session Attendances'
+
+    def __str__(self):
+        return f"{self.user} - {self.session.title} ({self.joined_at.strftime('%Y-%m-%d %H:%M')})"
+

@@ -30,6 +30,14 @@
                 <span class="text-sm">📜</span>
                 <span>Verify Certificates</span>
             </a>
+            <a href="{% url 'blog:article-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">📰</span>
+                <span>Knowledge Hub</span>
+            </a>
+            <a href="{% url 'portfolio-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                <span class="text-sm">💼</span>
+                <span>Talent Showcase</span>
+            </a>
 
             <!-- Student Specific -->
             {% if user.is_authenticated and is_student %}

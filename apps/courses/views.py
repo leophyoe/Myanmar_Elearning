@@ -3,8 +3,9 @@ from django.views.generic import (
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect, render
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.contrib import messages
+from datetime import timedelta
 from django.utils import timezone
 from django.urls import reverse_lazy, reverse
 
@@ -13,8 +14,9 @@ from apps.billing.models import active_payment_for, Payment
 from .models import (
     Subject, Course, Module, Lesson, LessonType, Quiz, Question, Choice,
     UserProgress, Enrollment, Assignment, AssignmentSubmission, LiveSession,
-    QuizAttempt,
+    LiveSessionAttendance, QuizAttempt,
 )
+from apps.courses.services.jitsi import get_jitsi_connection_config
 from .forms import (
     SubjectForm, CourseForm, CourseReviewForm, ModuleForm, LessonForm,
     QuizForm, QuestionFormSet, AssignmentForm, AssignmentSubmitForm,
@@ -52,6 +54,16 @@ def upcoming_live_sessions(course):
             is_published=True, starts_at__gte=timezone.now()
         ).order_by('starts_at')
     )
+
+
+def recorded_live_sessions(course):
+    """Published sessions for `course` that have a recording/replay URL attached."""
+    return list(
+        course.live_sessions.filter(
+            is_published=True
+        ).exclude(recording_url='').order_by('-starts_at')
+    )
+
 
 
 def sync_enrollment_progress(user, course):
@@ -168,10 +180,12 @@ class CourseDetailView(DetailView):
                 context['pending_payment'] = Payment.objects.filter(
                     student=user, course=course, status=Payment.Status.PENDING
                 ).first()
+            has_live_access = bool(user.is_teacher or user.is_admin or context['has_access'])
             context['live_sessions'] = (
-                upcoming_live_sessions(course)
-                if (user.is_teacher or user.is_admin or context['has_access'])
-                else []
+                upcoming_live_sessions(course) if has_live_access else []
+            )
+            context['recorded_live_sessions'] = (
+                recorded_live_sessions(course) if has_live_access else []
             )
         else:
             context['is_enrolled'] = False
@@ -183,6 +197,7 @@ class CourseDetailView(DetailView):
             context['can_take_exam'] = False
             context['exam_reason'] = "Sign in to take the examination."
             context['live_sessions'] = []
+            context['recorded_live_sessions'] = []
 
         first_module = course.modules.first()
         context['first_lesson'] = first_module.lessons.first() if first_module else None
@@ -252,6 +267,40 @@ class LessonDetailView(LoginRequiredMixin, DetailView):
             }
         else:
             context['my_submissions'] = {}
+
+        # Curriculum navigation and progress tracking
+        modules = list(course.modules.prefetch_related('lessons').order_by('order', 'id'))
+        context['modules'] = modules
+        
+        all_lessons = []
+        for m in modules:
+            all_lessons.extend(list(m.lessons.order_by('order', 'id')))
+        
+        current_idx = -1
+        for idx, l in enumerate(all_lessons):
+            if l.id == lesson.id:
+                current_idx = idx
+                break
+        
+        context['prev_lesson'] = all_lessons[current_idx - 1] if current_idx > 0 else None
+        context['next_lesson'] = all_lessons[current_idx + 1] if (current_idx >= 0 and current_idx < len(all_lessons) - 1) else None
+        context['total_lessons_count'] = len(all_lessons)
+        context['current_lesson_index'] = current_idx + 1 if current_idx >= 0 else 1
+        
+        if self.request.user.is_authenticated:
+            completed_lesson_ids = set(
+                UserProgress.objects.filter(
+                    user=self.request.user,
+                    course=course,
+                    is_completed=True
+                ).values_list('lesson_id', flat=True)
+            )
+        else:
+            completed_lesson_ids = set()
+        context['completed_lesson_ids'] = completed_lesson_ids
+        context['course_progress_percentage'] = (
+            round((len(completed_lesson_ids) / len(all_lessons) * 100), 1) if all_lessons else 0
+        )
         return context
 
 
@@ -1276,13 +1325,31 @@ class LiveSessionListView(LiveSessionMixin, TemplateView):
         course_id = self.request.GET.get('course')
         if course_id:
             qs = qs.filter(course_id=course_id)
-        return qs
+        status_filter = self.request.GET.get('status')
+        now = timezone.now()
+        if status_filter == 'upcoming':
+            qs = qs.filter(starts_at__gt=now)
+        elif status_filter == 'past':
+            qs = qs.filter(starts_at__lte=now)
+        elif status_filter == 'recorded':
+            qs = qs.exclude(recording_url='')
+        return qs.order_by('starts_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        base_qs = LiveSession.objects.filter(course__in=self.owned_courses())
+        course_id = self.request.GET.get('course')
+        if course_id:
+            base_qs = base_qs.filter(course_id=course_id)
+        now = timezone.now()
+        context['total_count'] = base_qs.count()
+        context['upcoming_count'] = base_qs.filter(starts_at__gt=now).count()
+        context['past_count'] = base_qs.filter(starts_at__lte=now).count()
+        context['recorded_count'] = base_qs.exclude(recording_url='').count()
         context['sessions'] = self.get_queryset()
         context['courses'] = self.owned_courses().order_by('title')
-        context['active_course'] = self.request.GET.get('course', '')
+        context['active_course'] = course_id or ''
+        context['active_status'] = self.request.GET.get('status', 'all')
         return context
 
 
@@ -1326,6 +1393,97 @@ class LiveSessionDeleteView(LiveSessionMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, "Live session removed.")
         return super().form_valid(form)
+
+
+class LiveSessionDetailView(LoginRequiredMixin, DetailView):
+    """
+    Agora Flat-inspired dedicated virtual classroom room / stage.
+    Displays countdown timer when scheduled, embedded Jitsi / launch controls when live,
+    and replay archive when ended.
+    """
+    model = LiveSession
+    template_name = 'courses/live_session_detail.html'
+    pk_url_kwarg = 'session_id'
+    context_object_name = 'session'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        session = self.get_object()
+        course = session.course
+        user = request.user
+        if not (user.is_admin or (course.owner_id and course.owner_id == user.id) or can_access_course(user, course)):
+            messages.warning(request, "You must be enrolled in this course to access this live classroom.")
+            return redirect('course-detail', slug=course.slug)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        session = self.object
+        course = session.course
+        user = self.request.user
+        context['course'] = course
+        context['is_host'] = bool(user.is_admin or (course.owner_id and course.owner_id == user.id))
+        context['status'] = session.status
+        context['is_live'] = session.is_live
+        context['is_upcoming'] = session.is_upcoming
+        context['is_ended'] = session.is_ended
+        context['has_replay'] = session.has_replay
+        context['ends_at'] = session.ends_at
+        context['other_sessions'] = course.live_sessions.filter(
+            is_published=True
+        ).exclude(id=session.id).order_by('starts_at')[:5]
+
+        # Jitsi connection parameters & room metadata
+        jitsi_config = get_jitsi_connection_config(user, session)
+        context['jitsi_config'] = jitsi_config
+        context['jitsi_room_name'] = jitsi_config['room_name']
+        context['jitsi_domain'] = jitsi_config['domain']
+        return context
+
+
+class LiveSessionAttendanceView(LoginRequiredMixin, View):
+    """
+    AJAX endpoint invoked by Jitsi External API event hooks
+    (videoConferenceJoined and videoConferenceLeft) to log participant attendance.
+    """
+    def post(self, request, session_id):
+        session = get_object_or_404(LiveSession, id=session_id)
+        course = session.course
+        user = request.user
+        if not (user.is_admin or (course.owner_id and course.owner_id == user.id) or can_access_course(user, course)):
+            return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+        action = request.POST.get('action', 'join')
+        now = timezone.now()
+
+        attendance, created = LiveSessionAttendance.objects.get_or_create(
+            session=session,
+            user=user,
+            defaults={
+                'user_agent': request.META.get('HTTP_USER_AGENT', '')[:250],
+                'ip_address': request.META.get('REMOTE_ADDR'),
+            }
+        )
+
+        if action == 'leave':
+            attendance.left_at = now
+            if attendance.joined_at:
+                delta = (now - attendance.joined_at).total_seconds()
+                attendance.duration_seconds = max(0, int(delta))
+            attendance.save(update_fields=['left_at', 'duration_seconds', 'updated_at'])
+            return JsonResponse({
+                'status': 'success',
+                'action': 'leave',
+                'duration_seconds': attendance.duration_seconds
+            })
+
+        return JsonResponse({
+            'status': 'success',
+            'action': 'join',
+            'joined_at': attendance.joined_at.isoformat(),
+        })
+
 
 
 # -----------------------------------------------------------------------------

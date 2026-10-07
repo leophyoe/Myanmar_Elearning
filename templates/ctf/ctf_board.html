@@ -10,12 +10,15 @@
             <h1 class="text-3xl font-bold text-white tracking-wide">Capture The Flag (CTF)</h1>
             <p class="text-xs text-slate-400 mt-1">Exploit targets, solve challenges, extract flags, and conquer the leaderboard.</p>
         </div>
-        <div class="flex items-center space-x-3 text-xs">
-            <span class="px-3 py-1.5 rounded bg-slate-900 border border-slate-800 text-slate-300">
-                Solved: <strong class="text-emerald-400">{{ solved_challenge_ids|length }}</strong> / {{ challenges.count }}
+        <div class="flex flex-wrap items-center gap-2.5 text-xs">
+            <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
+                Solved: <strong class="text-emerald-400 font-mono">{{ solved_count }}</strong> / {{ total_challenges_count }} (<span class="text-cyan-400 font-mono">{{ completion_pct }}%</span>)
             </span>
-            <a href="{% url 'leaderboard' %}" class="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
-                View Leaderboard
+            <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
+                Score: <strong class="text-amber-400 font-mono">{{ user_points_earned }}</strong> / {{ total_points_available }} PTS
+            </span>
+            <a href="{% url 'leaderboard' %}" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition shadow-md shadow-cyan-600/20">
+                Leaderboard 🏆
             </a>
         </div>
     </div>
@@ -34,10 +37,10 @@
                 {% for challenge in cat_challenges %}
                 {% if challenge.id in solved_challenge_ids %}
                 <div class="p-5 rounded-xl border transition cursor-pointer flex flex-col justify-between shadow-lg bg-emerald-950/20 border-emerald-700/60"
-                    onclick="openChallengeModal('{{ challenge.id }}', '{{ challenge.title|escapejs }}', '{{ challenge.points }}', '{{ challenge.get_difficulty_display }}', '{{ challenge.description|escapejs }}', true)">
+                    onclick="openChallengeModal('{{ challenge.id }}', '{{ challenge.title|escapejs }}', '{{ challenge.points }}', '{{ challenge.get_difficulty_display }}', '{{ challenge.description|escapejs }}', true, '{{ challenge.lab.slug|default:'' }}')">
                 {% else %}
                 <div class="p-5 rounded-xl border transition cursor-pointer flex flex-col justify-between shadow-lg bg-slate-900 border-slate-800 hover:border-cyan-500/50"
-                    onclick="openChallengeModal('{{ challenge.id }}', '{{ challenge.title|escapejs }}', '{{ challenge.points }}', '{{ challenge.get_difficulty_display }}', '{{ challenge.description|escapejs }}', false)">
+                    onclick="openChallengeModal('{{ challenge.id }}', '{{ challenge.title|escapejs }}', '{{ challenge.points }}', '{{ challenge.get_difficulty_display }}', '{{ challenge.description|escapejs }}', false, '{{ challenge.lab.slug|default:'' }}')">
                 {% endif %}
 
                     <div>
@@ -95,7 +98,18 @@
             <button onclick="closeChallengeModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
         </div>
 
-        <p id="modal-description" class="text-xs text-slate-300 leading-relaxed mb-6 whitespace-pre-wrap"></p>
+        <p id="modal-description" class="text-xs text-slate-300 leading-relaxed mb-4 whitespace-pre-wrap"></p>
+
+        <!-- Attached Sandbox Lab Banner -->
+        <div id="modal-lab-box" class="hidden mb-5 p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-800/80 flex items-center justify-between gap-3">
+            <div class="text-xs">
+                <span class="font-bold text-cyan-300 flex items-center gap-1.5">⚡ Dedicated Lab Machine Available</span>
+                <span class="text-slate-400 block text-[11px] mt-0.5">Spin up an isolated container sandbox to practice and capture this flag.</span>
+            </div>
+            <a id="modal-lab-link" href="#" class="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md transition whitespace-nowrap">
+                Open Lab &rarr;
+            </a>
+        </div>
 
         <!-- Flag Submission Form -->
         <div id="modal-submission-box" class="space-y-3">
@@ -115,12 +129,21 @@
 <script>
     let activeChallengeId = null;
 
-    function openChallengeModal(id, title, points, diff, desc, isSolved) {
+    function openChallengeModal(id, title, points, diff, desc, isSolved, labSlug) {
         activeChallengeId = id;
         document.getElementById('modal-title').textContent = title;
         document.getElementById('modal-points').textContent = points + " PTS";
         document.getElementById('modal-difficulty').textContent = diff;
         document.getElementById('modal-description').textContent = desc;
+
+        const labBox = document.getElementById('modal-lab-box');
+        const labLink = document.getElementById('modal-lab-link');
+        if (labSlug && labSlug.trim() !== '') {
+            labBox.classList.remove('hidden');
+            labLink.href = `/labs/${labSlug}/`;
+        } else {
+            labBox.classList.add('hidden');
+        }
 
         const alertBox = document.getElementById('modal-alert');
         alertBox.className = 'hidden';

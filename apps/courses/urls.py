@@ -15,7 +15,8 @@ from .views import (
     AssessmentDetailView, AssessmentSubmitView,
     SubmissionListView, SubmissionGradeView,
     LiveSessionListView, LiveSessionCreateView,
-    LiveSessionUpdateView, LiveSessionDeleteView,
+    LiveSessionUpdateView, LiveSessionDeleteView, LiveSessionDetailView,
+    LiveSessionAttendanceView,
     CategoryListAPIView, CourseListAPIView, CourseDetailAPIView,
 )
 from apps.billing.views import CheckoutView
@@ -63,7 +64,9 @@ urlpatterns = [
     path('manage/submissions/', SubmissionListView.as_view(), name='submission-list'),
     path('manage/submissions/<uuid:submission_id>/grade/', SubmissionGradeView.as_view(), name='submission-grade'),
 
-    # Live sessions (teacher / admin)
+    # Live sessions
+    path('live/<uuid:session_id>/', LiveSessionDetailView.as_view(), name='live-session-detail'),
+    path('live/<uuid:session_id>/attendance/', LiveSessionAttendanceView.as_view(), name='live-session-attendance'),
     path('manage/live/', LiveSessionListView.as_view(), name='live-session-list'),
     path('manage/live/new/', LiveSessionCreateView.as_view(), name='live-session-create'),
     path('manage/live/<uuid:session_id>/edit/', LiveSessionUpdateView.as_view(), name='live-session-edit'),

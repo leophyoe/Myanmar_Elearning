@@ -229,12 +229,20 @@ class PortfolioDetailView(DetailView):
         )
         completed = [e for e in enrollments if e.status == Enrollment.Status.COMPLETED]
 
+        authored_articles = []
+        if hasattr(target, 'authored_articles'):
+            articles_qs = target.authored_articles.all()
+            if not is_owner:
+                articles_qs = articles_qs.filter(is_published=True)
+            authored_articles = list(articles_qs.select_related('category')[:6])
+
         stats = {
             'credentials': len(credentials),
             'projects': target.portfolio_projects.filter(is_published=True).count(),
             'skills': target.skills.count(),
             'courses': len(enrollments),
             'completed': len(completed),
+            'articles': len(authored_articles),
             'points': profile.points if profile else 0,
             'rank': profile.rank if profile else None,
         }
@@ -273,6 +281,7 @@ class PortfolioDetailView(DetailView):
             ),
             'skills': list(target.skills.all()),
             'enrollments': enrollments,
+            'authored_articles': authored_articles,
             'stats': stats,
             'missing': [m for m in missing if not m[0]],
             'portfolio_url': absolute_uri(

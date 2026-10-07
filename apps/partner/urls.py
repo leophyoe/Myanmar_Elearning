@@ -7,6 +7,7 @@ from .views import (
     PartnerRevenueReportView,
     PartnerApplyView, PartnerApplySuccessView,
     PartnerInviteStudentView, PartnerInvitationAcceptView, PartnerInvitationDeclineView,
+    PartnerCohortExportCSVView, PartnerCohortEnrollStudentView, PartnerEnrollmentExportCSVView,
 )
 
 urlpatterns = [
@@ -16,11 +17,14 @@ urlpatterns = [
     path('directory/', InstitutionListView.as_view(), name='partner-list'),
     path('directory/<slug:slug>/', InstitutionDetailView.as_view(), name='partner-detail'),
     path('cohorts/<uuid:cohort_id>/', CohortDetailView.as_view(), name='partner-cohort-detail'),
+    path('cohorts/<uuid:cohort_id>/export/csv/', PartnerCohortExportCSVView.as_view(), name='partner-cohort-export-csv'),
+    path('cohorts/<uuid:cohort_id>/students/add/', PartnerCohortEnrollStudentView.as_view(), name='partner-cohort-enroll-student'),
 
     # Phase 2 — Institutional Course & Staff Management
     path('courses/', PartnerCourseListView.as_view(), name='partner-courses'),
     path('courses/create/', PartnerCourseCreateView.as_view(), name='partner-course-create'),
     path('enrollments/', PartnerEnrollmentListView.as_view(), name='partner-enrollments'),
+    path('enrollments/export/csv/', PartnerEnrollmentExportCSVView.as_view(), name='partner-enrollments-export-csv'),
     path('instructors/', PartnerInstructorManageView.as_view(), name='partner-instructors'),
 
     # Phase 4 — Partner Revenue & Financial Accounting

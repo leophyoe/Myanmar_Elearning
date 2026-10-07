@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ article.title }} - Knowledge Hub - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 font-mono">
+
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-xs text-slate-500 mb-8 overflow-x-auto scrollbar-none">
+        <a href="{% url 'landing-page' %}" class="hover:text-slate-300 transition">Home</a>
+        <span>&rsaquo;</span>
+        <a href="{% url 'blog:article-list' %}" class="hover:text-slate-300 transition">Knowledge Hub</a>
+        {% if article.category %}
+        <span>&rsaquo;</span>
+        <a href="{% url 'blog:article-category' category_slug=article.category.slug %}" class="hover:text-slate-300 transition">{{ article.category.name }}</a>
+        {% endif %}
+        <span>&rsaquo;</span>
+        <span class="text-slate-300 truncate max-w-xs">{{ article.title }}</span>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+
+        <!-- Main Article Content (8 cols) -->
+        <main class="lg:col-span-8">
+            <header class="mb-8">
+                <!-- Badges -->
+                <div class="flex flex-wrap items-center gap-2.5 mb-4">
+                    {% if article.category %}
+                    <a href="{% url 'blog:article-category' category_slug=article.category.slug %}" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-950 border border-cyan-800 text-cyan-300 hover:bg-cyan-900 transition">
+                        {{ article.category.name }}
+                    </a>
+                    {% endif %}
+                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold
+                        {% if article.difficulty == 'beginner' %}bg-emerald-950 text-emerald-400 border border-emerald-800
+                        {% elif article.difficulty == 'intermediate' %}bg-amber-950 text-amber-400 border border-amber-800
+                        {% else %}bg-rose-950 text-rose-400 border border-rose-800{% endif %}">
+                        {{ article.get_difficulty_display }}
+                    </span>
+                    <span class="text-xs text-slate-400 flex items-center gap-1">
+                        ⏱️ {{ article.reading_time_display }}
+                    </span>
+                    <span class="text-xs text-slate-500 flex items-center gap-1">
+                        👁️ {{ article.views_count }} views
+                    </span>
+                </div>
+
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-snug mb-4">
+                    {{ article.title }}
+                </h1>
+
+                <!-- Author and Date -->
+                <div class="flex items-center gap-3 py-3 border-y border-slate-800">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sm text-white shrink-0">
+                        {{ article.author.username|slice:":1"|upper }}
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-white truncate">{{ article.author.get_full_name|default:article.author.username }}</span>
+                            <a href="{% url 'portfolio-detail' username=article.author.username %}" class="text-[10px] text-cyan-400 hover:underline">
+                                [View Portfolio]
+                            </a>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Published {{ article.published_at|date:"F d, Y" }}</p>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Excerpt / Lead Paragraph -->
+            {% if article.summary %}
+            <div class="p-4 rounded-xl bg-slate-900 border-l-4 border-cyan-500 mb-8 text-sm text-slate-300 leading-relaxed font-sans italic">
+                {{ article.summary }}
+            </div>
+            {% endif %}
+
+            <!-- Article Body -->
+            <article class="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed space-y-6 font-sans">
+                {{ article.content|linebreaks }}
+            </article>
+
+            <!-- Tags -->
+            {% if article.tag_list %}
+            <div class="mt-10 pt-6 border-t border-slate-800">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-3">Topic Tags:</span>
+                <div class="flex flex-wrap gap-2">
+                    {% for tag in article.tag_list %}
+                    <a href="{% url 'blog:article-list' %}?tag={{ tag }}" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-400 hover:text-cyan-300 hover:border-cyan-700 transition">
+                        #{{ tag }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- High-Converting Course CTA (Bottom on Mobile, if related course exists) -->
+            {% if related_course %}
+            <div class="mt-10 p-6 rounded-2xl bg-gradient-to-br from-cyan-950/60 via-slate-900 to-slate-900 border border-cyan-700/60 shadow-xl">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-900 text-cyan-300 border border-cyan-600 mb-2 inline-block">
+                            🎓 Hands-On Curriculum Track
+                        </span>
+                        <h3 class="text-lg font-bold text-white">{{ related_course.title }}</h3>
+                        <p class="text-xs text-slate-400 mt-1 max-w-md">
+                            Take your knowledge further with practical exercises, cloud sandbox labs, and verified certification on THUTA.
+                        </p>
+                    </div>
+                    <a href="{% url 'course-detail' slug=related_course.slug %}" class="shrink-0 px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition shadow-lg shadow-cyan-600/30">
+                        Enroll in Course &rarr;
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </main>
+
+        <!-- Sidebar (4 cols) -->
+        <aside class="lg:col-span-4 space-y-6">
+
+            <!-- Author Bio Card -->
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-md">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">About the Author</h3>
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-12 h-12 rounded-full bg-cyan-900 border border-cyan-700 flex items-center justify-center font-bold text-base text-white shrink-0">
+                        {{ article.author.username|slice:":1"|upper }}
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="text-sm font-bold text-white truncate">{{ article.author.get_full_name|default:article.author.username }}</h4>
+                        <p class="text-[11px] text-cyan-400 uppercase font-medium">{{ article.author.get_role_display|default:article.author.role }}</p>
+                    </div>
+                </div>
+
+                {% if author_profile and author_profile.bio %}
+                <p class="text-xs text-slate-400 line-clamp-3 mb-4 leading-relaxed font-sans">
+                    {{ author_profile.bio }}
+                </p>
+                {% endif %}
+
+                <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span>{{ author_articles_count }} published article{{ author_articles_count|pluralize }}</span>
+                    <a href="{% url 'portfolio-detail' username=article.author.username %}" class="text-cyan-400 hover:underline font-semibold">
+                        View Portfolio &rarr;
+                    </a>
+                </div>
+            </div>
+
+            <!-- Related Course Callout (Desktop) -->
+            {% if related_course %}
+            <div class="p-6 rounded-2xl bg-slate-900 border border-cyan-800/80 shadow-md">
+                <div class="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-2">
+                    <span>📚 Related Course</span>
+                </div>
+                <h4 class="text-sm font-bold text-white mb-2 leading-snug">{{ related_course.title }}</h4>
+                <p class="text-xs text-slate-400 mb-4 line-clamp-3 font-sans">
+                    {{ related_course.description|default:"Master practical skills with step-by-step video lessons and isolated sandbox labs." }}
+                </p>
+                <div class="flex items-center justify-between mb-4 text-xs text-slate-400">
+                    <span class="capitalize">Level: {{ related_course.level }}</span>
+                    {% if related_course.price %}
+                    <span class="font-bold text-emerald-400">{{ related_course.price|floatformat:0 }} MMK</span>
+                    {% else %}
+                    <span class="font-bold text-cyan-400">Membership Included</span>
+                    {% endif %}
+                </div>
+                <a href="{% url 'course-detail' slug=related_course.slug %}" class="block w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-center font-semibold text-xs transition">
+                    Explore Course &rarr;
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Related Articles -->
+            {% if related_articles %}
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-md">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Related Tutorials</h3>
+                <div class="space-y-4">
+                    {% for item in related_articles %}
+                    <div class="group">
+                        <a href="{% url 'blog:article-detail' slug=item.slug %}" class="text-xs font-bold text-white group-hover:text-cyan-400 transition block mb-1 line-clamp-2">
+                            {{ item.title }}
+                        </a>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-500">
+                            <span>⏱️ {{ item.reading_time_display }}</span>
+                            <span>&bull;</span>
+                            <span>{{ item.published_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Talent Directory Promotion -->
+            <div class="p-5 rounded-2xl bg-slate-950 border border-slate-800 text-center">
+                <span class="text-2xl block mb-2">💼</span>
+                <h4 class="text-xs font-bold text-white mb-1">Looking for Top Tech Talent?</h4>
+                <p class="text-[11px] text-slate-400 mb-3 font-sans">
+                    Explore verified portfolios, hands-on lab proof, and CTF rankings across Myanmar.
+                </p>
+                <a href="{% url 'portfolio-list' %}" class="inline-block px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold border border-slate-700 transition">
+                    Browse Talent Directory &rarr;
+                </a>
+            </div>
+
+        </aside>
+
+    </div>
+</div>
+{% endblock %}

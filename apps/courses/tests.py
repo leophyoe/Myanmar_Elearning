@@ -1,4 +1,6 @@
+from datetime import timedelta
 from decimal import Decimal
+from django.utils import timezone
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -6,7 +8,7 @@ from rest_framework import status
 
 from apps.users.models import UserRole
 from apps.billing.models import SubscriptionPlan, UserSubscription
-from .models import Subject, Course, Module, Lesson, Enrollment, Quiz, Question, Choice, QuizAttempt
+from .models import Subject, Course, Module, Lesson, Enrollment, Quiz, Question, Choice, QuizAttempt, LiveSession
 from .views import can_access_course
 
 User = get_user_model()
@@ -1284,5 +1286,264 @@ class Phase3AssessmentAndCredentialTests(TestCase):
         blocked_resp = self.client.get(detail_url)
         self.assertEqual(blocked_resp.status_code, 302)
         self.assertIn(f'/courses/{self.course.slug}/', blocked_resp.url)
+
+
+class DistractionFreePlayerTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            username='prof_thuta', email='prof@thuta.edu', password='password123', role=UserRole.TEACHER
+        )
+        self.student = User.objects.create_user(
+            username='thuta_learner', email='learner@thuta.edu', password='password123', role=UserRole.STUDENT
+        )
+        self.subject = Subject.objects.create(title='Python Mastery', slug='python-mastery', kind='tech')
+        self.course = Course.objects.create(
+            title='Python Full Stack Course',
+            slug='python-full-stack',
+            subject=self.subject,
+            owner=self.teacher,
+            is_published=True,
+            price=0,
+        )
+        self.mod1 = Module.objects.create(course=self.course, code='MOD1', title='Basics', order=1)
+        self.mod2 = Module.objects.create(course=self.course, code='MOD2', title='Advanced', order=2)
+        self.lesson1 = Lesson.objects.create(module=self.mod1, title='Intro to Python', order=1, lesson_type='video')
+        self.lesson2 = Lesson.objects.create(module=self.mod1, title='Data Structures', order=2, lesson_type='text')
+        self.lesson3 = Lesson.objects.create(module=self.mod2, title='Web APIs', order=1, lesson_type='video')
+
+        Enrollment.objects.create(student=self.student, course=self.course)
+
+    def test_distraction_free_player_progression_and_context(self):
+        self.client.force_login(self.student)
+        url = reverse('lesson-detail', kwargs={'lesson_id': self.lesson2.id})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        # Check context
+        self.assertEqual(response.context['prev_lesson'].id, self.lesson1.id)
+        self.assertEqual(response.context['next_lesson'].id, self.lesson3.id)
+        self.assertEqual(response.context['total_lessons_count'], 3)
+        self.assertEqual(response.context['current_lesson_index'], 2)
+        self.assertEqual(len(response.context['modules']), 2)
+
+        # Check template rendering contains player components
+        self.assertContains(response, 'Course Overview')
+        self.assertContains(response, 'thutaCurriculumDrawer')
+        self.assertContains(response, 'thutaCurriculumToggle')
+        self.assertContains(response, 'Intro to Python')
+        self.assertContains(response, 'Data Structures')
+        self.assertContains(response, 'Web APIs')
+
+
+class Phase3LiveClassroomTests(TestCase):
+    def setUp(self):
+        self.teacher = User.objects.create_user(
+            username='teacher_thuta', email='teacher@thuta.edu', password='password123', role=UserRole.TEACHER
+        )
+        self.student = User.objects.create_user(
+            username='student_thuta', email='student@thuta.edu', password='password123', role=UserRole.STUDENT
+        )
+        self.unauthorized_student = User.objects.create_user(
+            username='stranger_thuta', email='stranger@thuta.edu', password='password123', role=UserRole.STUDENT
+        )
+        self.subject = Subject.objects.create(title='Live Web Security', slug='live-security', kind='tech')
+        self.course = Course.objects.create(
+            title='Web Security Bootcamp',
+            slug='web-security-bootcamp',
+            subject=self.subject,
+            owner=self.teacher,
+            is_published=True,
+            price=0,
+        )
+        Enrollment.objects.create(student=self.student, course=self.course)
+
+        # Scheduled upcoming session
+        self.upcoming_session = LiveSession.objects.create(
+            course=self.course,
+            title='Upcoming Buffer Overflow Workshop',
+            provider=LiveSession.Provider.ZOOM,
+            join_url='https://zoom.us/j/111222333',
+            starts_at=timezone.now() + timedelta(days=2),
+            duration_minutes=90,
+            notes='Prerequisites: C basics and gdb installed.',
+            is_published=True,
+        )
+
+        # Live in progress session (started 10 mins ago, lasts 60 mins)
+        self.live_session = LiveSession.objects.create(
+            course=self.course,
+            title='Live SQLi Exploitation Lab',
+            provider=LiveSession.Provider.JITSI,
+            join_url='https://meet.jit.si/thuta-sqli-lab',
+            starts_at=timezone.now() - timedelta(minutes=10),
+            duration_minutes=60,
+            notes='Follow along on your DVWA instance.',
+            is_published=True,
+        )
+
+        # Concluded session with recording
+        self.recorded_session = LiveSession.objects.create(
+            course=self.course,
+            title='Past Orientation & Cryptography Intro',
+            provider=LiveSession.Provider.GOOGLE_MEET,
+            join_url='https://meet.google.com/abc-defg-hij',
+            recording_url='https://youtube.com/watch?v=recorded123',
+            starts_at=timezone.now() - timedelta(days=3),
+            duration_minutes=45,
+            notes='Recorded lecture archive.',
+            is_published=True,
+        )
+
+    def test_live_session_lifecycle_properties(self):
+        # Upcoming
+        self.assertTrue(self.upcoming_session.is_upcoming)
+        self.assertFalse(self.upcoming_session.is_live)
+        self.assertFalse(self.upcoming_session.is_ended)
+        self.assertEqual(self.upcoming_session.status, 'scheduled')
+        self.assertFalse(self.upcoming_session.has_replay)
+
+        # Live
+        self.assertFalse(self.live_session.is_upcoming)
+        self.assertTrue(self.live_session.is_live)
+        self.assertFalse(self.live_session.is_ended)
+        self.assertEqual(self.live_session.status, 'live')
+
+        # Concluded with recording
+        self.assertFalse(self.recorded_session.is_upcoming)
+        self.assertFalse(self.recorded_session.is_live)
+        self.assertTrue(self.recorded_session.is_ended)
+        self.assertEqual(self.recorded_session.status, 'ended')
+        self.assertTrue(self.recorded_session.has_replay)
+
+    def test_live_session_detail_access_control(self):
+        # 1. Anonymous redirected to login
+        url = reverse('live-session-detail', kwargs={'session_id': self.upcoming_session.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/auth/login/', response.url)
+
+        # 2. Non-enrolled student redirected with warning
+        self.client.force_login(self.unauthorized_student)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(f'/courses/{self.course.slug}/', response.url)
+
+        # 3. Enrolled student allowed access
+        self.client.force_login(self.student)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Upcoming Buffer Overflow Workshop')
+        self.assertContains(response, 'countdownClock')
+        self.assertFalse(response.context['is_host'])
+
+        # 4. Host (teacher) has host controls
+        self.client.force_login(self.teacher)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['is_host'])
+        self.assertContains(response, 'Session Host')
+        self.assertContains(response, 'Launch Early as Host')
+
+    def test_live_and_recorded_session_rendering(self):
+        self.client.force_login(self.student)
+
+        # Test live session page
+        live_url = reverse('live-session-detail', kwargs={'session_id': self.live_session.id})
+        response = self.client.get(live_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'LIVE NOW')
+        self.assertContains(response, 'thuta-sqli-lab')
+
+        # Test recorded session page
+        recorded_url = reverse('live-session-detail', kwargs={'session_id': self.recorded_session.id})
+        response = self.client.get(recorded_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Session Replay Ready')
+        self.assertContains(response, 'https://youtube.com/watch?v=recorded123')
+
+    def test_teacher_studio_live_session_list_and_filters(self):
+        self.client.force_login(self.teacher)
+        list_url = reverse('live-session-list')
+
+        # Default all
+        response = self.client.get(list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_count'], 3)
+        self.assertEqual(response.context['upcoming_count'], 1)
+        self.assertEqual(response.context['past_count'], 2)
+        self.assertEqual(response.context['recorded_count'], 1)
+
+        # Filter by status=recorded
+        response_recorded = self.client.get(list_url + '?status=recorded')
+        self.assertEqual(response_recorded.status_code, 200)
+        self.assertEqual(len(response_recorded.context['sessions']), 1)
+        self.assertEqual(response_recorded.context['sessions'][0].id, self.recorded_session.id)
+
+    def test_jitsi_service_and_attendance_flow(self):
+        from apps.courses.services.jitsi import (
+            get_jitsi_room_name, generate_jitsi_jwt, get_jitsi_connection_config
+        )
+        from apps.courses.models import LiveSessionAttendance
+        import json
+        import base64
+
+        # 1. Room name extraction
+        self.assertEqual(get_jitsi_room_name(self.live_session), 'thuta-sqli-lab')
+
+        # 2. JWT Generation without secret returns empty string (guest mode)
+        with self.settings(JITSI_APP_SECRET=''):
+            token_guest = generate_jitsi_jwt(self.student, self.live_session)
+            self.assertEqual(token_guest, '')
+
+        # 3. JWT Generation with secret produces signed token with proper claims
+        with self.settings(JITSI_APP_SECRET='test-secret-key-12345', JITSI_APP_ID='thuta_test'):
+            token_student = generate_jitsi_jwt(self.student, self.live_session)
+            self.assertTrue(token_student)
+            parts = token_student.split('.')
+            self.assertEqual(len(parts), 3)
+
+            # Decode payload
+            payload_b64 = parts[1] + '=' * (-len(parts[1]) % 4)
+            payload = json.loads(base64.urlsafe_b64decode(payload_b64.encode()).decode())
+            self.assertEqual(payload['room'], 'thuta-sqli-lab')
+            self.assertFalse(payload['context']['user']['moderator'])
+            self.assertEqual(payload['iss'], 'thuta_test')
+
+            # Teacher token has moderator=True
+            token_teacher = generate_jitsi_jwt(self.teacher, self.live_session)
+            teacher_payload_b64 = token_teacher.split('.')[1] + '=' * (-len(token_teacher.split('.')[1]) % 4)
+            teacher_payload = json.loads(base64.urlsafe_b64decode(teacher_payload_b64.encode()).decode())
+            self.assertTrue(teacher_payload['context']['user']['moderator'])
+
+        # 4. Connection configuration structure
+        cfg = get_jitsi_connection_config(self.student, self.live_session)
+        self.assertEqual(cfg['room_name'], 'thuta-sqli-lab')
+        self.assertFalse(cfg['is_host'])
+        self.assertEqual(cfg['subject'], self.live_session.title)
+
+        # 5. Attendance logging endpoint
+        self.client.force_login(self.student)
+        att_url = reverse('live-session-attendance', kwargs={'session_id': self.live_session.id})
+
+        # Join action
+        res_join = self.client.post(att_url, {'action': 'join'})
+        self.assertEqual(res_join.status_code, 200)
+        self.assertEqual(res_join.json()['status'], 'success')
+        self.assertEqual(res_join.json()['action'], 'join')
+        self.assertEqual(LiveSessionAttendance.objects.filter(session=self.live_session, user=self.student).count(), 1)
+
+        # Leave action
+        res_leave = self.client.post(att_url, {'action': 'leave'})
+        self.assertEqual(res_leave.status_code, 200)
+        self.assertEqual(res_leave.json()['action'], 'leave')
+        att = LiveSessionAttendance.objects.get(session=self.live_session, user=self.student)
+        self.assertIsNotNone(att.left_at)
+
+        # Unauthorized student cannot log attendance
+        self.client.force_login(self.unauthorized_student)
+        res_unauth = self.client.post(att_url, {'action': 'join'})
+        self.assertEqual(res_unauth.status_code, 403)
+
+
 
 

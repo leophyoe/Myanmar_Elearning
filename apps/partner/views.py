@@ -1,13 +1,40 @@
+import csv
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
+from django.db.models import Count, Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.generic import TemplateView, ListView, DetailView
+from django.urls import reverse, reverse_lazy
+from django.utils import timezone
+from django.views.generic import (
+    CreateView, DetailView, ListView, TemplateView, View,
+)
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Institution, InstitutionCohort, CohortStudent
-from .serializers import InstitutionSerializer, InstitutionCohortSerializer
+from apps.courses.models import Course, Enrollment
+from apps.ctf.models import SolvedChallenge
+from apps.users.models import User, UserRole
+
+from .models import (
+    CohortStudent, Institution, InstitutionCohort, PartnerApplication,
+    PartnerMembership, PartnerStudent,
+)
+from .serializers import InstitutionCohortSerializer, InstitutionSerializer
+
+
+def get_user_partner_institutions(user):
+    """
+    Returns QuerySet of Institution instances managed by the given user.
+    """
+    if getattr(user, 'is_admin', False):
+        return Institution.objects.all()
+    return Institution.objects.filter(
+        Q(contact_person=user) |
+        Q(memberships__user=user, memberships__status=PartnerMembership.Status.ACTIVE)
+    ).distinct()
 
 
 class PartnerPortalDashboardView(LoginRequiredMixin, TemplateView):
@@ -75,17 +102,252 @@ class InstitutionDetailView(DetailView):
 
 class CohortDetailView(LoginRequiredMixin, DetailView):
     """
-    Detailed cohort view showing roster of enrolled students.
+    Detailed cohort view showing roster of enrolled students, progress matrix, and gradebook.
     """
     model = InstitutionCohort
     template_name = 'partner/cohort_detail.html'
     context_object_name = 'cohort'
     pk_url_kwarg = 'cohort_id'
 
+    def dispatch(self, request, *args, **kwargs):
+        cohort = self.get_object()
+        institutions = get_user_partner_institutions(request.user)
+        if not institutions.filter(id=cohort.institution_id).exists() and not request.user.is_admin:
+            raise PermissionDenied("You do not have access to view this cohort's roster.")
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['students'] = self.object.students.select_related('student').order_by('student_id_number', 'student__username')
+        cohort = self.object
+        cohort_students = list(
+            cohort.students.select_related('student').order_by('student_id_number', 'student__username')
+        )
+
+        enrollments_by_student = {}
+        if cohort.course:
+            enrollments = Enrollment.objects.filter(
+                course=cohort.course,
+                student__in=[cs.student for cs in cohort_students]
+            )
+            enrollments_by_student = {e.student_id: e for e in enrollments}
+
+        student_users = [cs.student for cs in cohort_students]
+        solves_qs = SolvedChallenge.objects.filter(user__in=student_users).values('user_id').annotate(total=Count('id'))
+        solves_by_student = {s['user_id']: s['total'] for s in solves_qs}
+
+        progress_list = []
+        completed_count = 0
+
+        for cs in cohort_students:
+            enr = enrollments_by_student.get(cs.student_id)
+            if enr:
+                cs.progress_pct = enr.progress_pct
+                cs.enrollment_status = enr.get_status_display()
+                if enr.status == 'completed' or enr.progress_pct == 100:
+                    completed_count += 1
+            else:
+                cs.progress_pct = 0
+                cs.enrollment_status = 'Not Enrolled'
+            progress_list.append(cs.progress_pct)
+            cs.ctf_solves_count = solves_by_student.get(cs.student_id, 0)
+
+        total_count = len(cohort_students)
+        avg_progress = round(sum(progress_list) / total_count, 1) if total_count else 0.0
+
+        context['students'] = cohort_students
+        context['total_students_count'] = total_count
+        context['avg_progress'] = avg_progress
+        context['completed_count'] = completed_count
         return context
+
+
+class PartnerCohortExportCSVView(LoginRequiredMixin, View):
+    """
+    Exports institutional cohort student roster and academic progress matrix to CSV.
+    """
+    def get(self, request, cohort_id):
+        cohort = get_object_or_404(InstitutionCohort.objects.select_related('institution', 'course'), id=cohort_id)
+        institutions = get_user_partner_institutions(request.user)
+        if not institutions.filter(id=cohort.institution_id).exists() and not request.user.is_admin:
+            raise PermissionDenied("You do not have permission to export this cohort's records.")
+
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        date_str = timezone.localdate().strftime('%Y%m%d')
+        response['Content-Disposition'] = f'attachment; filename="cohort_{cohort.code}_roster_{date_str}.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow([
+            'Student Account ID',
+            'Full Name',
+            'Username',
+            'Email',
+            'Institutional ID',
+            'Course',
+            'Progress (%)',
+            'Status',
+            'CTF Challenges Solved',
+            'Joined Date',
+        ])
+
+        cohort_students = list(cohort.students.select_related('student').order_by('student_id_number', 'student__username'))
+        enrollments_by_student = {}
+        if cohort.course:
+            enrollments = Enrollment.objects.filter(
+                course=cohort.course,
+                student__in=[cs.student for cs in cohort_students]
+            )
+            enrollments_by_student = {e.student_id: e for e in enrollments}
+
+        student_users = [cs.student for cs in cohort_students]
+        solves_qs = SolvedChallenge.objects.filter(user__in=student_users).values('user_id').annotate(total=Count('id'))
+        solves_by_student = {s['user_id']: s['total'] for s in solves_qs}
+
+        for cs in cohort_students:
+            enr = enrollments_by_student.get(cs.student_id)
+            progress = enr.progress_pct if enr else 0
+            status_text = enr.get_status_display() if enr else 'Not Enrolled'
+            ctf_count = solves_by_student.get(cs.student_id, 0)
+            course_title = cohort.course.title if cohort.course else 'N/A'
+
+            writer.writerow([
+                cs.student.account_id or 'N/A',
+                cs.student.get_full_name() or cs.student.username,
+                cs.student.username,
+                cs.student.email,
+                cs.student_id_number or '-',
+                course_title,
+                progress,
+                status_text,
+                ctf_count,
+                cs.joined_at.strftime('%Y-%m-%d %H:%M') if cs.joined_at else '-',
+            ])
+
+        return response
+
+
+class PartnerCohortEnrollStudentView(LoginRequiredMixin, View):
+    """
+    Enrolls a student into an institutional cohort and automatically provisions
+    course enrollment with source='partner'.
+    """
+    def post(self, request, cohort_id):
+        cohort = get_object_or_404(InstitutionCohort.objects.select_related('institution', 'course'), id=cohort_id)
+        institutions = get_user_partner_institutions(request.user)
+        if not institutions.filter(id=cohort.institution_id).exists() and not request.user.is_admin:
+            raise PermissionDenied("You do not manage this cohort.")
+
+        identifier = request.POST.get('identifier', '').strip()
+        student_id_num = request.POST.get('student_id_number', '').strip()
+
+        if not identifier:
+            messages.error(request, "Please enter a student Account ID, Email, or Username.")
+            return redirect('partner-cohort-detail', cohort_id=cohort.id)
+
+        target_student = User.objects.filter(
+            Q(account_id__iexact=identifier) |
+            Q(email__iexact=identifier) |
+            Q(username__iexact=identifier)
+        ).first()
+
+        if not target_student:
+            messages.error(request, f"No student found matching '{identifier}'.")
+            return redirect('partner-cohort-detail', cohort_id=cohort.id)
+
+        # Check seats limit
+        current_seats = CohortStudent.objects.filter(cohort__institution=cohort.institution).count()
+        if current_seats >= cohort.institution.max_student_seats:
+            messages.warning(
+                request,
+                f"Institution seat limit reached ({cohort.institution.max_student_seats} seats). Contact administration to expand seat quota."
+            )
+
+        # Create or update CohortStudent
+        cs, created = CohortStudent.objects.get_or_create(
+            cohort=cohort,
+            student=target_student,
+            defaults={'student_id_number': student_id_num}
+        )
+        if not created and student_id_num and cs.student_id_number != student_id_num:
+            cs.student_id_number = student_id_num
+            cs.save(update_fields=['student_id_number'])
+
+        # Ensure partner affiliation
+        PartnerStudent.objects.get_or_create(
+            institution=cohort.institution,
+            student=target_student,
+            defaults={
+                'status': PartnerStudent.Status.ACTIVE,
+                'class_group': cohort.code,
+            }
+        )
+
+        # If cohort has an associated course, enroll the student
+        if cohort.course:
+            Enrollment.objects.get_or_create(
+                course=cohort.course,
+                student=target_student,
+                defaults={
+                    'source': Enrollment.Source.PARTNER,
+                    'partner_institution': cohort.institution,
+                    'status': Enrollment.Status.ACTIVE,
+                }
+            )
+
+        messages.success(request, f"Student {target_student.get_full_name() or target_student.username} successfully enrolled in cohort {cohort.name}.")
+        return redirect('partner-cohort-detail', cohort_id=cohort.id)
+
+
+class PartnerEnrollmentExportCSVView(LoginRequiredMixin, View):
+    """
+    Exports all institutional course enrollments to CSV.
+    """
+    def get(self, request):
+        institutions = get_user_partner_institutions(request.user)
+        if not institutions.exists() and not request.user.is_admin:
+            raise PermissionDenied("You do not have access to partner enrollment records.")
+
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        date_str = timezone.localdate().strftime('%Y%m%d')
+        response['Content-Disposition'] = f'attachment; filename="partner_enrollments_{date_str}.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow([
+            'Institution',
+            'Course',
+            'Student Account ID',
+            'Full Name',
+            'Username',
+            'Email',
+            'Channel / Source',
+            'Progress (%)',
+            'Status',
+            'Enrolled Date',
+            'Completed Date',
+        ])
+
+        enrollments = Enrollment.objects.filter(
+            Q(course__partner_institution__in=institutions) |
+            Q(partner_institution__in=institutions)
+        ).select_related('course', 'student', 'partner_institution', 'course__partner_institution').order_by('-enrolled_at')
+
+        for enr in enrollments:
+            inst = enr.partner_institution or enr.course.partner_institution
+            inst_name = inst.name if inst else 'N/A'
+            writer.writerow([
+                inst_name,
+                enr.course.title,
+                enr.student.account_id or 'N/A',
+                enr.student.get_full_name() or enr.student.username,
+                enr.student.username,
+                enr.student.email,
+                enr.get_source_display(),
+                enr.progress_pct,
+                enr.get_status_display(),
+                enr.enrolled_at.strftime('%Y-%m-%d %H:%M') if enr.enrolled_at else '-',
+                enr.completed_at.strftime('%Y-%m-%d %H:%M') if enr.completed_at else '-',
+            ])
+
+        return response
 
 
 # -----------------------------------------------------------------------------

@@ -43,6 +43,8 @@ urlpatterns = [
     path('partner/', include('apps.partner.urls')),
     path('console/', include('apps.console.urls')),
     path('portfolio/', include('apps.portfolio.urls')),
+    path('hub/', RedirectView.as_view(pattern_name='blog:article-list', permanent=False), name='hub-redirect'),
+    path('articles/', include('apps.blog.urls')),
 ]
 
 if settings.DEBUG:

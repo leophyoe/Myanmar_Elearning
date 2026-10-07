@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}Knowledge Hub &amp; Developer Articles - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 font-mono">
+
+    <!-- Header Banner -->
+    <div class="mb-10 text-center sm:text-left">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-950/80 border border-cyan-800 text-cyan-300 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    <span class="lang-en">Technical Tutorials &amp; Security Cheat Sheets</span>
+                    <span class="lang-my">နည်းပညာလမ်းညွှန်များနှင့် ဆောင်းပါးများ</span>
+                </div>
+                <h1 class="text-3xl font-extrabold text-white tracking-tight">
+                    <span class="lang-en">Knowledge Hub</span>
+                    <span class="lang-my">နည်းပညာ ဗဟုသုတစင်တာ</span>
+                </h1>
+                <p class="text-sm text-slate-400 mt-2 max-w-3xl leading-relaxed">
+                    <span class="lang-en">Practical engineering tutorials, cybersecurity defense techniques, exploit walk-throughs, and software architecture articles curated by THUTA instructors and community engineers.</span>
+                    <span class="lang-my">လက်တွေ့ဆော့ဖ်ဝဲအင်ဂျင်နီယာနှင့် ဆိုက်ဘာလုံခြုံရေး လေ့လာသူများအတွက် အဆင့်မြင့်နည်းပညာ ဆောင်းပါးများ၊ လမ်းညွှန်ချက်များနှင့် သင်ရိုးချိတ်ဆက်မှုများ။</span>
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'course-list' %}" class="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition shadow-lg shadow-cyan-600/20 flex items-center gap-2">
+                    <span>🎓 Explore Full Courses</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mb-10 space-y-5">
+        <form method="GET" action="{% url 'blog:article-list' %}" class="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+            <!-- Search Input -->
+            <div class="flex-grow relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                    🔍
+                </div>
+                <input type="text" name="q" value="{{ q }}" placeholder="Search articles by title, topic, or tags..."
+                       data-placeholder-en="Search articles by title, topic, or tags..."
+                       data-placeholder-my="ဆောင်းပါးခေါင်းစဉ်၊ ဘာသာရပ် သို့မဟုတ် Tag ဖြင့် ရှာဖွေပါ..."
+                       class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500 transition">
+            </div>
+
+            <!-- Difficulty Selector -->
+            <div class="w-full md:w-48">
+                <select name="difficulty" class="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 text-xs focus:outline-none focus:border-cyan-500 transition">
+                    <option value="">All Difficulty Levels</option>
+                    {% for code, label in difficulties %}
+                    <option value="{{ code }}" {% if active_difficulty == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Preserve Category in Query -->
+            {% if category_slug %}
+            <input type="hidden" name="category" value="{{ category_slug }}">
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2">
+                <button type="submit" class="w-full md:w-auto px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition">
+                    Filter
+                </button>
+                {% if q or active_difficulty or category_slug or active_tag %}
+                <a href="{% url 'blog:article-list' %}" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition">
+                    Clear
+                </a>
+                {% endif %}
+            </div>
+        </form>
+
+        <!-- Category Filter Pills -->
+        {% if categories %}
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 pt-2 border-t border-slate-800/80 text-xs scrollbar-none">
+            <span class="text-slate-500 font-semibold uppercase text-[10px] tracking-wider shrink-0 pr-2">Categories:</span>
+            <a href="{% url 'blog:article-list' %}"
+               class="px-3 py-1.5 rounded-lg border text-xs shrink-0 transition font-medium {% if not category_slug %}bg-cyan-500/10 border-cyan-500 text-cyan-400 font-semibold{% else %}border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50{% endif %}">
+                All Topics
+            </a>
+            {% for cat in categories %}
+            <a href="{% url 'blog:article-category' category_slug=cat.slug %}"
+               class="px-3 py-1.5 rounded-lg border text-xs shrink-0 transition font-medium {% if category_slug == cat.slug %}bg-cyan-500/10 border-cyan-500 text-cyan-400 font-semibold{% else %}border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50{% endif %}">
+                {{ cat.name }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Featured Spotlight (if present) -->
+    {% if featured_articles and not q and not category_slug and not active_difficulty and not active_tag %}
+    <div class="mb-12">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-4 flex items-center gap-2">
+            <span>✨ Featured Tutorials</span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for featured in featured_articles %}
+            <div class="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-900/60 border border-cyan-800/50 p-6 flex flex-col justify-between hover:border-cyan-500 transition group shadow-lg shadow-cyan-950/20">
+                <div>
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-cyan-950 border border-cyan-700 text-cyan-300">
+                            {{ featured.category.name|default:"General" }}
+                        </span>
+                        <span class="text-[11px] text-slate-400">⏱️ {{ featured.reading_time_display }}</span>
+                    </div>
+                    <a href="{% url 'blog:article-detail' slug=featured.slug %}" class="block group-hover:text-cyan-400 transition">
+                        <h3 class="text-base font-bold text-white mb-2 leading-snug line-clamp-2">{{ featured.title }}</h3>
+                    </a>
+                    <p class="text-xs text-slate-400 line-clamp-3 mb-4 leading-relaxed">{{ featured.summary }}</p>
+                </div>
+                <div class="pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span class="truncate">{{ featured.author.get_full_name|default:featured.author.username }}</span>
+                    <a href="{% url 'blog:article-detail' slug=featured.slug %}" class="text-cyan-400 hover:underline font-semibold flex items-center gap-1">
+                        Read &rarr;
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Articles Grid -->
+    <div>
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">
+                {% if active_category %}
+                    Category: {{ active_category.name }}
+                {% elif q %}
+                    Search Results for &ldquo;{{ q }}&rdquo;
+                {% else %}
+                    All Articles ({{ paginator.count|default:articles|length }})
+                {% endif %}
+            </h2>
+        </div>
+
+        {% if articles %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for article in articles %}
+            <article class="rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between overflow-hidden group shadow-md hover:shadow-xl">
+                <div class="p-6">
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold
+                            {% if article.difficulty == 'beginner' %}bg-emerald-950 text-emerald-400 border border-emerald-800
+                            {% elif article.difficulty == 'intermediate' %}bg-amber-950 text-amber-400 border border-amber-800
+                            {% else %}bg-rose-950 text-rose-400 border border-rose-800{% endif %}">
+                            {{ article.get_difficulty_display }}
+                        </span>
+                        <span class="text-[11px] text-slate-500">⏱️ {{ article.reading_time_display }}</span>
+                    </div>
+
+                    {% if article.category %}
+                    <p class="text-[11px] font-semibold text-cyan-400 mb-1 uppercase tracking-wider">{{ article.category.name }}</p>
+                    {% endif %}
+
+                    <a href="{% url 'blog:article-detail' slug=article.slug %}" class="block group-hover:text-cyan-400 transition">
+                        <h3 class="text-base font-bold text-white mb-2 leading-snug line-clamp-2">{{ article.title }}</h3>
+                    </a>
+
+                    <p class="text-xs text-slate-400 line-clamp-3 leading-relaxed mb-4">
+                        {{ article.summary }}
+                    </p>
+
+                    <!-- Tags -->
+                    {% if article.tag_list %}
+                    <div class="flex flex-wrap gap-1.5 mb-4">
+                        {% for tag in article.tag_list %}
+                        <a href="{% url 'blog:article-list' %}?tag={{ tag }}" class="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-[10px] text-slate-400 hover:text-cyan-300 hover:border-cyan-700 transition">
+                            #{{ tag }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Related Course Funnel Pill -->
+                    {% if article.related_course %}
+                    <div class="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-800/40 text-[11px] text-cyan-300 flex items-center justify-between mb-2">
+                        <span class="truncate">🎓 {{ article.related_course.title }}</span>
+                        <a href="{% url 'course-detail' slug=article.related_course.slug %}" class="shrink-0 font-bold hover:underline ml-2">Course &rarr;</a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Footer Metadata -->
+                <div class="px-6 py-4 bg-slate-950/50 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-[10px] text-white">
+                            {{ article.author.username|slice:":1"|upper }}
+                        </div>
+                        <span class="truncate max-w-[120px]">{{ article.author.get_full_name|default:article.author.username }}</span>
+                    </div>
+                    <span class="text-[11px] text-slate-500">{{ article.published_at|date:"M d, Y" }}</span>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="mt-10 flex justify-center items-center gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if category_slug %}&category={{ category_slug }}{% endif %}{% if active_difficulty %}&difficulty={{ active_difficulty }}{% endif %}"
+               class="px-3.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:bg-slate-800 transition">
+                &larr; Previous
+            </a>
+            {% endif %}
+
+            <span class="text-xs text-slate-500 px-3">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if category_slug %}&category={{ category_slug }}{% endif %}{% if active_difficulty %}&difficulty={{ active_difficulty }}{% endif %}"
+               class="px-3.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:bg-slate-800 transition">
+                Next &rarr;
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="p-12 rounded-2xl bg-slate-900 border border-slate-800 text-center">
+            <span class="text-4xl block mb-3">📰</span>
+            <h3 class="text-lg font-bold text-white mb-2">No Articles Found</h3>
+            <p class="text-xs text-slate-400 max-w-md mx-auto mb-6">
+                There are currently no articles matching your filter criteria. Try searching with different keywords or exploring all categories.
+            </p>
+            <a href="{% url 'blog:article-list' %}" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                View All Articles
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

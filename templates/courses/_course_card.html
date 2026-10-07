@@ -1,0 +1,74 @@
+{# Reusable Standardized Course Card Component #}
+<div class="rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group">
+    <!-- Card Header / Thumbnail Area -->
+    <div class="p-6 pb-4 border-b border-slate-800/80 bg-gradient-to-br from-slate-950 to-slate-900">
+        <div class="flex items-center justify-between gap-2 mb-3">
+            <!-- Subject / Discipline Pill -->
+            <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border
+                {% if course.subject.kind == 'cyber' %}bg-cyan-950 text-cyan-300 border-cyan-800
+                {% elif course.subject.kind == 'tech' %}bg-blue-950 text-blue-300 border-blue-800
+                {% else %}bg-purple-950 text-purple-300 border-purple-800{% endif %}">
+                {{ course.subject.title|default:"Computer Science" }}
+            </span>
+
+            <!-- Difficulty Level Badge -->
+            <span class="text-[10px] px-2 py-0.5 rounded font-bold uppercase
+                {% if course.level == 'beginner' %}bg-emerald-950 text-emerald-300 border border-emerald-800
+                {% elif course.level == 'intermediate' %}bg-blue-950 text-blue-300 border border-blue-800
+                {% else %}bg-amber-950 text-amber-300 border border-amber-800{% endif %}">
+                {{ course.get_level_display }}
+            </span>
+        </div>
+
+        <a href="{% url 'course-detail' slug=course.slug %}" class="block group-hover:text-cyan-400 transition">
+            <h3 class="text-lg font-bold text-white line-clamp-1 group-hover:text-cyan-400 transition">{{ course.title }}</h3>
+        </a>
+        <p class="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+            {{ course.summary|default:course.description|striptags|truncatewords:20 }}
+        </p>
+    </div>
+
+    <!-- Card Body: Key Metrics & Highlights -->
+    <div class="p-6 py-4 space-y-3 text-xs text-slate-300">
+        <div class="flex items-center justify-between text-slate-400 text-[11px]">
+            <span class="flex items-center gap-1.5">
+                <span>📚</span> {{ course.modules.count }} Modules
+            </span>
+            <span class="flex items-center gap-1.5">
+                <span>⏱️</span> {{ course.estimated_hours|default:"10" }} Hours
+            </span>
+            <span class="flex items-center gap-1.5">
+                <span>📜</span> Verified Cert
+            </span>
+        </div>
+
+        <!-- Instructor Info -->
+        <div class="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+            <div class="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                {{ course.instructor.username|default:"T"|slice:":1"|upper }}
+            </div>
+            <span class="text-xs text-slate-400 truncate">
+                Instructor: <strong class="text-slate-200">{{ course.instructor.get_full_name|default:course.instructor.username }}</strong>
+            </span>
+        </div>
+    </div>
+
+    <!-- Card Footer: Pricing & CTA Action -->
+    <div class="p-6 pt-3 border-t border-slate-800/80 bg-slate-950/40 flex items-center justify-between gap-3">
+        <div>
+            {% if course.is_free %}
+            <span class="text-sm font-bold text-emerald-400">Free Course</span>
+            {% elif course.membership_tier_required == 'premium' %}
+            <span class="text-xs font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800">Premium Tier</span>
+            {% elif course.membership_tier_required == 'standard' %}
+            <span class="text-xs font-bold text-blue-400 bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800">Standard Tier</span>
+            {% else %}
+            <span class="text-sm font-bold text-white">{{ course.effective_price|default:"0" }} MMK</span>
+            {% endif %}
+        </div>
+
+        <a href="{% url 'course-detail' slug=course.slug %}" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition shadow-md shadow-cyan-600/20 shrink-0">
+            View Course &rarr;
+        </a>
+    </div>
+</div>

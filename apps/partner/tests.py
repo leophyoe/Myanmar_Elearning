@@ -327,3 +327,146 @@ class PartnerCoursePermissionAndObjectLevelAuthorizationTests(TestCase):
         self.assertTrue(new_teacher.is_teacher)
 
 
+class Phase5CohortGradebookAndCSVExportTests(TestCase):
+    def setUp(self):
+        from apps.courses.models import Course, Enrollment, Subject
+        Subject.ensure_default_subjects()
+        subject = Subject.objects.first()
+
+        self.partner_admin = User.objects.create_user(
+            username='partner_lead', email='lead@ytu.edu.mm', password='password123',
+            role=UserRole.PARTNER
+        )
+        self.other_partner = User.objects.create_user(
+            username='other_lead', email='lead@miit.edu.mm', password='password123',
+            role=UserRole.PARTNER
+        )
+        self.student = User.objects.create_user(
+            username='student_alpha', email='student_a@ytu.edu.mm', password='password123',
+            role=UserRole.STUDENT
+        )
+        self.new_student = User.objects.create_user(
+            username='student_beta', email='student_b@ytu.edu.mm', password='password123',
+            role=UserRole.STUDENT
+        )
+
+        self.institution = Institution.objects.create(
+            name='Yangon Technological University (YTU)',
+            slug='ytu-cyber',
+            contact_person=self.partner_admin,
+            is_verified=True,
+            max_student_seats=100,
+        )
+
+        self.course = Course.objects.create(
+            title='Enterprise Cyber Security',
+            slug='enterprise-cyber-sec',
+            subject=subject,
+            owner=self.partner_admin,
+            partner_institution=self.institution,
+            owner_type=Course.OwnerType.PARTNER,
+            status=Course.Status.PUBLISHED,
+            is_published=True,
+            price=0,
+        )
+
+        self.cohort = InstitutionCohort.objects.create(
+            institution=self.institution,
+            name='Cyber Defense Batch 1',
+            code='YTU-SEC-01',
+            course=self.course,
+            is_active=True,
+        )
+
+        self.cohort_student = CohortStudent.objects.create(
+            cohort=self.cohort,
+            student=self.student,
+            student_id_number='ROLL-101',
+        )
+
+        self.enrollment = Enrollment.objects.create(
+            course=self.course,
+            student=self.student,
+            source=Enrollment.Source.PARTNER,
+            partner_institution=self.institution,
+            progress_pct=85,
+            status=Enrollment.Status.ACTIVE,
+        )
+
+    def test_cohort_detail_view_and_gradebook_matrix(self):
+        self.client.force_login(self.partner_admin)
+        url = reverse('partner-cohort-detail', kwargs={'cohort_id': self.cohort.id})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'YTU-SEC-01')
+        self.assertContains(res, 'Enterprise Cyber Security')
+        self.assertContains(res, 'student_alpha')
+        self.assertContains(res, '85%')
+        self.assertEqual(res.context['total_students_count'], 1)
+        self.assertEqual(res.context['avg_progress'], 85.0)
+
+        # Other partner cannot view this cohort's details
+        self.client.force_login(self.other_partner)
+        res_denied = self.client.get(url)
+        self.assertEqual(res_denied.status_code, 403)
+
+    def test_cohort_export_csv_view(self):
+        self.client.force_login(self.partner_admin)
+        export_url = reverse('partner-cohort-export-csv', kwargs={'cohort_id': self.cohort.id})
+        res = self.client.get(export_url)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'text/csv; charset=utf-8')
+        self.assertIn('attachment; filename="cohort_YTU-SEC-01_roster_', res['Content-Disposition'])
+
+        content = res.content.decode('utf-8')
+        self.assertIn('Student Account ID,Full Name,Username,Email,Institutional ID', content)
+        self.assertIn('student_alpha', content)
+        self.assertIn('ROLL-101', content)
+        self.assertIn('85', content)
+
+        # Other partner blocked from export
+        self.client.force_login(self.other_partner)
+        res_denied = self.client.get(export_url)
+        self.assertEqual(res_denied.status_code, 403)
+
+    def test_cohort_enroll_student_view(self):
+        self.client.force_login(self.partner_admin)
+        add_url = reverse('partner-cohort-enroll-student', kwargs={'cohort_id': self.cohort.id})
+
+        # Enroll student_beta via account_id
+        res = self.client.post(add_url, {
+            'identifier': self.new_student.account_id,
+            'student_id_number': 'ROLL-102',
+        })
+        self.assertEqual(res.status_code, 302)
+
+        # Check CohortStudent created
+        self.assertTrue(
+            CohortStudent.objects.filter(cohort=self.cohort, student=self.new_student).exists()
+        )
+        cs = CohortStudent.objects.get(cohort=self.cohort, student=self.new_student)
+        self.assertEqual(cs.student_id_number, 'ROLL-102')
+
+        # Check course Enrollment automatically created
+        from apps.courses.models import Enrollment
+        enr = Enrollment.objects.filter(course=self.course, student=self.new_student).first()
+        self.assertIsNotNone(enr)
+        self.assertEqual(enr.source, Enrollment.Source.PARTNER)
+        self.assertEqual(enr.partner_institution, self.institution)
+
+    def test_partner_enrollment_export_csv_view(self):
+        self.client.force_login(self.partner_admin)
+        export_url = reverse('partner-enrollments-export-csv')
+        res = self.client.get(export_url)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'text/csv; charset=utf-8')
+        self.assertIn('attachment; filename="partner_enrollments_', res['Content-Disposition'])
+
+        content = res.content.decode('utf-8')
+        self.assertIn('Institution,Course,Student Account ID,Full Name,Username,Email', content)
+        self.assertIn('Yangon Technological University (YTU)', content)
+        self.assertIn('Enterprise Cyber Security', content)
+        self.assertIn('student_alpha', content)
+
+
+

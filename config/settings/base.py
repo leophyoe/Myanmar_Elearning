@@ -61,6 +61,7 @@ LOCAL_APPS = [
     'apps.vpn',
     'apps.partner',
     'apps.api',
+    'apps.blog',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -206,4 +207,9 @@ CYBER_BUNDLE_MAX_MB = int(os.environ.get('CYBER_BUNDLE_MAX_MB', 25))
 FLAG_SALT = os.environ.get('FLAG_SALT', 'ftcr_dynamic_salt_2026_secure')
 FLAG_PREFIX = os.environ.get('FLAG_PREFIX', 'FTCR{')
 FLAG_SUFFIX = os.environ.get('FLAG_SUFFIX', '}')
+
+# Virtual Classroom & Jitsi Meet Configuration
+JITSI_DOMAIN = os.environ.get('JITSI_DOMAIN', 'meet.jit.si')
+JITSI_APP_ID = os.environ.get('JITSI_APP_ID', '')
+JITSI_APP_SECRET = os.environ.get('JITSI_APP_SECRET', '')
 

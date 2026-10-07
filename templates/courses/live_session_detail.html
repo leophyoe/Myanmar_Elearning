@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ session.title }} - Live Classroom - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-800">
+        <div>
+            <div class="flex items-center space-x-2 text-xs text-slate-400 mb-2">
+                <a href="{% url 'course-detail' slug=course.slug %}" class="hover:text-cyan-400 transition">&larr; {{ course.title }}</a>
+                <span>/</span>
+                <span class="text-slate-200">Live Classroom</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+                <span>{{ session.title }}</span>
+                {% if is_live %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-950 text-red-400 border border-red-800 animate-pulse">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span> LIVE NOW
+                </span>
+                {% elif is_upcoming %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                    SCHEDULED
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                    ENDED
+                </span>
+                {% endif %}
+            </h1>
+        </div>
+
+        <div class="flex items-center gap-3">
+            {% if is_host %}
+            <span class="text-[11px] px-2.5 py-1 rounded-lg bg-indigo-950/80 text-indigo-300 border border-indigo-800 font-semibold">
+                Session Host
+            </span>
+            <a href="{% url 'live-session-edit' session_id=session.id %}" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+                Edit Session
+            </a>
+            {% endif %}
+            <button type="button" id="copyShareBtn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <span>Copy Link</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Stage Container -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Center Stage (2 cols) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Stage Card -->
+            <div class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-2xl">
+                <!-- State 1: UPCOMING (Countdown Timer) -->
+                {% if is_upcoming %}
+                <div class="p-8 sm:p-12 text-center bg-gradient-to-b from-slate-900 via-slate-900/90 to-slate-950">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-cyan-950/80 border border-cyan-800 flex items-center justify-center text-cyan-400">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+
+                    <h2 class="text-xl font-bold text-white mb-2">Class Starts In</h2>
+                    <p class="text-xs text-slate-400 mb-8 max-w-md mx-auto">
+                        This session is scheduled for <span class="text-white font-medium">{{ session.starts_at|date:"l, d F Y · H:i" }}</span>. The meeting link will unlock when the instructor begins.
+                    </p>
+
+                    <!-- Agora Flat Style Countdown Ticker -->
+                    <div id="countdownClock" data-target="{{ session.starts_at|date:'c' }}" class="grid grid-cols-4 gap-3 max-w-sm mx-auto mb-8 font-mono">
+                        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                            <div id="cd-days" class="text-2xl sm:text-3xl font-extrabold text-cyan-400">00</div>
+                            <div class="text-[10px] uppercase tracking-wider text-slate-500 mt-1">Days</div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                            <div id="cd-hours" class="text-2xl sm:text-3xl font-extrabold text-cyan-400">00</div>
+                            <div class="text-[10px] uppercase tracking-wider text-slate-500 mt-1">Hours</div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                            <div id="cd-mins" class="text-2xl sm:text-3xl font-extrabold text-cyan-400">00</div>
+                            <div class="text-[10px] uppercase tracking-wider text-slate-500 mt-1">Mins</div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                            <div id="cd-secs" class="text-2xl sm:text-3xl font-extrabold text-cyan-400">00</div>
+                            <div class="text-[10px] uppercase tracking-wider text-slate-500 mt-1">Secs</div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                        {% if is_host %}
+                        <a href="{{ session.join_url }}" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm transition shadow-lg shadow-cyan-600/20">
+                            Launch Early as Host &rarr;
+                        </a>
+                        {% else %}
+                        <button disabled class="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800 text-slate-500 font-semibold text-sm cursor-not-allowed border border-slate-700">
+                            Room Opens at Scheduled Time
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- State 2: LIVE NOW -->
+                {% elif is_live %}
+                <div class="p-6 sm:p-10 bg-slate-950">
+                    <div class="flex items-center justify-between pb-4 mb-6 border-b border-slate-800">
+                        <div class="flex items-center space-x-3">
+                            <span class="w-3 h-3 rounded-full bg-red-500 animate-ping"></span>
+                            <div>
+                                <h2 class="text-lg font-bold text-white">Live Classroom In Session</h2>
+                                <p class="text-xs text-slate-400">Class has started! Join now to participate in real-time.</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 text-xs font-mono">
+                            {{ session.get_provider_display }}
+                        </span>
+                    </div>
+
+                    <!-- If Jitsi Meet Provider, provide embedded classroom option -->
+                    {% if session.provider == 'jitsi' %}
+                    <div class="relative w-full aspect-video rounded-xl bg-slate-900 border border-slate-800 overflow-hidden mb-6">
+                        <iframe src="{{ session.join_url }}"
+                                allow="camera; microphone; fullscreen; display-capture; autoplay"
+                                class="w-full h-full border-0"></iframe>
+                    </div>
+                    {% endif %}
+
+                    <div class="p-6 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                        <h3 class="text-base font-semibold text-white mb-2">Connect to Virtual Classroom</h3>
+                        <p class="text-xs text-slate-400 max-w-md mx-auto mb-6">
+                            Click below to open the {{ session.get_provider_display }} live video room in a dedicated window with screen sharing and audio chat.
+                        </p>
+                        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <a href="{{ session.join_url }}" target="_blank" rel="noopener noreferrer"
+                               class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                <span>Join Live Class Now</span>
+                            </a>
+                            <button type="button" onclick="navigator.clipboard.writeText('{{ session.join_url }}'); alert('Meeting link copied to clipboard!');"
+                                    class="w-full sm:w-auto px-4 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition">
+                                Copy Meeting URL
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- State 3: ENDED / REPLAY ARCHIVE -->
+                {% else %}
+                <div class="p-8 sm:p-12 text-center bg-slate-950">
+                    <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+
+                    <h2 class="text-xl font-bold text-white mb-2">Class Session Concluded</h2>
+                    <p class="text-xs text-slate-400 max-w-md mx-auto mb-6">
+                        This live session ended on {{ session.ends_at|date:"d M Y at H:i" }}.
+                    </p>
+
+                    {% if has_replay %}
+                    <div class="p-6 rounded-xl bg-slate-900 border border-emerald-900/60 max-w-lg mx-auto text-left mb-6">
+                        <div class="flex items-center space-x-2 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>Session Replay Ready</span>
+                        </div>
+                        <p class="text-xs text-slate-300 mb-4">
+                            The full video recording and lecture replay has been published for enrolled students.
+                        </p>
+                        <a href="{{ session.recording_url }}" target="_blank" rel="noopener noreferrer"
+                           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition shadow-lg shadow-emerald-600/20">
+                            <span>Watch Recording / Replay &rarr;</span>
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800 max-w-md mx-auto mb-6">
+                        <p class="text-xs text-slate-400">
+                            No replay recording uploaded yet. Check back later or ask the instructor in the discussion forum.
+                        </p>
+                        {% if is_host %}
+                        <div class="mt-4">
+                            <a href="{% url 'live-session-edit' session_id=session.id %}" class="inline-block text-xs px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
+                                + Attach Replay Recording Link
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Session Agenda & Notes -->
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span>Class Agenda &amp; Prerequisites</span>
+                </h3>
+                {% if session.notes %}
+                <div class="text-sm text-slate-300 leading-relaxed whitespace-pre-line bg-slate-950 p-4 rounded-xl border border-slate-800/80">
+                    {{ session.notes }}
+                </div>
+                {% else %}
+                <p class="text-xs text-slate-500 italic">No specific prerequisites or agenda notes posted for this session.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right Sidebar Info (1 col) -->
+        <div class="space-y-6">
+            <!-- Session Meta Card -->
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+                <h3 class="text-xs uppercase tracking-wider font-bold text-slate-400">Session Metadata</h3>
+                <div class="space-y-3 text-xs">
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                        <span class="text-slate-500">Platform</span>
+                        <span class="font-medium text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">
+                            {{ session.get_provider_display }}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                        <span class="text-slate-500">Scheduled Date</span>
+                        <span class="font-medium text-slate-200">{{ session.starts_at|date:"d M Y" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                        <span class="text-slate-500">Start Time</span>
+                        <span class="font-mono text-cyan-400 font-semibold">{{ session.starts_at|date:"H:i" }}</span>
+                    </div>
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                        <span class="text-slate-500">Duration</span>
+                        <span class="font-medium text-slate-200">{{ session.duration_minutes }} minutes</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Access Status</span>
+                        <span class="text-emerald-400 font-medium">✓ Enrolled &amp; Verified</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instructor Info -->
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <h3 class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-3">Host &amp; Instructor</h3>
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-full bg-cyan-900 border border-cyan-700 flex items-center justify-center text-cyan-200 font-bold text-sm">
+                        {{ course.owner.username|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <div class="text-sm font-semibold text-white">
+                            {{ course.owner.get_full_name|default:course.owner.username }}
+                        </div>
+                        <div class="text-[11px] text-slate-500">Course Lead &amp; Instructor</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Sessions in this Course -->
+            {% if other_sessions %}
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <h3 class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-3">Other Course Sessions</h3>
+                <div class="space-y-2.5">
+                    {% for other in other_sessions %}
+                    <a href="{% url 'live-session-detail' session_id=other.id %}" class="block p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-slate-700 transition">
+                        <div class="text-xs font-medium text-white truncate">{{ other.title }}</div>
+                        <div class="flex items-center justify-between text-[10px] text-slate-500 mt-1">
+                            <span>{{ other.starts_at|date:"d M, H:i" }}</span>
+                            {% if other.is_upcoming %}
+                            <span class="text-cyan-400">Upcoming</span>
+                            {% elif other.is_live %}
+                            <span class="text-red-400 font-bold animate-pulse">● Live</span>
+                            {% elif other.has_replay %}
+                            <span class="text-emerald-400">Replay</span>
+                            {% else %}
+                            <span>Past</span>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Copy link helper
+    var copyBtn = document.getElementById('copyShareBtn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', function() {
+            var url = window.location.href;
+            navigator.clipboard.writeText(url).then(function() {
+                var origText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<span>✓ Copied!</span>';
+                setTimeout(function() { copyBtn.innerHTML = origText; }, 2000);
+            }).catch(function() {
+                alert('Classroom URL: ' + window.location.href);
+            });
+        });
+    }
+
+    // Countdown timer
+    var clock = document.getElementById('countdownClock');
+    if (clock && clock.dataset.target) {
+        var targetTime = new Date(clock.dataset.target).getTime();
+        var daysEl = document.getElementById('cd-days');
+        var hoursEl = document.getElementById('cd-hours');
+        var minsEl = document.getElementById('cd-mins');
+        var secsEl = document.getElementById('cd-secs');
+
+        function updateCountdown() {
+            var now = new Date().getTime();
+            var distance = targetTime - now;
+
+            if (distance < 0) {
+                // Time has arrived, reload to trigger live state
+                clearInterval(interval);
+                window.location.reload();
+                return;
+            }
+
+            var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+            if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+            if (minsEl) minsEl.textContent = String(minutes).padStart(2, '0');
+            if (secsEl) secsEl.textContent = String(seconds).padStart(2, '0');
+        }
+
+        updateCountdown();
+        var interval = setInterval(updateCountdown, 1000);
+    }
+});
+</script>
+{% endblock %}

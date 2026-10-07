@@ -25,6 +25,7 @@ def platform_context(request):
         context.update({
             'is_student': user.is_student,
             'is_teacher': user.is_teacher,
+            'is_partner': user.is_partner,
             'is_admin': user.is_admin,
             # Legacy flags (deprecated - prefer is_admin / is_teacher)
             'is_instructor': user.is_teacher,

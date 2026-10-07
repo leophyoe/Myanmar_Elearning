@@ -258,6 +258,41 @@
                 {% endif %}
             </section>
 
+            <!-- 2.5 Knowledge Hub Articles (if any) -->
+            {% if authored_articles %}
+            <section id="articles" class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <span>📰 Technical Tutorials &amp; Articles</span>
+                        <span class="text-xs text-slate-500 font-normal">({{ authored_articles|length }})</span>
+                    </h2>
+                    <a href="{% url 'blog:article-list' %}" class="text-xs text-cyan-400 hover:underline">Knowledge Hub &rarr;</a>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {% for art in authored_articles %}
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800/80 hover:border-cyan-700/60 transition group flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                                    {{ art.category.name|default:"General" }}
+                                </span>
+                                <span class="text-[10px] text-slate-500">⏱️ {{ art.reading_time_display }}</span>
+                            </div>
+                            <a href="{% url 'blog:article-detail' slug=art.slug %}" class="text-xs font-bold text-white group-hover:text-cyan-400 transition block mb-1">
+                                {{ art.title }}
+                            </a>
+                            <p class="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{{ art.summary }}</p>
+                        </div>
+                        <div class="pt-3 mt-3 border-t border-slate-900 flex items-center justify-between text-[10px] text-slate-500">
+                            <span>{{ art.published_at|date:"M d, Y" }}</span>
+                            <a href="{% url 'blog:article-detail' slug=art.slug %}" class="text-cyan-400 hover:underline font-semibold">Read Tutorial &rarr;</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
             <!-- 3. Credentials (platform + external, one list) -->
             <section id="credentials" class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
                 <div class="flex items-center justify-between mb-2">

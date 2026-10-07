@@ -1,221 +1,479 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}{{ lesson.title }} - {{ PLATFORM_NAME }}{% endblock %}
+{% block title %}{{ lesson.title }} - {{ lesson.module.course.title }} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block sidebar %}{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <!-- Breadcrumb -->
-    <div class="flex items-center space-x-2 text-xs text-slate-500 mb-6">
-        <a href="{% url 'course-list' %}" class="hover:text-cyan-400">Curriculum</a>
-        <span>/</span>
-        <a href="{% url 'course-detail' slug=lesson.module.course.slug %}" class="hover:text-cyan-400">{{ lesson.module.code }}</a>
-        <span>/</span>
-        <span class="text-slate-300 font-semibold truncate">{{ lesson.title }}</span>
-    </div>
-
-    <!-- Lesson Header -->
-    <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mb-8">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-                <span class="text-xs px-2.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
-                    {{ lesson.module.code }} • Lesson {{ lesson.order }}
-                </span>
-                <span class="ml-2 text-[10px] px-2 py-0.5 rounded font-bold uppercase
-                    {% if lesson.lesson_type == 'video' %}bg-indigo-950 text-indigo-300 border border-indigo-800
-                    {% elif lesson.lesson_type == 'pdf' %}bg-rose-950 text-rose-300 border border-rose-800
-                    {% elif lesson.lesson_type == 'quiz' %}bg-amber-950 text-amber-300 border border-amber-800
-                    {% elif lesson.lesson_type == 'lab' or lesson.lesson_type == 'ctf' %}bg-emerald-950 text-emerald-300 border border-emerald-800
-                    {% else %}bg-slate-800 text-slate-300 border border-slate-700{% endif %}">
-                    {{ type_label }}
-                </span>
-                <h1 class="text-2xl sm:text-3xl font-bold text-white mt-2">{{ lesson.title }}</h1>
-                <p class="text-xs text-slate-400 mt-1">Estimated duration: {{ lesson.estimated_minutes }} minutes</p>
-            </div>
-            {% if not can_manage %}
-            <form method="POST" action="{% url 'lesson-complete' lesson_id=lesson.id %}" class="flex items-center gap-3 shrink-0">
-                {% csrf_token %}
-                {% if progress.is_completed %}
-                <span class="px-3 py-1 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300 text-xs font-semibold">
-                    ✓ Completed
-                </span>
-                <button type="submit" class="text-[11px] text-slate-500 hover:text-slate-300 underline">Undo</button>
-                {% else %}
-                <button type="submit"
-                        class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-emerald-950 border border-slate-700 hover:border-emerald-700 text-slate-200 hover:text-emerald-300 text-xs font-semibold transition">
-                    ✓ Mark complete
-                </button>
-                {% endif %}
-            </form>
-            {% elif progress.is_completed %}
-                <span class="px-3 py-1 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300 text-xs font-semibold">
-                    ✓ Completed
-                </span>
-            {% endif %}
-        </div>
-    </div>
-
-    {% if can_manage %}
-    <div class="flex flex-wrap gap-2 mb-8 text-xs">
-        <a href="{% url 'quiz-edit' lesson_id=lesson.id %}"
-           class="px-3 py-2 rounded-lg bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-200 font-semibold transition">
-            {% if quiz %}Edit quiz{% else %}+ Add quiz{% endif %}
-        </a>
-        <a href="{% url 'assignment-create' %}?module={{ lesson.module_id }}"
-           class="px-3 py-2 rounded-lg bg-violet-950 hover:bg-violet-900 border border-violet-800 text-violet-200 font-semibold transition">
-            + Assignment
-        </a>
-        <a href="{% url 'submission-list' %}"
-           class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold transition">
-            Grading queue
-        </a>
-        <a href="{% url 'lesson-edit' lesson_id=lesson.id %}"
-           class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold transition">
-            Edit lesson
-        </a>
-    </div>
-    {% endif %}
-
-    <!-- Video -->
-    {% if lesson.has_video %}
-    <div class="rounded-2xl bg-slate-900 border border-slate-800 shadow-xl overflow-hidden mb-8">
-        <div class="px-6 py-3 border-b border-slate-800 flex items-center justify-between">
-            <h2 class="text-xs font-bold text-white uppercase tracking-wider">Video lecture</h2>
-            {% if lesson.video_file %}
-            <a href="{{ lesson.video_file.url }}" download class="text-[11px] text-cyan-400 hover:underline">Download</a>
-            {% endif %}
-        </div>
-        <div class="p-4">
-            {% if lesson.video_file %}
-                <video controls preload="metadata" class="w-full max-h-[480px] rounded-lg bg-black" src="{{ lesson.video_file.url }}">
-                    Your browser does not support embedded video.
-                    <a href="{{ lesson.video_file.url }}" class="text-cyan-400 underline">Download the file</a>.
-                </video>
-            {% else %}
-                <a href="{{ lesson.video_url }}" target="_blank" rel="noopener noreferrer"
-                   class="block text-sm text-cyan-300 hover:text-cyan-200 underline break-all">
-                    {{ lesson.video_url }}
+<div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <!-- Top Distraction-Free Header Bar -->
+    <header class="h-14 border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between">
+        <div class="flex items-center space-x-3 min-w-0">
+            <a href="{% url 'course-detail' slug=lesson.module.course.slug %}"
+               class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+               title="Back to Course Overview">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </a>
+            <div class="min-w-0">
+                <a href="{% url 'course-detail' slug=lesson.module.course.slug %}" class="text-xs text-slate-400 hover:text-cyan-400 transition truncate block">
+                    {{ lesson.module.course.title }}
                 </a>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Attached document -->
-    {% if lesson.has_document %}
-    <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mb-8 flex items-center justify-between gap-4">
-        <div class="min-w-0">
-            <h2 class="text-xs font-bold text-white uppercase tracking-wider mb-1">Course material</h2>
-            <p class="text-xs text-slate-400 truncate">{{ lesson.document_file.name }}</p>
-        </div>
-        <a href="{{ lesson.document_file.url }}" target="_blank" rel="noopener"
-           class="shrink-0 text-xs px-4 py-2 rounded-lg bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-200 font-semibold transition">
-            Open / Download
-        </a>
-    </div>
-    {% endif %}
-
-    <!-- Theoretical Lecture Content -->
-    {% if lesson.content_markdown %}
-    <article class="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-slate-300 text-sm leading-relaxed mb-8 prose prose-invert max-w-none">
-        {{ lesson.content_markdown|linebreaks }}
-    </article>
-    {% endif %}
-
-    <!-- Hands-on Lab Sandbox Link (if available) -->
-    {% if labs %}
-    <div class="mb-10">
-        <h2 class="text-lg font-bold text-white mb-3 flex items-center space-x-2">
-            <span>🧪</span>
-            <span>Associated Practical Laboratories</span>
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {% for lab in labs %}
-            <div class="p-5 rounded-xl bg-slate-900 border border-cyan-900/50 hover:border-cyan-500 transition flex flex-col justify-between">
-                <div>
-                    <div class="flex justify-between items-center text-xs mb-2">
-                        <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 font-bold uppercase">{{ lab.get_difficulty_display }}</span>
-                        <span class="text-amber-400 font-bold">{{ lab.points }} Points</span>
-                    </div>
-                    <h3 class="text-base font-bold text-white mb-1">{{ lab.title }}</h3>
-                    <p class="text-xs text-slate-400 leading-relaxed mb-4">{{ lab.description|truncatewords:20 }}</p>
-                </div>
-                <a href="{% url 'lab-detail' slug=lab.slug %}" class="w-full text-center py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition">
-                    Launch Lab Environment &rarr;
-                </a>
+                <h1 class="text-sm font-semibold text-white truncate flex items-center gap-2">
+                    <span>{{ lesson.title }}</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
+                        Lesson {{ current_lesson_index }} of {{ total_lessons_count }}
+                    </span>
+                </h1>
             </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Module assignments -->
-    {% if assignments %}
-    <div class="rounded-2xl bg-slate-900 border border-slate-800 shadow-xl overflow-hidden mb-10">
-        <div class="px-6 py-3 border-b border-slate-800">
-            <h2 class="text-xs font-bold text-white uppercase tracking-wider">Assignments in {{ lesson.module.code }}</h2>
-        </div>
-        <ul class="divide-y divide-slate-800">
-            {% for a in assignments %}
-            <li class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4">
-                <div class="min-w-0">
-                    <a href="{% url 'assignment-detail' assignment_id=a.id %}" class="text-sm text-slate-200 hover:text-cyan-300 font-semibold">
-                        {{ a.title }}
-                    </a>
-                    <p class="text-[11px] text-slate-500 mt-0.5">
-                        max {{ a.max_score }} pts
-                        {% if a.due_date %} · due {{ a.due_date|date:"d M Y H:i" }}{% endif %}
-                    </p>
-                </div>
-                <div class="flex items-center gap-3 shrink-0 text-[11px]">
-                    {% if a.id in my_submissions %}
-                    <span class="font-mono text-slate-500">submitted</span>
-                    {% endif %}
-                    <a href="{% url 'assignment-detail' assignment_id=a.id %}"
-                       class="px-3 py-1.5 rounded-lg bg-violet-950 hover:bg-violet-900 border border-violet-800 text-violet-200 font-semibold transition">
-                        {% if a.id in my_submissions %}View / update{% else %}Open{% endif %}
-                    </a>
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
-
-    <!-- Checkpoint Quiz Section -->
-    {% if quiz %}
-    <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mb-10">
-        <div class="mb-6 pb-4 border-b border-slate-800">
-            <h2 class="text-xl font-bold text-white">{{ quiz.title }}</h2>
-            <p class="text-xs text-slate-400 mt-1">Passing requirement: {{ quiz.passing_percentage }}%</p>
         </div>
 
-        <form method="POST" action="{% url 'quiz-submit' lesson_id=lesson.id %}" class="space-y-6">
-            {% csrf_token %}
-            {% for question in quiz.questions.all %}
-            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800/80">
-                <p class="text-sm font-semibold text-white mb-3">
-                    <span class="text-cyan-400 mr-1">Q{{ forloop.counter }}.</span>
-                    {{ question.prompt }}
-                    <span class="text-xs text-slate-500 ml-2">({{ question.points }} pts)</span>
-                </p>
-
-                <div class="space-y-2">
-                    {% for choice in question.choices.all %}
-                    <label class="flex items-center space-x-3 p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-slate-600 cursor-pointer text-xs text-slate-300">
-                        <input type="radio" name="question_{{ question.id }}" value="{{ choice.id }}" class="text-cyan-500 focus:ring-cyan-500">
-                        <span>{{ choice.text }}</span>
-                    </label>
-                    {% endfor %}
+        <div class="flex items-center space-x-3">
+            <!-- Progress indicator -->
+            <div class="hidden sm:flex items-center space-x-2 text-xs">
+                <div class="w-24 h-2 rounded-full bg-slate-800 overflow-hidden">
+                    <div class="h-full bg-cyan-500 rounded-full transition-all" style="width: {{ course_progress_percentage }}%;"></div>
                 </div>
+                <span class="font-mono text-cyan-400 font-semibold">{{ course_progress_percentage }}%</span>
             </div>
-            {% endfor %}
 
-            <button type="submit" class="px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition">
-                Submit Quiz for Grading
+            <!-- Curriculum Drawer Toggle -->
+            <button type="button" id="thutaCurriculumToggle"
+                    class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center space-x-1.5 transition">
+                <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                <span>Curriculum</span>
             </button>
-        </form>
-    </div>
-    {% endif %}
-</div>
-{% endblock %}
+        </div>
+    </header>
 
+    <!-- Main Player Stage + Drawer Container -->
+    <div class="flex-1 flex overflow-hidden relative">
+        <!-- Content Area -->
+        <main class="flex-1 overflow-y-auto px-4 sm:px-8 py-6 max-w-5xl mx-auto w-full space-y-6">
+            <!-- Video / Media Theater -->
+            {% if lesson.has_video %}
+            <div class="rounded-2xl bg-black border border-slate-800 overflow-hidden shadow-2xl">
+                <div class="relative w-full aspect-video bg-black flex items-center justify-center">
+                    {% if lesson.video_file %}
+                    <video id="thutaVideoPlayer" controls preload="metadata" class="w-full h-full object-contain" src="{{ lesson.video_file.url }}">
+                        Your browser does not support embedded video.
+                    </video>
+                    {% elif lesson.video_url %}
+                    <div class="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                        <p class="text-sm text-slate-300 mb-3">External video lecture hosted on streaming platform.</p>
+                        <a href="{{ lesson.video_url }}" target="_blank" rel="noopener noreferrer"
+                           class="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition">
+                            Launch Video Stream &rarr;
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Video Controls Toolbar (Speed Selector) -->
+                {% if lesson.video_file %}
+                <div class="px-4 py-2 bg-slate-900 border-t border-slate-800 flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-1 text-slate-400">
+                        <span class="text-[11px] uppercase tracking-wider mr-2">Playback Speed:</span>
+                        <button type="button" class="speed-btn px-2 py-0.5 rounded hover:bg-slate-800 transition" data-speed="0.75">0.75x</button>
+                        <button type="button" class="speed-btn px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 font-bold border border-cyan-800" data-speed="1.0">1.0x</button>
+                        <button type="button" class="speed-btn px-2 py-0.5 rounded hover:bg-slate-800 transition" data-speed="1.25">1.25x</button>
+                        <button type="button" class="speed-btn px-2 py-0.5 rounded hover:bg-slate-800 transition" data-speed="1.5">1.5x</button>
+                        <button type="button" class="speed-btn px-2 py-0.5 rounded hover:bg-slate-800 transition" data-speed="2.0">2.0x</button>
+                    </div>
+                    <a href="{{ lesson.video_file.url }}" download class="text-slate-400 hover:text-white transition flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span>Download</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Teacher Management Toolbar -->
+            {% if can_manage %}
+            <div class="flex flex-wrap gap-2 text-xs p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <span class="text-slate-500 font-semibold uppercase text-[10px] self-center mr-2">Teacher Controls:</span>
+                <a href="{% url 'quiz-edit' lesson_id=lesson.id %}" class="px-3 py-1.5 rounded-lg bg-amber-950 text-amber-200 border border-amber-800 font-semibold">
+                    {% if quiz %}Edit quiz{% else %}+ Add quiz{% endif %}
+                </a>
+                <a href="{% url 'assignment-create' %}?module={{ lesson.module_id }}" class="px-3 py-1.5 rounded-lg bg-violet-950 text-violet-200 border border-violet-800 font-semibold">
+                    + Assignment
+                </a>
+                <a href="{% url 'submission-list' %}" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 font-semibold">
+                    Grading queue
+                </a>
+                <a href="{% url 'lesson-edit' lesson_id=lesson.id %}" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 font-semibold">
+                    Edit lesson
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Interactive Tabbed Workbench -->
+            <div class="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-xl">
+                <!-- Tab Headers -->
+                <div class="flex border-b border-slate-800 text-xs overflow-x-auto bg-slate-950/60" id="lessonTabs">
+                    <button type="button" class="tab-btn px-5 py-3 font-semibold border-b-2 border-cyan-500 text-white flex items-center gap-2" data-tab="tab-overview">
+                        <span>Course Overview</span>
+                    </button>
+                    {% if lesson.has_document %}
+                    <button type="button" class="tab-btn px-5 py-3 font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2" data-tab="tab-materials">
+                        <span>Materials</span>
+                    </button>
+                    {% endif %}
+                    {% if assignments %}
+                    <button type="button" class="tab-btn px-5 py-3 font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2" data-tab="tab-assignments">
+                        <span>Assignments ({{ assignments|length }})</span>
+                    </button>
+                    {% endif %}
+                    {% if labs %}
+                    <button type="button" class="tab-btn px-5 py-3 font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2" data-tab="tab-labs">
+                        <span>Cyber Labs ({{ labs|length }})</span>
+                    </button>
+                    {% endif %}
+                    {% if quiz %}
+                    <button type="button" class="tab-btn px-5 py-3 font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2" data-tab="tab-quiz">
+                        <span>Checkpoint Quiz</span>
+                    </button>
+                    {% endif %}
+                    <button type="button" class="tab-btn px-5 py-3 font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2" data-tab="tab-notes">
+                        <span>Private Notes</span>
+                    </button>
+                </div>
+
+                <!-- Tab 1: Overview & Markdown Content -->
+                <div id="tab-overview" class="tab-panel p-6 sm:p-8">
+                    <div class="flex items-center justify-between pb-4 mb-6 border-b border-slate-800">
+                        <div>
+                            <span class="text-xs px-2.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
+                                {{ lesson.module.code }} • Lesson {{ lesson.order }}
+                            </span>
+                            <span class="ml-2 text-[10px] px-2 py-0.5 rounded uppercase font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                                {{ type_label }}
+                            </span>
+                            <h2 class="text-xl sm:text-2xl font-bold text-white mt-2">{{ lesson.title }}</h2>
+                            <p class="text-xs text-slate-400 mt-1">Estimated duration: {{ lesson.estimated_minutes }} minutes</p>
+                        </div>
+
+                        <!-- Completion Status Check -->
+                        <div>
+                            {% if progress.is_completed %}
+                            <span class="px-3 py-1.5 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300 text-xs font-semibold flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                <span>Completed</span>
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if lesson.content_markdown %}
+                    <article class="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed whitespace-pre-line mb-6">
+                        {{ lesson.content_markdown|linebreaks }}
+                    </article>
+                    {% else %}
+                    <p class="text-xs text-slate-500 italic mb-6">No additional reading notes provided for this lesson.</p>
+                    {% endif %}
+
+                    {% if assignments %}
+                    <div class="mt-8 pt-6 border-t border-slate-800">
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-3">Module Assignments</h3>
+                        <div class="space-y-3">
+                            {% for a in assignments %}
+                            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div class="min-w-0">
+                                    <a href="{% url 'assignment-detail' assignment_id=a.id %}" class="text-sm font-semibold text-white hover:text-cyan-400">{{ a.title }}</a>
+                                    <div class="text-[11px] text-slate-500 mt-0.5">Max {{ a.max_score }} pts {% if a.due_date %}· Due {{ a.due_date|date:"d M Y H:i" }}{% endif %}</div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    {% if a.id in my_submissions %}
+                                    <span class="text-xs text-emerald-400 font-mono">Submitted</span>
+                                    {% endif %}
+                                    <a href="{% url 'assignment-detail' assignment_id=a.id %}" class="text-xs px-3 py-1.5 rounded-lg bg-violet-950 hover:bg-violet-900 border border-violet-800 text-violet-200 font-semibold transition">
+                                        {% if a.id in my_submissions %}View / Update{% else %}Open Assignment{% endif %}
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Tab: Module Assignments -->
+                {% if assignments %}
+                <div id="tab-assignments" class="tab-panel p-6 sm:p-8 hidden space-y-4">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-2">Module Assignments in {{ lesson.module.code }}</h3>
+                    <ul class="divide-y divide-slate-800 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden">
+                        {% for a in assignments %}
+                        <li class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-4">
+                            <div class="min-w-0">
+                                <a href="{% url 'assignment-detail' assignment_id=a.id %}" class="text-sm text-slate-200 hover:text-cyan-300 font-semibold">
+                                    {{ a.title }}
+                                </a>
+                                <p class="text-[11px] text-slate-500 mt-0.5">
+                                    max {{ a.max_score }} pts
+                                    {% if a.due_date %} · due {{ a.due_date|date:"d M Y H:i" }}{% endif %}
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-3 shrink-0 text-[11px]">
+                                {% if a.id in my_submissions %}
+                                <span class="font-mono text-emerald-400">submitted</span>
+                                {% endif %}
+                                <a href="{% url 'assignment-detail' assignment_id=a.id %}"
+                                   class="px-3.5 py-1.5 rounded-lg bg-violet-950 hover:bg-violet-900 border border-violet-800 text-violet-200 font-semibold transition">
+                                    {% if a.id in my_submissions %}View / update{% else %}Open Assignment{% endif %}
+                                </a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Tab 2: Attached Documents & Materials -->
+                {% if lesson.has_document %}
+                <div id="tab-materials" class="tab-panel p-6 sm:p-8 hidden">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Course Material &amp; Documentation</h3>
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                        <div>
+                            <div class="text-sm font-semibold text-white">{{ lesson.document_file.name }}</div>
+                            <div class="text-xs text-slate-400 mt-0.5">Reference material for {{ lesson.title }}</div>
+                        </div>
+                        <a href="{{ lesson.document_file.url }}" target="_blank" rel="noopener"
+                           class="text-xs px-4 py-2 rounded-lg bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-200 font-semibold transition">
+                            Download Document &rarr;
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Tab 3: Practical Cyber Labs -->
+                {% if labs %}
+                <div id="tab-labs" class="tab-panel p-6 sm:p-8 hidden space-y-4">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-2">Hands-on Practice &amp; Cyber Range</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for lab in labs %}
+                        <div class="p-5 rounded-xl bg-slate-950 border border-cyan-900/50 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-center text-xs mb-2">
+                                    <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 font-bold uppercase">{{ lab.get_difficulty_display }}</span>
+                                    <span class="text-amber-400 font-bold">{{ lab.points }} Points</span>
+                                </div>
+                                <h4 class="text-base font-bold text-white mb-1">{{ lab.title }}</h4>
+                                <p class="text-xs text-slate-400 leading-relaxed mb-4">{{ lab.description|truncatewords:20 }}</p>
+                            </div>
+                            <a href="{% url 'lab-detail' slug=lab.slug %}" class="w-full text-center py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition">
+                                Launch Lab Environment &rarr;
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Tab 4: Checkpoint Quiz -->
+                {% if quiz %}
+                <div id="tab-quiz" class="tab-panel p-6 sm:p-8 hidden">
+                    <div class="mb-6 pb-4 border-b border-slate-800">
+                        <h3 class="text-lg font-bold text-white">{{ quiz.title }}</h3>
+                        <p class="text-xs text-slate-400 mt-1">Passing requirement: {{ quiz.passing_percentage }}%</p>
+                    </div>
+
+                    <form method="POST" action="{% url 'quiz-submit' lesson_id=lesson.id %}" class="space-y-6">
+                        {% csrf_token %}
+                        {% for question in quiz.questions.all %}
+                        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800/80">
+                            <p class="text-sm font-semibold text-white mb-3">
+                                <span class="text-cyan-400 mr-1">Q{{ forloop.counter }}.</span>
+                                {{ question.prompt }}
+                                <span class="text-xs text-slate-500 ml-2">({{ question.points }} pts)</span>
+                            </p>
+
+                            <div class="space-y-2">
+                                {% for choice in question.choices.all %}
+                                <label class="flex items-center space-x-3 p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-slate-600 cursor-pointer text-xs text-slate-300">
+                                    <input type="radio" name="question_{{ question.id }}" value="{{ choice.id }}" class="text-cyan-500 focus:ring-cyan-500">
+                                    <span>{{ choice.text }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <button type="submit" class="px-6 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition">
+                            Submit Quiz for Grading
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <!-- Tab 5: Private Notes (Saved to LocalStorage) -->
+                <div id="tab-notes" class="tab-panel p-6 sm:p-8 hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Private Study Scratchpad</h3>
+                        <span id="notesStatus" class="text-[11px] text-emerald-400">Autosaved locally</span>
+                    </div>
+                    <textarea id="lessonStudyNotes" rows="8"
+                              class="w-full p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs font-mono focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                              placeholder="Type your notes, code snippets, or thoughts for this lesson..."></textarea>
+                </div>
+            </div>
+
+            <!-- Sequential Progression Footer -->
+            <div class="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                <div>
+                    {% if prev_lesson %}
+                    <a href="{% url 'lesson-detail' lesson_id=prev_lesson.id %}"
+                       class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
+                        <span>&larr; Previous Lesson</span>
+                    </a>
+                    {% else %}
+                    <span class="text-xs text-slate-600 italic">Beginning of Course</span>
+                    {% endif %}
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <form method="POST" action="{% url 'lesson-complete' lesson_id=lesson.id %}">
+                        {% csrf_token %}
+                        {% if progress.is_completed %}
+                        <button type="submit" class="text-xs text-slate-400 hover:text-rose-400 transition underline">
+                            Mark Incomplete
+                        </button>
+                        {% else %}
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/20 transition">
+                            ✓ Mark Complete
+                        </button>
+                        {% endif %}
+                    </form>
+
+                    {% if next_lesson %}
+                    <a href="{% url 'lesson-detail' lesson_id=next_lesson.id %}"
+                       class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-lg shadow-cyan-600/20 transition flex items-center gap-1.5">
+                        <span>Next Lesson &rarr;</span>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'course-detail' slug=lesson.module.course.slug %}"
+                       class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition">
+                        Finish Course 🎉
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+
+        <!-- Slide-out Curriculum Drawer -->
+        <aside id="thutaCurriculumDrawer"
+               class="fixed inset-y-0 right-0 w-80 sm:w-96 bg-slate-900 border-l border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 flex flex-col">
+            <!-- Drawer Header -->
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+                <div class="min-w-0">
+                    <div class="text-xs font-bold text-white uppercase tracking-wider">Course Curriculum</div>
+                    <div class="text-[10px] text-slate-400 truncate">{{ lesson.module.course.title }}</div>
+                </div>
+                <button type="button" id="thutaCurriculumClose" class="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Drawer Modules List -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                {% for mod in modules %}
+                <div class="rounded-xl bg-slate-950 border border-slate-800/80 overflow-hidden">
+                    <div class="px-3.5 py-2.5 bg-slate-900/60 border-b border-slate-800/60 flex items-center justify-between text-xs">
+                        <span class="font-bold text-white">{{ mod.code }}: {{ mod.title }}</span>
+                        <span class="text-[10px] text-slate-500 font-mono">{{ mod.lessons.all|length }} lessons</span>
+                    </div>
+                    <div class="divide-y divide-slate-850">
+                        {% for l in mod.lessons.all %}
+                        <a href="{% url 'lesson-detail' lesson_id=l.id %}"
+                           class="flex items-center justify-between px-3.5 py-2.5 text-xs transition {% if l.id == lesson.id %}bg-cyan-950/60 text-cyan-300 font-semibold border-l-2 border-cyan-400{% else %}text-slate-300 hover:bg-slate-900/80{% endif %}">
+                            <div class="flex items-center space-x-2 truncate">
+                                <span class="text-slate-500 font-mono text-[11px]">{{ forloop.counter }}.</span>
+                                <span class="truncate">{{ l.title }}</span>
+                            </div>
+                            <div class="flex items-center space-x-2 shrink-0">
+                                {% if l.id in completed_lesson_ids %}
+                                <span class="text-emerald-400 text-xs">✓</span>
+                                {% endif %}
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Drawer open/close
+    var toggleBtn = document.getElementById('thutaCurriculumToggle');
+    var closeBtn = document.getElementById('thutaCurriculumClose');
+    var drawer = document.getElementById('thutaCurriculumDrawer');
+
+    if (toggleBtn && drawer) {
+        toggleBtn.addEventListener('click', function() {
+            drawer.classList.toggle('translate-x-full');
+        });
+    }
+    if (closeBtn && drawer) {
+        closeBtn.addEventListener('click', function() {
+            drawer.classList.add('translate-x-full');
+        });
+    }
+
+    // 2. Playback speed controls
+    var video = document.getElementById('thutaVideoPlayer');
+    var speedBtns = document.querySelectorAll('.speed-btn');
+    if (video && speedBtns.length) {
+        speedBtns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var speed = parseFloat(btn.dataset.speed);
+                video.playbackRate = speed;
+                speedBtns.forEach(function(b) {
+                    b.classList.remove('bg-cyan-950', 'text-cyan-400', 'font-bold', 'border', 'border-cyan-800');
+                    b.classList.add('hover:bg-slate-800');
+                });
+                btn.classList.add('bg-cyan-950', 'text-cyan-400', 'font-bold', 'border', 'border-cyan-800');
+            });
+        });
+    }
+
+    // 3. Tab switching
+    var tabBtns = document.querySelectorAll('.tab-btn');
+    var tabPanels = document.querySelectorAll('.tab-panel');
+    tabBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var target = btn.dataset.tab;
+            tabPanels.forEach(function(panel) { panel.classList.add('hidden'); });
+            tabBtns.forEach(function(b) {
+                b.classList.remove('border-cyan-500', 'text-white');
+                b.classList.add('border-transparent', 'text-slate-400');
+            });
+            var panel = document.getElementById(target);
+            if (panel) panel.classList.remove('hidden');
+            btn.classList.remove('border-transparent', 'text-slate-400');
+            btn.classList.add('border-cyan-500', 'text-white');
+        });
+    });
+
+    // 4. LocalStorage Notes
+    var notesKey = 'thuta_lesson_notes_' + '{{ lesson.id }}';
+    var notesArea = document.getElementById('lessonStudyNotes');
+    var notesStatus = document.getElementById('notesStatus');
+    if (notesArea) {
+        var saved = localStorage.getItem(notesKey);
+        if (saved) notesArea.value = saved;
+
+        notesArea.addEventListener('input', function() {
+            localStorage.setItem(notesKey, notesArea.value);
+            if (notesStatus) {
+                notesStatus.textContent = 'Saved just now';
+                setTimeout(function() { notesStatus.textContent = 'Autosaved locally'; }, 2000);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

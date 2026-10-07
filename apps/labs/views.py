@@ -1,17 +1,20 @@
+from datetime import timedelta
 from pathlib import Path
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView, View,
 )
 
 from apps.common.permissions import TeacherRequiredMixin
-from apps.ctf.models import Challenge
+from apps.ctf.models import Challenge, SolvedChallenge
 
 from .bundles import BundleError
 from .forms import LabBundleUploadForm, LabForm, LabTemplateForm
@@ -27,18 +30,43 @@ class LabListView(ListView):
         queryset = Lab.objects.filter(is_active=True).select_related('template')
         category = self.request.GET.get('category')
         difficulty = self.request.GET.get('difficulty')
+        q = self.request.GET.get('q')
         if category:
             queryset = queryset.filter(template__category=category)
         if difficulty:
             queryset = queryset.filter(difficulty=difficulty)
+        if q:
+            queryset = queryset.filter(title__icontains=q)
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
         context['categories'] = LabCategory.choices
         context['difficulties'] = LabDifficulty.choices
         context['selected_category'] = self.request.GET.get('category', '')
         context['selected_difficulty'] = self.request.GET.get('difficulty', '')
+        context['search_query'] = self.request.GET.get('q', '')
+
+        all_active = Lab.objects.filter(is_active=True)
+        context['total_labs_count'] = all_active.count()
+        context['total_points_pool'] = all_active.aggregate(Sum('points'))['points__sum'] or 0
+
+        if user.is_authenticated:
+            context['active_instance'] = LabInstance.objects.filter(
+                user=user,
+                status__in=['running', 'provisioning']
+            ).first()
+            context['solved_lab_ids'] = list(
+                SolvedChallenge.objects.filter(
+                    user=user,
+                    challenge__lab__isnull=False
+                ).values_list('challenge__lab_id', flat=True)
+            )
+        else:
+            context['active_instance'] = None
+            context['solved_lab_ids'] = []
+
         return context
 
 
@@ -61,7 +89,16 @@ class LabDetailView(LoginRequiredMixin, DetailView):
             status__in=['provisioning', 'running']
         ).first()
 
+        challenge = Challenge.objects.filter(lab=lab, is_active=True).first()
+        is_solved = False
+        if challenge and user.is_authenticated:
+            is_solved = SolvedChallenge.objects.filter(user=user, challenge=challenge).exists()
+
         context['active_instance'] = active_instance
+        context['challenge'] = challenge
+        context['is_solved'] = is_solved
+        context['max_extensions'] = getattr(settings, 'LAB_MAX_EXTENSIONS', 2)
+        context['extension_minutes'] = getattr(settings, 'LAB_EXTENSION_MINUTES', 30)
         return context
 
 
@@ -119,6 +156,24 @@ class LabStatusApiView(LoginRequiredMixin, View):
             'remaining_seconds': instance.remaining_seconds(),
             'is_expired': instance.is_expired(),
         })
+
+
+class LabExtendView(LoginRequiredMixin, View):
+    def post(self, request, instance_id):
+        instance = get_object_or_404(LabInstance, id=instance_id, user=request.user)
+        max_extensions = getattr(settings, 'LAB_MAX_EXTENSIONS', 2)
+        ext_minutes = getattr(settings, 'LAB_EXTENSION_MINUTES', 30)
+
+        if instance.status == 'running' and instance.extensions_used < max_extensions:
+            base_time = instance.expires_at if (instance.expires_at and instance.expires_at > timezone.now()) else timezone.now()
+            instance.expires_at = base_time + timedelta(minutes=ext_minutes)
+            instance.extensions_used += 1
+            instance.save(update_fields=['expires_at', 'extensions_used'])
+            messages.success(request, f"Lab sandbox extended by {ext_minutes} minutes.")
+        else:
+            messages.warning(request, "Lab instance cannot be extended or maximum extensions reached.")
+
+        return redirect('lab-detail', slug=instance.lab.slug)
 
 
 

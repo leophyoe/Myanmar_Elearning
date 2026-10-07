@@ -75,3 +75,21 @@ class EnrollmentAdmin(admin.ModelAdmin):
     list_filter = ('status', 'course')
     search_fields = ('student__username', 'student__email', 'course__title')
     readonly_fields = ('enrolled_at', 'completed_at')
+
+
+from .models import LiveSession, LiveSessionAttendance
+
+
+@admin.register(LiveSession)
+class LiveSessionAdmin(admin.ModelAdmin):
+    list_display = ('title', 'course', 'provider', 'starts_at', 'duration_minutes', 'is_published')
+    list_filter = ('provider', 'is_published', 'starts_at')
+    search_fields = ('title', 'course__title', 'notes')
+
+
+@admin.register(LiveSessionAttendance)
+class LiveSessionAttendanceAdmin(admin.ModelAdmin):
+    list_display = ('session', 'user', 'joined_at', 'left_at', 'duration_seconds')
+    list_filter = ('joined_at', 'session__provider')
+    search_fields = ('user__username', 'user__email', 'session__title')
+    readonly_fields = ('joined_at',)

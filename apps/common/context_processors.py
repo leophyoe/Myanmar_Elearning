@@ -6,8 +6,12 @@ def _dashboard_url(user):
     """Return the dashboard route that matches the user's role."""
     if user.is_admin:
         return reverse('admin-dashboard')
+    if getattr(user, 'role', None) == 'partner' or (user.is_partner and not user.is_teacher):
+        return reverse('partner-dashboard')
     if user.is_teacher:
         return reverse('teacher-dashboard')
+    if user.is_partner:
+        return reverse('partner-dashboard')
     return reverse('dashboard')
 
 

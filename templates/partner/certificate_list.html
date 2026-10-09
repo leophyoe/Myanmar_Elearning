@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Issued Digital Credentials — {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    {% include 'partner/_partner_nav.html' %}
+
+    <!-- Header & Search -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/60 p-6 rounded-2xl border border-slate-800">
+        <div>
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+                Institutional Digital Credentials Roster
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Cryptographically verifiable certificates awarded to your institution's enrolled learners.</p>
+        </div>
+
+        <form method="GET" class="w-full sm:w-80 flex items-center gap-2">
+            <div class="relative flex-1">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search serial, student, course..."
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 pl-9 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition">
+                Search
+            </button>
+            {% if query %}
+            <a href="{% url 'partner-certificates' %}" class="px-3 py-2 bg-slate-800/50 hover:bg-slate-800 text-slate-400 rounded-xl text-xs transition">
+                Reset
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Credentials Table -->
+    <div class="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase tracking-wider bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Serial / Code</th>
+                        <th class="py-3 px-4">Recipient</th>
+                        <th class="py-3 px-4">Program / Course</th>
+                        <th class="py-3 px-4">Institution</th>
+                        <th class="py-3 px-4">Grade</th>
+                        <th class="py-3 px-4">Awarded Date</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4 text-right">Verification</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for cert in certificates %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3.5 px-4 font-mono font-bold text-amber-400">
+                            {{ cert.certificate_code }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-white text-sm">{{ cert.student_name }}</div>
+                            <div class="text-[11px] text-slate-400 font-mono">@{{ cert.student.username }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 font-medium text-slate-200">
+                            {{ cert.program_title }}
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-400 text-[11px]">
+                            {{ cert.course.partner_institution.name|default:"THUTA Academic Network" }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="font-mono font-bold text-amber-300 bg-amber-950/60 border border-amber-800 px-2 py-0.5 rounded text-[10px]">
+                                {{ cert.grade|default:"PASSED" }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
+                            {{ cert.issued_at|date:"M d, Y" }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            {% if cert.is_revoked %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-950 text-red-400 border border-red-800">Revoked</span>
+                            {% else %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">Valid</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <div class="inline-flex items-center gap-2">
+                                <a href="{% url 'certificate-verify' cert_id=cert.id %}" target="_blank" class="px-2.5 py-1 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-300 hover:bg-cyan-900 transition text-[11px] font-semibold flex items-center gap-1">
+                                    <span>Verify</span>
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                </a>
+                                <a href="{% url 'certificate-qr' cert_id=cert.id %}" download="{{ cert.certificate_code }}.png" class="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition text-[11px]">
+                                    QR Code
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-slate-500">
+                            <div class="max-w-sm mx-auto space-y-3">
+                                <svg class="w-10 h-10 text-slate-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                                </svg>
+                                <p class="text-sm font-semibold text-slate-300">No credentials issued yet</p>
+                                <p class="text-xs text-slate-500">Certificates will automatically appear here once students in your institutional cohorts complete courses and pass assessments.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

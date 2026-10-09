@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Methods Management - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div>
+            <h1 class="text-2xl font-bold text-white">Accepted Myanmar Payment Methods</h1>
+            <p class="text-xs text-slate-400 mt-1">Configure MMQR, mobile wallets, and bank transfer channels displayed during checkout.</p>
+        </div>
+        <a href="{% url 'billing:method-create' %}"
+           class="px-4 py-2 text-xs font-bold rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 transition flex items-center gap-1.5 shadow-md">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Payment Method
+        </a>
+    </div>
+
+    <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900 shadow-xl">
+        <table class="w-full text-left text-xs text-slate-300 divide-y divide-slate-800">
+            <thead class="bg-slate-950/60 uppercase tracking-wider text-[11px] text-slate-400 font-semibold">
+                <tr>
+                    <th class="px-4 py-3.5">Order</th>
+                    <th class="px-4 py-3.5">Method Name</th>
+                    <th class="px-4 py-3.5">Type / Code</th>
+                    <th class="px-4 py-3.5">Account / Number</th>
+                    <th class="px-4 py-3.5">QR Asset</th>
+                    <th class="px-4 py-3.5">Status</th>
+                    <th class="px-4 py-3.5 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/80">
+                {% for method in payment_methods %}
+                <tr class="hover:bg-slate-800/40 transition">
+                    <td class="px-4 py-3.5 font-mono text-slate-400">{{ method.display_order }}</td>
+                    <td class="px-4 py-3.5 font-bold text-white">{{ method.name }}</td>
+                    <td class="px-4 py-3.5 font-mono">
+                        <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-cyan-300 text-[10px]">
+                            {{ method.code }}
+                        </span>
+                        <div class="text-[10px] text-slate-500 mt-0.5">{{ method.get_method_type_display }}</div>
+                    </td>
+                    <td class="px-4 py-3.5">
+                        <div class="text-slate-200">{{ method.account_name|default:"-" }}</div>
+                        <div class="font-mono text-amber-300 text-[11px]">{{ method.account_number|default:"-" }}</div>
+                    </td>
+                    <td class="px-4 py-3.5">
+                        {% if method.qr_image %}
+                        <a href="{{ method.qr_image.url }}" target="_blank" class="text-xs text-cyan-400 hover:underline flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            View Image
+                        </a>
+                        {% else %}
+                        <span class="text-slate-600 text-[11px]">No QR</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3.5">
+                        {% if method.is_active %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                            Active
+                        </span>
+                        {% else %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                            Disabled
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3.5 text-right space-x-1">
+                        <a href="{% url 'billing:method-edit' pk=method.pk %}" class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white inline-block">
+                            Edit
+                        </a>
+                        <a href="{% url 'billing:method-toggle' pk=method.pk %}" class="p-1.5 rounded hover:bg-slate-800 {% if method.is_active %}text-amber-400{% else %}text-emerald-400{% endif %} inline-block">
+                            {% if method.is_active %}Disable{% else %}Enable{% endif %}
+                        </a>
+                        <a href="{% url 'billing:method-delete' pk=method.pk %}" onclick="return confirm('Delete payment channel {{ method.name }}?');" class="p-1.5 rounded hover:bg-slate-800 text-red-400 inline-block">
+                            Delete
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-6 py-8 text-center text-slate-500">
+                        No payment channels configured.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

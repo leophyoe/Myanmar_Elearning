@@ -1,263 +1,745 @@
 {% extends "base.html" %}
 {% load humanize %}
 
-{% block title %}Membership Plans & Pricing — Myanmar E-Learning{% endblock %}
+{% block title %}Membership Plans & Pricing — THUTA Myanmar E-Learning{% endblock %}
 
 {% block sidebar %}{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="text-center mb-5">
-        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-semibold mb-2">Student Membership Plans</span>
-        <h1 class="display-5 fw-bold text-dark mb-3">Affordable Learning for Everyone in Myanmar</h1>
-        <p class="lead text-muted mx-auto" style="max-width: 720px;">
-            Choose a plan that fits your study goals. Switch or upgrade anytime.
-            One account gives you seamless access to multi-category courses, practical labs, and verified certificates.
-        </p>
-    </div>
+<div class="relative overflow-hidden min-h-screen py-12 sm:py-16">
+    <!-- Ambient Background Glow Accents -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[360px] bg-gradient-to-tr from-sky-400/10 via-blue-500/10 to-indigo-500/10 dark:from-cyan-600/15 dark:via-blue-600/10 dark:to-purple-600/15 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+    <div class="absolute bottom-1/3 right-10 w-[400px] h-[300px] bg-sky-500/5 dark:bg-purple-600/10 blur-[100px] rounded-full pointer-events-none -z-10"></div>
 
-    <!-- Pricing Cards Grid -->
-    <div class="row row-cols-1 row-cols-md-3 g-4 mb-5 align-items-stretch">
-        <!-- Starter Plan -->
-        <div class="col">
-            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative">
-                <div class="card-body p-4 p-xl-5 d-flex flex-column">
-                    <div class="mb-4">
-                        <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-1 mb-2">Free Starter</span>
-                        <h3 class="fw-bold text-dark">Starter</h3>
-                        <p class="text-muted small">Ideal for exploring courses and starting your learning journey.</p>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Hero Header -->
+        <div class="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sky-50 dark:bg-cyan-950/80 border border-sky-200 dark:border-cyan-800 text-sky-700 dark:text-cyan-300 text-xs font-semibold uppercase tracking-wider mb-5 shadow-sm">
+                <span class="w-2 h-2 rounded-full bg-sky-500 dark:bg-cyan-400 animate-pulse"></span>
+                <span class="lang-en">MEMBERSHIP &amp; PRICING PLANS</span>
+                <span class="lang-my">အသင်းဝင် အစီအစဉ်များနှင့် ဈေးနှုန်းများ</span>
+            </div>
+
+            <h1 class="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight mb-5">
+                <span class="lang-en">Affordable Learning for Everyone in <span class="text-sky-600 dark:text-sky-400">Myanmar</span></span>
+                <span class="lang-my">မြန်မာကျောင်းသားတိုင်းအတွက် <span class="text-sky-600 dark:text-sky-400 font-extrabold">သင့်တင့်မျှတသော ပညာရေး</span></span>
+            </h1>
+
+            <p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base leading-relaxed">
+                <span class="lang-en">
+                    Choose the plan that suits your study goals. Switch or upgrade anytime.
+                    One account gives you seamless access to multi-category courses, practical labs, assessments, and verified digital certificates.
+                </span>
+                <span class="lang-my">
+                    သင့်ရည်မှန်းချက်နှင့် ကိုက်ညီသော သင်ယူမှုအစီအစဉ်ကို ရွေးချယ်ပါ။
+                    ဘာသာရပ်စုံ သင်ခန်းစာများ၊ လက်တွေ့ Cyber Labs များ၊ စာမေးပွဲများနှင့် တရားဝင် QR အောင်လက်မှတ်များကို တစ်နေရာတည်းတွင် လေ့လာနိုင်ပါသည်။
+                </span>
+            </p>
+
+            <!-- Billing Cycle Switcher -->
+            <div class="mt-8 inline-flex items-center p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md">
+                <button type="button" id="billingMonthlyBtn" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition duration-200 bg-sky-600 text-white shadow-md shadow-sky-600/30">
+                    <span class="lang-en">Monthly Billing</span>
+                    <span class="lang-my">လစဉ်ပေးသွင်းမည်</span>
+                </button>
+                <button type="button" id="billingYearlyBtn" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition duration-200 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5">
+                    <span class="lang-en">Annual Billing</span>
+                    <span class="lang-my">နှစ်စဉ်ပေးသွင်းမည်</span>
+                    <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
+                        <span class="lang-en">Save ~20%</span>
+                        <span class="lang-my">၂၀% သက်သာ</span>
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Pricing Cards Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mb-20">
+            <!-- 1. Starter Tier (Free) -->
+            <div class="rounded-3xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-slate-800 p-8 flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-300 shadow-xl relative group">
+                <div>
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                            <span class="lang-en">Free Starter</span>
+                            <span class="lang-my">အခမဲ့ စတင်ရန်</span>
+                        </span>
+                        <span class="text-xs text-slate-500">Tier 01</span>
                     </div>
 
-                    <div class="mb-4">
-                        <span class="display-6 fw-bold text-dark">0</span>
-                        <span class="text-muted fw-semibold">MMK / Free</span>
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Starter</h2>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
+                        <span class="lang-en">Ideal for exploring courses, preview lectures, and starting your fundamental learning journey.</span>
+                        <span class="lang-my">သင်ခန်းစာများကို စမ်းသပ်လေ့လာရန်နှင့် အခြေခံ အသိပညာများ စတင်ဆည်းပူးရန် အကောင်းဆုံး ဖြစ်ပါသည်။</span>
+                    </p>
+
+                    <!-- Price Display -->
+                    <div class="mb-8 pb-6 border-b border-slate-200 dark:border-slate-800">
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white">0</span>
+                            <span class="text-sm font-bold text-slate-500 dark:text-slate-400">MMK</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">
+                            <span class="lang-en">Forever Free • No Credit Card Required</span>
+                            <span class="lang-my">အမြဲတမ်း အခမဲ့ • ငွေပေးသွင်းရန်မလိုပါ</span>
+                        </p>
                     </div>
 
-                    <ul class="list-unstyled mb-5 flex-grow-1">
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
-                            <span>Selected Free Courses</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
-                            <span>Free Lessons & Video Previews</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
-                            <span>Basic Learning Resources</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-success me-2 fs-5"></i>
-                            <span>Selected Knowledge Quizzes</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center text-muted">
-                            <i class="bi bi-x-circle text-secondary me-2 fs-5"></i>
-                            <span>No Official Examinations</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center text-muted">
-                            <i class="bi bi-x-circle text-secondary me-2 fs-5"></i>
-                            <span>No Official Certificate</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center text-muted">
-                            <i class="bi bi-x-circle text-secondary me-2 fs-5"></i>
-                            <span>No Hands-on / Cyber Labs</span>
-                        </li>
-                    </ul>
+                    <!-- Feature List -->
+                    <div class="space-y-3.5 mb-8 text-xs sm:text-sm">
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-300">
+                            <svg class="w-5 h-5 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span><strong class="text-slate-900 dark:text-white">Selected Free Courses</strong> &amp; Previews</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-300">
+                            <svg class="w-5 h-5 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Video &amp; Markdown Lecture Previews</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-300">
+                            <svg class="w-5 h-5 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Basic Practice Quizzes &amp; Self-Check</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-300">
+                            <svg class="w-5 h-5 text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Community Discussion Q&amp;A</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-400 dark:text-slate-600 line-through">
+                            <svg class="w-5 h-5 text-slate-300 dark:text-slate-700 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <span>No Official Course Examinations</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-400 dark:text-slate-600 line-through">
+                            <svg class="w-5 h-5 text-slate-300 dark:text-slate-700 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <span>No Verified Digital Certificates</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-400 dark:text-slate-600 line-through">
+                            <svg class="w-5 h-5 text-slate-300 dark:text-slate-700 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <span>No Interactive Cyber Range Labs</span>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- Action Button -->
+                <div>
                     {% if current_subscription and current_subscription.plan.plan_type == 'starter' %}
-                        <button class="btn btn-outline-secondary w-100 py-2 rounded-3" disabled>Active Plan</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 text-slate-500 dark:bg-slate-800/80 dark:text-slate-400 border border-slate-200 dark:border-slate-700 cursor-default flex items-center justify-center gap-2" disabled>
+                            <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="lang-en">Current Active Plan</span>
+                            <span class="lang-my">လက်ရှိ အသုံးပြုနေသော အစီအစဉ်</span>
+                        </button>
                     {% else %}
-                        <a href="{% url 'subscribe' plan_type='starter' %}" class="btn btn-outline-primary w-100 py-2 rounded-3 fw-semibold">
-                            Get Started Free
+                        <a href="{% url 'subscribe' plan_type='starter' %}" class="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-100 hover:bg-slate-200 text-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-white border border-slate-300 dark:border-slate-700 transition duration-200 flex items-center justify-center gap-2 shadow-sm">
+                            <span class="lang-en">Get Started Free &rarr;</span>
+                            <span class="lang-my">အခမဲ့ စတင်မည် &rarr;</span>
                         </a>
                     {% endif %}
                 </div>
             </div>
-        </div>
 
-        <!-- Standard Plan (Featured) -->
-        <div class="col">
-            <div class="card h-100 border-primary border-2 shadow rounded-4 overflow-hidden position-relative">
-                <div class="position-absolute top-0 end-0 bg-primary text-white text-uppercase px-3 py-1 fw-bold" style="font-size: 0.75rem; border-bottom-left-radius: 12px;">
-                    Most Popular
+            <!-- 2. Standard Tier (Featured / Most Popular) -->
+            <div class="rounded-3xl bg-white dark:bg-[#111C2E] border-2 border-sky-500 p-8 flex flex-col justify-between relative shadow-[0_4px_30px_rgba(14,165,233,0.15)] dark:shadow-[0_0_40px_rgba(6,182,212,0.18)] transition-all duration-300 transform lg:-translate-y-3 group">
+                <!-- Most Popular Floating Pill -->
+                <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 text-white text-[11px] font-black uppercase tracking-wider shadow-lg shadow-sky-500/30 flex items-center gap-1.5 whitespace-nowrap">
+                    <span>🔥</span>
+                    <span class="lang-en">MOST POPULAR</span>
+                    <span class="lang-my">အသုံးအများဆုံး</span>
                 </div>
-                <div class="card-body p-4 p-xl-5 d-flex flex-column">
-                    <div class="mb-4">
-                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-1 mb-2">Standard Access</span>
-                        <h3 class="fw-bold text-dark">Standard</h3>
-                        <p class="text-muted small">Complete access to academic courses, quizzes, assignments & certificates.</p>
+
+                <div>
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 dark:bg-cyan-950/90 text-sky-700 dark:text-cyan-300 border border-sky-200 dark:border-cyan-700/60">
+                            <span class="lang-en">Standard Access</span>
+                            <span class="lang-my">စံပြ အစီအစဉ်</span>
+                        </span>
+                        <span class="text-xs text-sky-600 dark:text-cyan-400 font-mono font-bold">Recommended</span>
                     </div>
 
-                    <div class="mb-4">
-                        <div class="d-flex align-items-baseline">
-                            <span class="display-6 fw-bold text-primary">{{ standard_plan.monthly_price|default:5000|intcomma }}</span>
-                            <span class="text-muted fw-semibold ms-2">{{ standard_plan.currency|default:"MMK" }} / month</span>
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Standard</h2>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
+                        <span class="lang-en">Complete access to academic courses across all disciplines, quizzes, assignments &amp; verified certificates.</span>
+                        <span class="lang-my">ဘာသာရပ်စုံ သင်တန်းများအားလုံး၊ စာမေးပွဲများနှင့် တရားဝင် QR အောင်လက်မှတ်များကို အပြည့်အစုံ ရယူနိုင်ပါသည်။</span>
+                    </p>
+
+                    <!-- Price Display -->
+                    <div class="mb-8 pb-6 border-b border-slate-200 dark:border-cyan-900/40">
+                        <div class="price-monthly flex items-baseline gap-2">
+                            <span class="text-4xl sm:text-5xl font-black text-sky-600 dark:text-cyan-400">{{ standard_plan.monthly_price|default:5000|intcomma }}</span>
+                            <span class="text-sm font-bold text-slate-600 dark:text-slate-300">MMK / <span class="lang-en">month</span><span class="lang-my">လ</span></span>
                         </div>
-                        <span class="text-muted small">or {{ standard_plan.yearly_price|default:50000|intcomma }} {{ standard_plan.currency|default:"MMK" }} / year (save {{ standard_plan.annual_savings|default:10000|intcomma }} {{ standard_plan.currency|default:"MMK" }})</span>
+                        <div class="price-yearly hidden">
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-4xl sm:text-5xl font-black text-sky-600 dark:text-cyan-400">{{ standard_plan.yearly_price|default:50000|intcomma }}</span>
+                                <span class="text-sm font-bold text-slate-600 dark:text-slate-300">MMK / <span class="lang-en">year</span><span class="lang-my">နှစ်</span></span>
+                            </div>
+                            <p class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                ⚡ <span class="lang-en">Save {{ standard_plan.annual_savings|default:10000|intcomma }} MMK yearly (~4,166 MMK/mo)</span>
+                                <span class="lang-my">နှစ်စဉ် ၁၀,၀၀၀ ကျပ် သက်သာခွင့်</span>
+                            </p>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1 price-monthly-hint">
+                            <span class="lang-en">Billed monthly • Cancel or upgrade anytime</span>
+                            <span class="lang-my">လစဉ် ပေးသွင်းခြင်း • အချိန်မရွေး ပြောင်းလဲနိုင်သည်</span>
+                        </p>
                     </div>
 
-                    <ul class="list-unstyled mb-5 flex-grow-1">
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
-                            <span><strong>All Standard Courses</strong> in every discipline</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
-                            <span>Complete Video & Markdown Lectures</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
-                            <span>Quizzes & Graded Assignments</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
-                            <span><strong>Official Examination Access</strong></span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
-                            <span><strong>Verified Course Completion Certificates</strong></span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-primary me-2 fs-5"></i>
-                            <span>Downloadable Study Materials</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center text-muted">
-                            <i class="bi bi-x-circle text-secondary me-2 fs-5"></i>
+                    <!-- Feature List -->
+                    <div class="space-y-3.5 mb-8 text-xs sm:text-sm">
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-sky-500 dark:text-cyan-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span><strong class="text-slate-900 dark:text-white">All Standard Courses</strong> in every discipline</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-sky-500 dark:text-cyan-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Full Video &amp; Markdown Lectures</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-sky-500 dark:text-cyan-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Quizzes &amp; Graded Homework Assignments</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-sky-500 dark:text-cyan-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span><strong class="text-slate-900 dark:text-white">Official Examination Access</strong></span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-sky-500 dark:text-cyan-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span><strong class="text-slate-900 dark:text-white">Verified QR Digital Certificates</strong></span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-sky-500 dark:text-cyan-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Downloadable Source Code &amp; Slides</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-400 dark:text-slate-500 line-through">
+                            <svg class="w-5 h-5 text-slate-300 dark:text-slate-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                             <span>No Advanced Cyber Range Labs</span>
-                        </li>
-                    </ul>
-
-                    {% if current_subscription and current_subscription.plan.plan_type == 'standard' %}
-                        <button class="btn btn-primary w-100 py-2 rounded-3" disabled>Current Plan</button>
-                    {% else %}
-                        <a href="{% url 'subscribe' plan_type='standard' %}" class="btn btn-primary w-100 py-2 rounded-3 fw-semibold shadow-sm">
-                            Subscribe Standard
-                        </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Premium Plan -->
-        <div class="col">
-            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative bg-dark text-white">
-                <div class="card-body p-4 p-xl-5 d-flex flex-column">
-                    <div class="mb-4">
-                        <span class="badge bg-warning text-dark rounded-pill px-3 py-1 mb-2">Full Power</span>
-                        <h3 class="fw-bold text-white">Premium</h3>
-                        <p class="text-white-50 small">All courses plus practical Cyber Range, real browser labs & live class discounts.</p>
-                    </div>
-
-                    <div class="mb-4">
-                        <div class="d-flex align-items-baseline">
-                            <span class="display-6 fw-bold text-warning">{{ premium_plan.monthly_price|default:15000|intcomma }}</span>
-                            <span class="text-white-50 fw-semibold ms-2">{{ premium_plan.currency|default:"MMK" }} / month</span>
                         </div>
-                        <span class="text-white-50 small">or {{ premium_plan.yearly_price|default:150000|intcomma }} {{ premium_plan.currency|default:"MMK" }} / year (save {{ premium_plan.annual_savings|default:30000|intcomma }} {{ premium_plan.currency|default:"MMK" }})</span>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div>
+                    {% if current_subscription and current_subscription.plan.plan_type == 'standard' %}
+                        <button class="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-sky-100 text-sky-800 dark:bg-cyan-950/80 dark:text-cyan-300 border border-sky-300 dark:border-cyan-800 cursor-default flex items-center justify-center gap-2" disabled>
+                            <svg class="w-4 h-4 text-sky-600 dark:text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="lang-en">Current Active Plan</span>
+                            <span class="lang-my">လက်ရှိ အသုံးပြုနေသော အစီအစဉ်</span>
+                        </button>
+                    {% else %}
+                        <a href="{% url 'subscribe' plan_type='standard' %}" class="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white shadow-lg shadow-sky-500/25 transition duration-200 flex items-center justify-center gap-2 transform active:scale-[0.99]">
+                            <span class="lang-en">Subscribe Standard Plan &rarr;</span>
+                            <span class="lang-my">Standard အစီအစဉ် ရယူမည် &rarr;</span>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 3. Premium Tier (VIP / Full Power) -->
+            <div class="rounded-3xl bg-white dark:bg-[#111C2E] border-2 border-purple-500/80 p-8 flex flex-col justify-between relative shadow-[0_4px_30px_rgba(168,85,247,0.15)] dark:shadow-[0_0_40px_rgba(168,85,247,0.18)] transition-all duration-300 group">
+                <!-- Full Power Floating Pill -->
+                <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[11px] font-black uppercase tracking-wider shadow-lg shadow-purple-500/30 flex items-center gap-1.5 whitespace-nowrap">
+                    <span>⚡</span>
+                    <span class="lang-en">FULL POWER &amp; LABS</span>
+                    <span class="lang-my">အပြည့်စုံဆုံး အစီအစဉ်</span>
+                </div>
+
+                <div>
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 dark:bg-purple-950/90 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700/60">
+                            <span class="lang-en">Full Cyber Range</span>
+                            <span class="lang-my">လက်တွေ့ခန်း အပါအဝင်</span>
+                        </span>
+                        <span class="text-xs text-purple-600 dark:text-purple-400 font-mono font-bold">VIP Elite</span>
                     </div>
 
-                    <ul class="list-unstyled mb-5 flex-grow-1">
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
-                            <span><strong>Everything in Standard</strong></span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
-                            <span><strong>All Premium & Advanced Courses</strong></span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
-                            <span><strong>Full Cyber Range & Terminal Access</strong></span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
-                            <span>Hands-on Docker Labs & CTF Challenges</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
-                            <span>Capstone Industry Projects</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
-                            <span><strong>20% Discount</strong> on Instructor Live Classes</span>
-                        </li>
-                        <li class="mb-3 d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-warning me-2 fs-5"></i>
-                            <span>Priority Student Support</span>
-                        </li>
-                    </ul>
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Premium</h2>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
+                        <span class="lang-en">All courses plus practical Cyber Range, real browser terminal labs, Docker sandboxes &amp; live class discounts.</span>
+                        <span class="lang-my">သင်တန်းအားလုံးအပြင် လက်တွေ့ Cyber Range Terminal၊ Docker sandboxes များနှင့် Live Class ၂၀% လျှော့စျေး။</span>
+                    </p>
 
+                    <!-- Price Display -->
+                    <div class="mb-8 pb-6 border-b border-slate-200 dark:border-purple-900/40">
+                        <div class="price-monthly flex items-baseline gap-2">
+                            <span class="text-4xl sm:text-5xl font-black text-purple-600 dark:text-purple-400">{{ premium_plan.monthly_price|default:15000|intcomma }}</span>
+                            <span class="text-sm font-bold text-slate-600 dark:text-slate-300">MMK / <span class="lang-en">month</span><span class="lang-my">လ</span></span>
+                        </div>
+                        <div class="price-yearly hidden">
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-4xl sm:text-5xl font-black text-purple-600 dark:text-purple-400">{{ premium_plan.yearly_price|default:150000|intcomma }}</span>
+                                <span class="text-sm font-bold text-slate-600 dark:text-slate-300">MMK / <span class="lang-en">year</span><span class="lang-my">နှစ်</span></span>
+                            </div>
+                            <p class="text-xs text-amber-600 dark:text-amber-300 font-semibold mt-1">
+                                ⚡ <span class="lang-en">Save {{ premium_plan.annual_savings|default:30000|intcomma }} MMK yearly (~12,500 MMK/mo)</span>
+                                <span class="lang-my">နှစ်စဉ် ၃၀,၀၀၀ ကျပ် သက်သာခွင့်</span>
+                            </p>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1 price-monthly-hint">
+                            <span class="lang-en">Billed monthly • Cancel or upgrade anytime</span>
+                            <span class="lang-my">လစဉ် ပေးသွင်းခြင်း • အချိန်မရွေး ပြောင်းလဲနိုင်သည်</span>
+                        </p>
+                    </div>
+
+                    <!-- Feature List -->
+                    <div class="space-y-3.5 mb-8 text-xs sm:text-sm">
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-purple-500 dark:text-purple-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span><strong class="text-slate-900 dark:text-white">Everything in Standard Plan</strong></span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-purple-500 dark:text-purple-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span><strong class="text-slate-900 dark:text-white">All Premium Specialist Tracks</strong> (AI, Security, DevOps)</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-purple-500 dark:text-purple-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span><strong class="text-slate-900 dark:text-white">Full Cyber Range &amp; Web Terminal Access</strong></span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-purple-500 dark:text-purple-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Hands-on Docker Containers &amp; CTF Flags</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-purple-500 dark:text-purple-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Capstone Industry Real-world Projects</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-purple-500 dark:text-purple-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span><strong class="text-amber-600 dark:text-amber-300">20% Discount</strong> on Instructor Live Classes</span>
+                        </div>
+                        <div class="flex items-start gap-3 text-slate-700 dark:text-slate-200">
+                            <svg class="w-5 h-5 text-purple-500 dark:text-purple-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>Priority Student Support &amp; Community Mentors</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div>
                     {% if current_subscription and current_subscription.plan.plan_type == 'premium' %}
-                        <button class="btn btn-warning text-dark w-100 py-2 rounded-3" disabled>Current Plan</button>
+                        <button class="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-300 dark:border-purple-800 cursor-default flex items-center justify-center gap-2" disabled>
+                            <svg class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="lang-en">Current Active Plan</span>
+                            <span class="lang-my">လက်ရှိ အသုံးပြုနေသော အစီအစဉ်</span>
+                        </button>
                     {% else %}
-                        <a href="{% url 'subscribe' plan_type='premium' %}" class="btn btn-warning text-dark w-100 py-2 rounded-3 fw-semibold">
-                            Subscribe Premium
+                        <a href="{% url 'subscribe' plan_type='premium' %}" class="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-600/30 transition duration-200 flex items-center justify-center gap-2 transform active:scale-[0.99]">
+                            <span class="lang-en">Subscribe Premium Plan &rarr;</span>
+                            <span class="lang-my">Premium အစီအစဉ် ရယူမည် &rarr;</span>
                         </a>
                     {% endif %}
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Comparison Table -->
-    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
-        <h3 class="fw-bold mb-4 text-center">Feature Breakdown & Entitlements</h3>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 40%;">Feature</th>
-                        <th class="text-center" style="width: 20%;">Starter (Free)</th>
-                        <th class="text-center" style="width: 20%;">Standard ({{ standard_plan.monthly_price|default:5000|intcomma }} {{ standard_plan.currency|default:"MMK" }})</th>
-                        <th class="text-center" style="width: 20%;">Premium ({{ premium_plan.monthly_price|default:15000|intcomma }} {{ premium_plan.currency|default:"MMK" }})</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td class="fw-semibold">Monthly Price</td>
-                        <td class="text-center">0 MMK</td>
-                        <td class="text-center fw-bold text-primary">{{ standard_plan.monthly_price|default:5000|intcomma }} {{ standard_plan.currency|default:"MMK" }}</td>
-                        <td class="text-center fw-bold text-warning">{{ premium_plan.monthly_price|default:15000|intcomma }} {{ premium_plan.currency|default:"MMK" }}</td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Annual Price</td>
-                        <td class="text-center">0 MMK</td>
-                        <td class="text-center">{{ standard_plan.yearly_price|default:50000|intcomma }} {{ standard_plan.currency|default:"MMK" }}</td>
-                        <td class="text-center">{{ premium_plan.yearly_price|default:150000|intcomma }} {{ premium_plan.currency|default:"MMK" }}</td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Standard Courses (Python, CS, ICT, GED, etc.)</td>
-                        <td class="text-center text-muted">Previews only</td>
-                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Full Access</td>
-                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Full Access</td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Premium & Advanced Specialist Courses</td>
-                        <td class="text-center text-muted">No</td>
-                        <td class="text-center text-muted">No</td>
-                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Full Access</td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Official Exam & Verified Certificate</td>
-                        <td class="text-center text-muted">No</td>
-                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Included</td>
-                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Included</td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Hands-on Cyber Range & Terminal Labs</td>
-                        <td class="text-center text-muted">No</td>
-                        <td class="text-center text-muted">No</td>
-                        <td class="text-center"><i class="bi bi-check-lg text-success fs-5"></i> Included</td>
-                    </tr>
-                    <tr>
-                        <td class="fw-semibold">Live Class Discount</td>
-                        <td class="text-center text-muted">None</td>
-                        <td class="text-center text-muted">Standard rate</td>
-                        <td class="text-center fw-bold text-success">20% OFF</td>
-                    </tr>
-                </tbody>
-            </table>
+        <!-- Local Myanmar Payment Support & Guarantees -->
+        <div class="mb-20 rounded-3xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-slate-800 p-8 sm:p-10 shadow-xl">
+            <div class="text-center max-w-2xl mx-auto mb-8">
+                <span class="text-xs font-mono uppercase tracking-widest text-sky-600 dark:text-cyan-400 font-semibold">Convenient &amp; Trusted</span>
+                <h3 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                    <span class="lang-en">Accepted Myanmar Payment Methods</span>
+                    <span class="lang-my">လက်ခံရရှိနိုင်သော မြန်မာပြည်တွင်း ငွေပေးချေမှုများ</span>
+                </h3>
+                <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2">
+                    <span class="lang-en">Instant receipt upload with automated verification and quick activation.</span>
+                    <span class="lang-my">ငွေလွှဲပြေစာ အလွယ်တကူ တင်သွင်းပြီး အမြန်ဆုံး အတည်ပြုပေးပါသည်။</span>
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto mb-8">
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex flex-col items-center text-center">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-600/20 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30 flex items-center justify-center font-bold text-sm mb-2">
+                        KP
+                    </div>
+                    <span class="text-xs font-bold text-slate-900 dark:text-white">KBZPay (KPay)</span>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">09-974288199</span>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex flex-col items-center text-center">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 dark:bg-yellow-500/20 dark:text-yellow-400 border border-amber-200 dark:border-yellow-500/30 flex items-center justify-center font-bold text-sm mb-2">
+                        WP
+                    </div>
+                    <span class="text-xs font-bold text-slate-900 dark:text-white">Wave Money</span>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">09-974288199</span>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex flex-col items-center text-center">
+                    <div class="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 dark:bg-cyan-600/20 dark:text-cyan-400 border border-sky-200 dark:border-cyan-500/30 flex items-center justify-center font-bold text-sm mb-2">
+                        KBZ
+                    </div>
+                    <span class="text-xs font-bold text-slate-900 dark:text-white">KBZ Bank</span>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">iBanking / mBanking</span>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 flex flex-col items-center text-center">
+                    <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 dark:bg-red-600/20 dark:text-red-400 border border-red-200 dark:border-red-500/30 flex items-center justify-center font-bold text-sm mb-2">
+                        AYA
+                    </div>
+                    <span class="text-xs font-bold text-slate-900 dark:text-white">AYA / CB Bank</span>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Direct Transfer</span>
+                </div>
+            </div>
+
+            <!-- Value Pillars -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 pt-6 border-t border-slate-200 dark:border-slate-800/80 text-center sm:text-left">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        ⚡
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white">Instant Free Tier</h4>
+                        <p class="text-[11px] text-slate-600 dark:text-slate-400">Starter activates in seconds with zero delay.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-sky-100 dark:bg-cyan-950/60 border border-sky-300 dark:border-cyan-800 text-sky-600 dark:text-cyan-400 flex items-center justify-center shrink-0">
+                        🛡️
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white">Secure Verification</h4>
+                        <p class="text-[11px] text-slate-600 dark:text-slate-400">Manual review protects against duplicate transactions.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950/60 border border-purple-300 dark:border-purple-800 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                        🔄
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white">Upgrade Anytime</h4>
+                        <p class="text-[11px] text-slate-600 dark:text-slate-400">Seamlessly upgrade from Starter to Standard or Premium.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        📜
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white">QR Verified Badges</h4>
+                        <p class="text-[11px] text-slate-600 dark:text-slate-400">Shareable certificates with permanent verification URLs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Feature Breakdown Matrix -->
+        <div class="rounded-3xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-slate-800 p-6 sm:p-10 shadow-xl mb-20 overflow-hidden">
+            <div class="text-center max-w-2xl mx-auto mb-8">
+                <span class="text-xs font-mono uppercase tracking-widest text-sky-600 dark:text-cyan-400 font-semibold">Comprehensive Comparison</span>
+                <h3 class="text-xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mt-1">
+                    <span class="lang-en">Feature Breakdown &amp; Entitlements</span>
+                    <span class="lang-my">အသေးစိတ် အခွင့်အရေး နှိုင်းယှဉ်ချက်</span>
+                </h3>
+                <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-2">
+                    <span class="lang-en">Transparent overview of what each THUTA membership tier unlocks.</span>
+                    <span class="lang-my">အသင်းဝင် အစီအစဉ်တစ်ခုချင်းစီ၏ အသေးစိတ် အခွင့်အရေးများ နှိုင်းယှဉ်ချက်။</span>
+                </p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs sm:text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400">
+                            <th class="py-4 px-4 font-semibold w-2/5">
+                                <span class="lang-en">Feature</span>
+                                <span class="lang-my">ဝန်ဆောင်မှု အင်္ဂါရပ်</span>
+                            </th>
+                            <th class="py-4 px-4 font-semibold text-center w-1/5">
+                                <div class="text-slate-900 dark:text-white font-bold">Starter</div>
+                                <div class="text-[11px] text-slate-500 font-normal">Free</div>
+                            </th>
+                            <th class="py-4 px-4 font-semibold text-center w-1/5 bg-sky-50/60 dark:bg-cyan-950/20 rounded-t-xl border-x border-sky-200/60 dark:border-cyan-800/40">
+                                <div class="text-sky-600 dark:text-cyan-400 font-bold">Standard</div>
+                                <div class="text-[11px] text-sky-700/80 dark:text-cyan-300/70 font-normal">{{ standard_plan.monthly_price|default:5000|intcomma }} MMK/mo</div>
+                            </th>
+                            <th class="py-4 px-4 font-semibold text-center w-1/5 bg-purple-50/60 dark:bg-purple-950/20 rounded-t-xl border-x border-purple-200/60 dark:border-purple-800/40">
+                                <div class="text-purple-600 dark:text-purple-400 font-bold">Premium</div>
+                                <div class="text-[11px] text-purple-700/80 dark:text-purple-300/70 font-normal">{{ premium_plan.monthly_price|default:15000|intcomma }} MMK/mo</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800/60">
+                        <!-- Pricing Row -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-4 font-medium text-slate-800 dark:text-slate-300">
+                                <span class="lang-en">Monthly Fee</span>
+                                <span class="lang-my">လစဉ် ကြေး</span>
+                            </td>
+                            <td class="py-4 px-4 text-center text-slate-600 dark:text-slate-400">0 MMK</td>
+                            <td class="py-4 px-4 text-center font-bold text-sky-600 dark:text-cyan-400 bg-sky-50/60 dark:bg-cyan-950/20 border-x border-sky-200/60 dark:border-cyan-800/40">{{ standard_plan.monthly_price|default:5000|intcomma }} MMK</td>
+                            <td class="py-4 px-4 text-center font-bold text-purple-600 dark:text-purple-400 bg-purple-50/60 dark:bg-purple-950/20 border-x border-purple-200/60 dark:border-purple-800/40">{{ premium_plan.monthly_price|default:15000|intcomma }} MMK</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-4 font-medium text-slate-800 dark:text-slate-300">
+                                <span class="lang-en">Annual Fee (Billed Yearly)</span>
+                                <span class="lang-my">နှစ်စဉ် ကြေး</span>
+                            </td>
+                            <td class="py-4 px-4 text-center text-slate-600 dark:text-slate-400">0 MMK</td>
+                            <td class="py-4 px-4 text-center font-medium text-slate-700 dark:text-slate-300 bg-sky-50/60 dark:bg-cyan-950/20 border-x border-sky-200/60 dark:border-cyan-800/40">{{ standard_plan.yearly_price|default:50000|intcomma }} MMK</td>
+                            <td class="py-4 px-4 text-center font-medium text-slate-700 dark:text-slate-300 bg-purple-50/60 dark:bg-purple-950/20 border-x border-purple-200/60 dark:border-purple-800/40">{{ premium_plan.yearly_price|default:150000|intcomma }} MMK</td>
+                        </tr>
+
+                        <!-- Standard Courses -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-4 text-slate-700 dark:text-slate-300">
+                                <div class="font-semibold text-slate-900 dark:text-white">Standard Disciplines</div>
+                                <div class="text-[11px] text-slate-500">Python, CS, Web Development, ICT, Academic Foundation</div>
+                            </td>
+                            <td class="py-4 px-4 text-center text-slate-500 text-xs">Previews Only</td>
+                            <td class="py-4 px-4 text-center bg-sky-50/60 dark:bg-cyan-950/20 border-x border-sky-200/60 dark:border-cyan-800/40">
+                                <span class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    Full Access
+                                </span>
+                            </td>
+                            <td class="py-4 px-4 text-center bg-purple-50/60 dark:bg-purple-950/20 border-x border-purple-200/60 dark:border-purple-800/40">
+                                <span class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    Full Access
+                                </span>
+                            </td>
+                        </tr>
+
+                        <!-- Premium Courses -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-4 text-slate-700 dark:text-slate-300">
+                                <div class="font-semibold text-slate-900 dark:text-white">Advanced &amp; Specialist Tracks</div>
+                                <div class="text-[11px] text-slate-500">Cyber Defense, Artificial Intelligence &amp; Data Engineering</div>
+                            </td>
+                            <td class="py-4 px-4 text-center text-slate-400 dark:text-slate-600">—</td>
+                            <td class="py-4 px-4 text-center text-slate-500 text-xs bg-sky-50/60 dark:bg-cyan-950/20 border-x border-sky-200/60 dark:border-cyan-800/40">Previews Only</td>
+                            <td class="py-4 px-4 text-center bg-purple-50/60 dark:bg-purple-950/20 border-x border-purple-200/60 dark:border-purple-800/40">
+                                <span class="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-xs">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    Full Access
+                                </span>
+                            </td>
+                        </tr>
+
+                        <!-- Examinations & Certificates -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-4 text-slate-700 dark:text-slate-300">
+                                <div class="font-semibold text-slate-900 dark:text-white">Official Exams &amp; QR Certificates</div>
+                                <div class="text-[11px] text-slate-500">Graded assignments, final assessments &amp; verifiable digital badges</div>
+                            </td>
+                            <td class="py-4 px-4 text-center text-slate-400 dark:text-slate-600">—</td>
+                            <td class="py-4 px-4 text-center bg-sky-50/60 dark:bg-cyan-950/20 border-x border-sky-200/60 dark:border-cyan-800/40">
+                                <span class="inline-flex items-center gap-1 text-sky-600 dark:text-cyan-400 font-semibold text-xs">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    Included
+                                </span>
+                            </td>
+                            <td class="py-4 px-4 text-center bg-purple-50/60 dark:bg-purple-950/20 border-x border-purple-200/60 dark:border-purple-800/40">
+                                <span class="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 font-semibold text-xs">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    Included
+                                </span>
+                            </td>
+                        </tr>
+
+                        <!-- Cyber Range Labs -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-4 text-slate-700 dark:text-slate-300">
+                                <div class="font-semibold text-slate-900 dark:text-white">Interactive Cyber Range &amp; Docker Labs</div>
+                                <div class="text-[11px] text-slate-500">In-browser terminal, hands-on Linux container environments &amp; CTF challenges</div>
+                            </td>
+                            <td class="py-4 px-4 text-center text-slate-400 dark:text-slate-600">—</td>
+                            <td class="py-4 px-4 text-center text-slate-400 dark:text-slate-600 bg-sky-50/60 dark:bg-cyan-950/20 border-x border-sky-200/60 dark:border-cyan-800/40">—</td>
+                            <td class="py-4 px-4 text-center bg-purple-50/60 dark:bg-purple-950/20 border-x border-purple-200/60 dark:border-purple-800/40">
+                                <span class="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 font-semibold text-xs">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    Full Access
+                                </span>
+                            </td>
+                        </tr>
+
+                        <!-- Capstone Projects -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-4 text-slate-700 dark:text-slate-300">
+                                <div class="font-semibold text-slate-900 dark:text-white">Capstone Projects &amp; Career Portfolio</div>
+                                <div class="text-[11px] text-slate-500">Public showcase page &amp; instructor code review</div>
+                            </td>
+                            <td class="py-4 px-4 text-center text-slate-400 dark:text-slate-600">—</td>
+                            <td class="py-4 px-4 text-center text-slate-500 text-xs bg-sky-50/60 dark:bg-cyan-950/20 border-x border-sky-200/60 dark:border-cyan-800/40">Standard Showcase</td>
+                            <td class="py-4 px-4 text-center bg-purple-50/60 dark:bg-purple-950/20 border-x border-purple-200/60 dark:border-purple-800/40">
+                                <span class="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 font-semibold text-xs">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    Priority Review
+                                </span>
+                            </td>
+                        </tr>
+
+                        <!-- Live Class Discount -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition">
+                            <td class="py-4 px-4 text-slate-700 dark:text-slate-300">
+                                <div class="font-semibold text-slate-900 dark:text-white">Instructor Live Class Discount</div>
+                                <div class="text-[11px] text-slate-500">Direct interactive live sessions with senior tutors</div>
+                            </td>
+                            <td class="py-4 px-4 text-center text-slate-600 dark:text-slate-400">Standard Rate</td>
+                            <td class="py-4 px-4 text-center text-slate-600 dark:text-slate-400 text-xs bg-sky-50/60 dark:bg-cyan-950/20 border-x border-sky-200/60 dark:border-cyan-800/40">Standard Rate</td>
+                            <td class="py-4 px-4 text-center bg-purple-50/60 dark:bg-purple-950/20 border-x border-purple-200/60 dark:border-purple-800/40">
+                                <span class="px-2 py-0.5 rounded-full text-[11px] font-black bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30">
+                                    20% OFF
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="max-w-4xl mx-auto mb-16">
+            <div class="text-center mb-10">
+                <span class="text-xs font-mono uppercase tracking-widest text-sky-600 dark:text-cyan-400 font-semibold">Questions &amp; Answers</span>
+                <h3 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
+                    <span class="lang-en">Frequently Asked Questions</span>
+                    <span class="lang-my">မကြာခဏ မေးလေ့ရှိသော မေးခွန်းများ</span>
+                </h3>
+            </div>
+
+            <div class="space-y-4">
+                <div class="rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                    <h4 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-2">
+                        <span class="lang-en">How does the payment and verification process work?</span>
+                        <span class="lang-my">ငွေပေးချေမှုနှင့် စာရင်းသွင်းမှု လုပ်ငန်းစဉ် မည်သို့လုပ်ဆောင်ရပါသလဲ။</span>
+                    </h4>
+                    <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        <span class="lang-en">
+                            Select your desired plan (Standard or Premium) and choose Monthly or Annual billing. Transfer the fee via KBZPay, WavePay, or Bank Transfer, and upload your payment receipt screenshot. Platform administrators verify and activate your membership promptly (usually within 1–2 hours).
+                        </span>
+                        <span class="lang-my">
+                            နှစ်သက်ရာ Standard သို့မဟုတ် Premium အစီအစဉ်ကို ရွေးချယ်ပြီး လစဉ် သို့မဟုတ် နှစ်စဉ်စနစ်ကို သတ်မှတ်ပါ။ KBZPay, WavePay သို့မဟုတ် ဘဏ်လွှဲစနစ်ဖြင့် ငွေလွှဲပြေစာ Screenshot ကို Upload တင်ပေးရပါမည်။ Admin မှ စစ်ဆေးအတည်ပြုပြီး ၁ နာရီမှ ၂ နာရီအတွင်း အသင်းဝင်ခွင့်ကို ဖွင့်လှစ်ပေးပါမည်။
+                        </span>
+                    </p>
+                </div>
+
+                <div class="rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                    <h4 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-2">
+                        <span class="lang-en">Can I switch or upgrade between Starter, Standard, and Premium?</span>
+                        <span class="lang-my">Starter မှ Standard သို့မဟုတ် Premium သို့ အချိန်မရွေး ပြောင်းလဲနိုင်ပါသလား။</span>
+                    </h4>
+                    <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        <span class="lang-en">
+                            Yes! You can start on Starter for free, and upgrade to Standard or Premium whenever you are ready to take exams, earn verifiable certificates, or access Cyber Range labs.
+                        </span>
+                        <span class="lang-my">
+                            ဟုတ်ကဲ့၊ အချိန်မရွေး ပြောင်းလဲနိုင်ပါသည်။ Starter ဖြင့် အခမဲ့ စတင်လေ့လာနိုင်ပြီး စာမေးပွဲဖြေဆိုလိုသည့်အခါ သို့မဟုတ် Cyber Range လက်တွေ့ခန်းများ အသုံးပြုလိုသည့်အခါ Standard သို့မဟုတ် Premium သို့ အချိန်မရွေး အဆင့်မြှင့်တင်နိုင်ပါသည်။
+                        </span>
+                    </p>
+                </div>
+
+                <div class="rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                    <h4 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-2">
+                        <span class="lang-en">Are the certificates recognized and verifiable?</span>
+                        <span class="lang-my">ရရှိမည့် သင်တန်းအောင်လက်မှတ်များကို စိစစ်အတည်ပြုနိုင်ပါသလား။</span>
+                    </h4>
+                    <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        <span class="lang-en">
+                            Every certificate issued upon completing a course comes with a unique Certificate ID and a cryptographic QR code. Anyone, including employers and institutions, can verify the authenticity of your credential at any time through our Public Verification portal.
+                        </span>
+                        <span class="lang-my">
+                            THUTA မှ ထုတ်ပေးသော အောင်လက်မှတ်တိုင်းတွင် သီးသန့် Certificate ID နှင့် QR Code ပါဝင်ပြီး အလုပ်ရှင်များနှင့် မည်သူမဆို Public Verification စာမျက်နှာမှတစ်ဆင့် တရားဝင်မှန်ကန်မှုကို အချိန်မရွေး စစ်ဆေးအတည်ပြုနိုင်ပါသည်။
+                        </span>
+                    </p>
+                </div>
+
+                <div class="rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                    <h4 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-2">
+                        <span class="lang-en">What is Cyber Range and terminal access in the Premium plan?</span>
+                        <span class="lang-my">Premium အစီအစဉ်တွင် ပါဝင်သော Cyber Range ဆိုသည်မှာ အဘယ်နည်း။</span>
+                    </h4>
+                    <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        <span class="lang-en">
+                            Cyber Range gives you isolated, browser-based Linux terminal environments and Docker containers where you can practice real cybersecurity attacks, defenses, system administration, and CTF challenges without needing a heavy computer or complex local setup.
+                        </span>
+                        <span class="lang-my">
+                            Cyber Range သည် သင့် Browser ထဲတွင် တိုက်ရိုက် Linux Terminal နှင့် Docker container များကို ဖွင့်လှစ်ပြီး လက်တွေ့လုံခြုံရေးတိုက်ခိုက်မှု၊ ခုခံကာကွယ်မှုနှင့် CTF စိန်ခေါ်မှုများကို မိမိကွန်ပျူတာတွင် software ထည့်သွင်းရန်မလိုဘဲ လေ့ကျင့်နိုင်သော စနစ်ဖြစ်ပါသည်။
+                        </span>
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Interactive Billing Switcher JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const monthlyBtn = document.getElementById('billingMonthlyBtn');
+    const yearlyBtn = document.getElementById('billingYearlyBtn');
+    const monthlyPrices = document.querySelectorAll('.price-monthly');
+    const yearlyPrices = document.querySelectorAll('.price-yearly');
+    const monthlyHints = document.querySelectorAll('.price-monthly-hint');
+
+    function setBilling(cycle) {
+        if (cycle === 'yearly') {
+            monthlyBtn.classList.remove('bg-sky-600', 'text-white', 'shadow-md', 'shadow-sky-600/30');
+            monthlyBtn.classList.add('text-slate-600', 'dark:text-slate-400');
+            yearlyBtn.classList.add('bg-sky-600', 'text-white', 'shadow-md', 'shadow-sky-600/30');
+            yearlyBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+
+            monthlyPrices.forEach(el => el.classList.add('hidden'));
+            yearlyPrices.forEach(el => el.classList.remove('hidden'));
+            monthlyHints.forEach(el => el.classList.add('hidden'));
+        } else {
+            yearlyBtn.classList.remove('bg-sky-600', 'text-white', 'shadow-md', 'shadow-sky-600/30');
+            yearlyBtn.classList.add('text-slate-600', 'dark:text-slate-400');
+            monthlyBtn.classList.add('bg-sky-600', 'text-white', 'shadow-md', 'shadow-sky-600/30');
+            monthlyBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+
+            yearlyPrices.forEach(el => el.classList.add('hidden'));
+            monthlyPrices.forEach(el => el.classList.remove('hidden'));
+            monthlyHints.forEach(el => el.classList.remove('hidden'));
+        }
+    }
+
+    if (monthlyBtn && yearlyBtn) {
+        monthlyBtn.addEventListener('click', () => setBilling('monthly'));
+        yearlyBtn.addEventListener('click', () => setBilling('yearly'));
+    }
+});
+</script>
 {% endblock %}

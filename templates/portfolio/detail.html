@@ -9,7 +9,8 @@
     <div class="mb-6 flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
         <nav class="flex items-center space-x-2 text-xs text-slate-400">
             <a href="{% url 'portfolio-list' %}" class="hover:text-cyan-400 transition flex items-center gap-1.5 font-semibold text-cyan-400">
-                <span>&larr; All Public Portfolios / ပရိုဖိုင်များအားလုံး</span>
+                <span class="lang-en">&larr; All Public Portfolios</span>
+                <span class="lang-my">&larr; ပရိုဖိုင်များအားလုံး</span>
             </a>
             <span>/</span>
             <span class="text-slate-300 truncate max-w-xs sm:max-w-md">{{ portfolio_user.get_full_name|default:portfolio_user.username }}</span>
@@ -311,7 +312,7 @@
                             <div class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center text-sm font-bold
                                 {% if c.source_kind == 'platform' %}bg-cyan-950 text-cyan-300 border border-cyan-800
                                 {% else %}bg-slate-800 text-slate-300 border border-slate-700{% endif %}">
-                                {% if c.source_kind == 'platform' %}M{% else %}C{% endif %}
+                                {% if c.source_kind == 'platform' %}T{% else %}C{% endif %}
                             </div>
                             <div class="min-w-0">
                                 <div class="text-sm text-white font-medium leading-snug">{{ c.title }}</div>
@@ -362,6 +363,32 @@
                 <p class="text-sm text-slate-500">No credentials added yet.</p>
                 {% endif %}
             </section>
+
+            <!-- 3.5 Badges & Achievements -->
+            {% if user_badges %}
+            <section id="badges" class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <span>🎖️ Badges &amp; Achievements</span>
+                        <span class="text-xs text-slate-500 font-normal">({{ user_badges|length }})</span>
+                    </h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {% for ub in user_badges %}
+                    <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-lg font-bold shrink-0 shadow-sm">
+                            ★
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-xs text-white font-bold truncate">{{ ub.badge.name }}</div>
+                            <div class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">{{ ub.badge.description }}</div>
+                            <div class="text-[9px] text-slate-500 font-mono mt-1">{{ ub.awarded_at|date:"d M Y" }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
 
             <!-- 4. Education -->
             <section id="education" class="p-6 rounded-2xl bg-slate-900 border border-slate-800">

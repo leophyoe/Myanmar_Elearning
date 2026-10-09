@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_edit %}Edit Cohort: {{ cohort.name }}{% else %}Create Academic Batch{% endif %} — {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    {% include 'partner/_partner_nav.html' %}
+
+    <div class="flex items-center justify-between">
+        <a href="{% if is_edit %}{% url 'partner-cohort-detail' cohort_id=cohort.id %}{% else %}{% url 'partner-cohorts' %}{% endif %}" class="text-xs text-cyan-400 hover:underline flex items-center gap-1 font-semibold">
+            <span>&larr;</span> Back to {% if is_edit %}Cohort Details{% else %}Cohorts Roster{% endif %}
+        </a>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
+        <div class="mb-6 pb-6 border-b border-slate-800">
+            <span class="text-xs font-semibold uppercase tracking-wider text-cyan-400 bg-cyan-950/60 border border-cyan-800 rounded-full px-3 py-1 inline-block mb-2">
+                Batch Lifecycle Management
+            </span>
+            <h1 class="text-2xl font-black text-white">
+                {% if is_edit %}Edit Academic Batch: {{ cohort.name }}{% else %}Create New Academic Cohort{% endif %}
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">
+                Configure batch curriculum linkage, student capacity codes, and academic scheduling parameters.
+            </p>
+        </div>
+
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Institution (disabled if edit) -->
+                {% if not is_edit %}
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Partner Institution *</label>
+                    <select name="institution_id" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                        {% for inst in institutions %}
+                        <option value="{{ inst.id }}">{{ inst.name }} (Capacity: {{ inst.max_student_seats }} seats)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Cohort Name -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Cohort / Batch Name *</label>
+                    <input type="text" name="name" value="{{ cohort.name|default:'' }}" required placeholder="e.g. Cyber Defense Batch 2026-A"
+                           class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                    <p class="text-[11px] text-slate-500 mt-1">Official display title shown to students and on reports.</p>
+                </div>
+
+                <!-- Cohort Code -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Batch Code *</label>
+                    <input type="text" name="code" value="{{ cohort.code|default:'' }}" {% if is_edit %}readonly class="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-400 font-mono cursor-not-allowed"{% else %}required placeholder="e.g. CYBER-2026-B1" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white font-mono uppercase placeholder-slate-500 focus:outline-none focus:border-cyan-500"{% endif %}>
+                    <p class="text-[11px] text-slate-500 mt-1">Unique alphanumeric identifier for student grouping.</p>
+                </div>
+
+                <!-- Associated Course -->
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Curriculum / Program (Optional)</label>
+                    <select name="course_id" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                        <option value="">-- General Program / None --</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}" {% if cohort.course_id == course.id %}selected{% endif %}>
+                            {{ course.title }} ({{ course.get_level_display }} · {{ course.get_access_type_display }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-[11px] text-slate-500 mt-1">Enrolling students into this cohort will automatically grant course access.</p>
+                </div>
+
+                <!-- Start Date -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Start Date</label>
+                    <input type="date" name="start_date" value="{{ cohort.start_date|date:'Y-m-d'|default:'' }}"
+                           class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                </div>
+
+                <!-- End Date -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">End Date</label>
+                    <input type="date" name="end_date" value="{{ cohort.end_date|date:'Y-m-d'|default:'' }}"
+                           class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                </div>
+
+                <!-- Active Status Toggle -->
+                <div class="sm:col-span-2 p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-white">Cohort Active Status</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">Active cohorts appear in batch operations and student progress tracking.</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="is_active" {% if not is_edit or cohort.is_active %}checked{% endif %} class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                <a href="{% if is_edit %}{% url 'partner-cohort-detail' cohort_id=cohort.id %}{% else %}{% url 'partner-cohorts' %}{% endif %}" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-cyan-900/30 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    {% if is_edit %}Save Changes{% else %}Create Batch{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+
+{% block title %}Review Application: {{ application.user.username }} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <!-- Breadcrumb & Header -->
+    <div class="mb-6 flex items-center justify-between">
+        <a href="{% url 'console-instructor-application-list' %}"
+           class="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition">
+            &larr; Back to Faculty Applications
+        </a>
+        <div class="flex items-center gap-2">
+            <span class="text-xs px-2.5 py-1 rounded-full font-bold uppercase border
+                {% if application.status == 'approved' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                {% elif application.status == 'rejected' %}bg-rose-950 text-rose-300 border-rose-800
+                {% else %}bg-amber-950 text-amber-300 border-amber-800{% endif %}">
+                Status: {{ application.get_status_display }}
+            </span>
+        </div>
+    </div>
+
+    {% include 'console/_tabs.html' with active='instructor_applications' %}
+
+    <!-- Top Banner depending on status -->
+    {% if application.status == 'approved' %}
+    <div class="p-5 rounded-2xl bg-emerald-950/40 border border-emerald-800/60 mb-8 flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-emerald-900/60 flex items-center justify-center text-emerald-400 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+        </div>
+        <div>
+            <h2 class="text-sm font-bold text-emerald-300">Application Approved</h2>
+            <p class="text-xs text-emerald-200/80 mt-1">
+                Approved on {{ application.reviewed_at|date:"d M Y, H:i" }}
+                {% if application.reviewed_by %}by {{ application.reviewed_by.username }}{% endif %}.
+                Rank awarded: <span class="font-semibold text-white">{{ application.get_awarded_level_display }}</span>.
+            </p>
+            {% if application.admin_notes %}
+            <p class="text-xs text-slate-300 mt-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                <span class="font-semibold text-slate-400">Reviewer Notes:</span> {{ application.admin_notes }}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    {% elif application.status == 'rejected' %}
+    <div class="p-5 rounded-2xl bg-rose-950/40 border border-rose-800/60 mb-8 flex items-start gap-4">
+        <div class="w-10 h-10 rounded-xl bg-rose-900/60 flex items-center justify-center text-rose-400 shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </div>
+        <div>
+            <h2 class="text-sm font-bold text-rose-300">Application Not Approved</h2>
+            <p class="text-xs text-rose-200/80 mt-1">
+                Reviewed on {{ application.reviewed_at|date:"d M Y, H:i" }}
+                {% if application.reviewed_by %}by {{ application.reviewed_by.username }}{% endif %}.
+            </p>
+            {% if application.rejection_feedback %}
+            <p class="text-xs text-slate-300 mt-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                <span class="font-semibold text-rose-400">Feedback shared with applicant:</span> {{ application.rejection_feedback }}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Application Details (2 Cols) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Professional Credentials Card -->
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-6">
+                <h2 class="text-base font-bold text-white tracking-wide border-b border-slate-800 pb-3">
+                    Academic &amp; Professional Qualifications
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                        <span class="text-slate-400 block text-[11px] uppercase tracking-wider font-semibold">Academic / Professional Title</span>
+                        <span class="text-white text-sm font-medium mt-0.5 block">{{ application.title|default:"Not specified" }}</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[11px] uppercase tracking-wider font-semibold">Department / Faculty</span>
+                        <span class="text-white text-sm font-medium mt-0.5 block">{{ application.department|default:"Not specified" }}</span>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <span class="text-slate-400 block text-[11px] uppercase tracking-wider font-semibold">Target Subjects &amp; Specialization</span>
+                        <span class="text-cyan-300 text-sm font-medium mt-0.5 block">{{ application.target_subjects|default:"Not specified" }}</span>
+                    </div>
+                </div>
+
+                {% if application.bio %}
+                <div>
+                    <span class="text-slate-400 block text-[11px] uppercase tracking-wider font-semibold mb-1.5">Instructor Biography &amp; Statement</span>
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 leading-relaxed whitespace-pre-line">
+                        {{ application.bio }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if application.qualifications %}
+                <div>
+                    <span class="text-slate-400 block text-[11px] uppercase tracking-wider font-semibold mb-1.5">Experience &amp; Certifications</span>
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 leading-relaxed whitespace-pre-line">
+                        {{ application.qualifications }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Evidence, Links & Portfolio Card -->
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+                <h2 class="text-base font-bold text-white tracking-wide border-b border-slate-800 pb-3">
+                    Portfolio &amp; External References
+                </h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    {% if application.sample_lecture_url %}
+                    <div>
+                        <span class="text-slate-400 block text-[11px] uppercase tracking-wider font-semibold">Sample Lecture / Teaching Video</span>
+                        <a href="{{ application.sample_lecture_url }}" target="_blank" rel="noopener noreferrer"
+                           class="text-cyan-400 hover:text-cyan-300 underline mt-1 inline-flex items-center gap-1 break-all">
+                            {{ application.sample_lecture_url }} &nearr;
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    {% if application.website %}
+                    <div>
+                        <span class="text-slate-400 block text-[11px] uppercase tracking-wider font-semibold">Portfolio / Personal Website</span>
+                        <a href="{{ application.website }}" target="_blank" rel="noopener noreferrer"
+                           class="text-cyan-400 hover:text-cyan-300 underline mt-1 inline-flex items-center gap-1 break-all">
+                            {{ application.website }} &nearr;
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    {% if application.linkedin_url %}
+                    <div>
+                        <span class="text-slate-400 block text-[11px] uppercase tracking-wider font-semibold">LinkedIn Profile</span>
+                        <a href="{{ application.linkedin_url }}" target="_blank" rel="noopener noreferrer"
+                           class="text-cyan-400 hover:text-cyan-300 underline mt-1 inline-flex items-center gap-1 break-all">
+                            {{ application.linkedin_url }} &nearr;
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    {% if application.github_url %}
+                    <div>
+                        <span class="text-slate-400 block text-[11px] uppercase tracking-wider font-semibold">GitHub Profile</span>
+                        <a href="{{ application.github_url }}" target="_blank" rel="noopener noreferrer"
+                           class="text-cyan-400 hover:text-cyan-300 underline mt-1 inline-flex items-center gap-1 break-all">
+                            {{ application.github_url }} &nearr;
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if application.cv_document or application.sample_video %}
+                <div class="pt-4 border-t border-slate-800 flex flex-wrap gap-4 text-xs">
+                    {% if application.cv_document %}
+                    <a href="{{ application.cv_document.url }}" target="_blank"
+                       class="px-3.5 py-2 rounded-lg bg-slate-950 border border-slate-700 hover:border-slate-500 text-white font-medium flex items-center gap-2 transition">
+                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Download Uploaded CV / Resume
+                    </a>
+                    {% endif %}
+
+                    {% if application.sample_video %}
+                    <a href="{{ application.sample_video.url }}" target="_blank"
+                       class="px-3.5 py-2 rounded-lg bg-slate-950 border border-slate-700 hover:border-slate-500 text-white font-medium flex items-center gap-2 transition">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Watch Uploaded Demo Video
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar / Decision Panels (1 Col) -->
+        <div class="space-y-6">
+            <!-- Applicant Account Summary -->
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Applicant Account</h3>
+                <div>
+                    <div class="text-sm font-bold text-white">{{ application.user.get_full_name|default:application.user.username }}</div>
+                    <div class="text-xs text-slate-400">@{{ application.user.username }} · {{ application.user.email }}</div>
+                </div>
+                <div class="space-y-2 text-xs pt-2 border-t border-slate-800">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Current System Role:</span>
+                        <span class="text-white font-semibold">{{ application.user.get_role_display }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Active Mode:</span>
+                        <span class="text-white font-semibold">{{ application.user.get_active_mode_display }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Joined Platform:</span>
+                        <span class="text-slate-300">{{ application.user.date_joined|date:"d M Y" }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Applied On:</span>
+                        <span class="text-slate-300">{{ application.created_at|date:"d M Y, H:i" }}</span>
+                    </div>
+                </div>
+                <div class="pt-2">
+                    <a href="{% url 'console-user-detail' user_id=application.user.pk %}"
+                       class="block text-center px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-400 font-medium transition">
+                        View Full User Account Profile &rarr;
+                    </a>
+                </div>
+            </div>
+
+            <!-- Decision Form Panels -->
+            <!-- APPROVAL PANEL -->
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+                <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    {% if application.status == 'approved' %}Update Faculty Rank{% else %}Approve &amp; Grant Faculty Access{% endif %}
+                </h3>
+
+                <form method="POST" action="{% url 'console-instructor-application-action' app_id=application.id action='approve' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Awarded Pedagogical Rank</label>
+                        <select name="awarded_level" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                            {% for code, label in awarded_levels %}
+                            <option value="{{ code }}" {% if application.awarded_level == code %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Administrative Notes (Internal)</label>
+                        <textarea name="admin_notes" rows="2" placeholder="Internal verification notes..."
+                                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">{{ application.admin_notes }}</textarea>
+                    </div>
+
+                    <button type="submit"
+                            class="w-full py-2.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-lg shadow-emerald-950/40">
+                        {% if application.status == 'approved' %}Save Updated Approval{% else %}Approve as Instructor{% endif %}
+                    </button>
+                </form>
+            </div>
+
+            <!-- REJECTION PANEL -->
+            {% if application.status != 'approved' %}
+            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+                <h3 class="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Reject Application
+                </h3>
+
+                <form method="POST" action="{% url 'console-instructor-application-action' app_id=application.id action='reject' %}" class="space-y-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Rejection Feedback (Shared with applicant)</label>
+                        <textarea name="rejection_feedback" rows="3" required placeholder="Please provide specific feedback or missing requirements for the applicant..."
+                                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">{{ application.rejection_feedback }}</textarea>
+                        <p class="text-[11px] text-slate-500 mt-1">This feedback will be visible to the user on their application dashboard.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Internal Notes</label>
+                        <textarea name="admin_notes" rows="2" placeholder="Internal remarks..."
+                                  class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500">{{ application.admin_notes }}</textarea>
+                    </div>
+
+                    <button type="submit"
+                            class="w-full py-2.5 px-4 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-lg shadow-rose-950/40">
+                        Reject Application
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -173,7 +173,18 @@ class UnifiedProfileForm(forms.Form):
 class InstructorApplicationForm(forms.ModelForm):
     class Meta:
         model = InstructorApplication
-        fields = ('department', 'title', 'target_subjects', 'qualifications', 'teaching_experience')
+        fields = (
+            'department',
+            'title',
+            'target_subjects',
+            'qualifications',
+            'teaching_experience',
+            'bio',
+            'sample_lecture_url',
+            'website',
+            'linkedin_url',
+            'github_url',
+        )
         widgets = {
             'department': forms.TextInput(attrs={
                 'class': 'w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 text-sm',
@@ -197,6 +208,28 @@ class InstructorApplicationForm(forms.ModelForm):
                 'rows': 3,
                 'placeholder': 'Previous lecturing, workshop facilitation, or technical mentoring...',
             }),
+            'bio': forms.Textarea(attrs={
+                'class': 'w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 text-sm',
+                'rows': 3,
+                'placeholder': 'Brief personal biography, teaching philosophy, and background...',
+            }),
+            'sample_lecture_url': forms.URLInput(attrs={
+                'class': 'w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 text-sm',
+                'placeholder': 'https://youtube.com/... or https://vimeo.com/... sample lecture link',
+            }),
+            'website': forms.URLInput(attrs={
+                'class': 'w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 text-sm',
+                'placeholder': 'https://yourportfolio.com or blog',
+            }),
+            'linkedin_url': forms.URLInput(attrs={
+                'class': 'w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 text-sm',
+                'placeholder': 'https://linkedin.com/in/username',
+            }),
+            'github_url': forms.URLInput(attrs={
+                'class': 'w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 text-sm',
+                'placeholder': 'https://github.com/username',
+            }),
         }
+
 
 

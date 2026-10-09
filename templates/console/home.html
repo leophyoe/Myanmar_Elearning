@@ -3,98 +3,98 @@
 {% block title %}Administration Console - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <div class="pb-6 mb-8 border-b border-slate-800">
-        <h1 class="text-2xl font-bold text-white tracking-wide">Administration Console</h1>
-        <p class="text-xs text-slate-400 mt-1">Accounts, courses, pricing and revenue — all in one place.</p>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+    <div class="pb-6 mb-8 border-b border-slate-200 dark:border-[#26364B]">
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-[#F1F5F9] tracking-wide">Administration Console</h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Accounts, courses, pricing and revenue — all in one place.</p>
     </div>
 
     {% include 'console/_tabs.html' with active='home' %}
 
     {% if pending_teachers %}
     <a href="{% url 'console-user-list' %}?role=teacher&amp;status=inactive"
-       class="flex items-center justify-between gap-4 mt-6 p-4 rounded-xl bg-amber-950/50 border border-amber-800 hover:bg-amber-950 transition block">
-        <span class="text-xs text-amber-200">
-            <span class="font-bold uppercase tracking-wider text-amber-400 mr-2">Teacher applications</span>
+       class="flex items-center justify-between gap-4 mt-6 p-4 rounded-2xl bg-[#FFFBEB] dark:bg-[#302719] border border-[#FDE68A] dark:border-[#423522] hover:bg-amber-100 dark:hover:bg-[#423522] transition block shadow-sm">
+        <span class="text-xs text-[#92400E] dark:text-[#FCD34D]">
+            <span class="font-bold uppercase tracking-wider mr-2">Teacher applications</span>
             {{ pending_teachers }} applicant{{ pending_teachers|pluralize }} registered through /register/ and cannot sign in yet.
         </span>
-        <span class="text-xs text-amber-400 shrink-0">Review &rarr;</span>
+        <span class="text-xs font-bold text-[#92400E] dark:text-[#FCD34D] shrink-0">Review &rarr;</span>
     </a>
     {% endif %}
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-        <a href="{% url 'console-user-list' %}?role=student" class="p-5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-600 transition block">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Students</div>
-            <div class="text-2xl font-bold text-white">{{ students }}</div>
+        <a href="{% url 'console-user-list' %}?role=student" class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] hover:border-[#0284C7] dark:hover:border-[#38BDF8] transition block shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Students</div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-[#F1F5F9]">{{ students }}</div>
         </a>
-        <a href="{% url 'console-user-list' %}?role=teacher" class="p-5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-600 transition block">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Teachers</div>
-            <div class="text-2xl font-bold text-emerald-400">{{ teachers }}</div>
+        <a href="{% url 'console-user-list' %}?role=teacher" class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] hover:border-emerald-500 transition block shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Teachers</div>
+            <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ teachers }}</div>
         </a>
-        <a href="{% url 'console-user-list' %}?role=admin" class="p-5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-600 transition block">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Administrators</div>
-            <div class="text-2xl font-bold text-purple-400">{{ admins }}</div>
+        <a href="{% url 'console-user-list' %}?role=admin" class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] hover:border-purple-500 transition block shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Administrators</div>
+            <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ admins }}</div>
         </a>
-        <a href="{% url 'console-user-list' %}?status=inactive" class="p-5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-600 transition block">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Deactivated</div>
-            <div class="text-2xl font-bold text-red-400">{{ deactivated }}</div>
+        <a href="{% url 'console-user-list' %}?status=inactive" class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] hover:border-rose-500 transition block shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Deactivated</div>
+            <div class="text-2xl font-bold text-rose-600 dark:text-rose-400">{{ deactivated }}</div>
         </a>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <!-- Courses -->
-        <a href="{% url 'console-course-list' %}" class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-cyan-600 transition block">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-3">Course catalogue</div>
-            <div class="text-3xl font-bold text-white mb-1">{{ courses }}</div>
-            <div class="text-[11px] text-slate-500">
+        <a href="{% url 'console-course-list' %}" class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] hover:border-[#0284C7] dark:hover:border-[#38BDF8] transition block shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 font-medium">Course catalogue</div>
+            <div class="text-3xl font-bold text-slate-900 dark:text-[#F1F5F9] mb-1">{{ courses }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">
                 {{ published_courses }} published · {{ paid_courses }} paid · {{ enrolments }} enrolments
             </div>
-            <div class="text-xs text-cyan-400 mt-4">Manage courses &rarr;</div>
+            <div class="text-xs text-[#0284C7] dark:text-[#38BDF8] font-semibold mt-4">Manage courses &rarr;</div>
         </a>
 
         <!-- Fees -->
-        <a href="{% url 'console-fee-overview' %}" class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-amber-600 transition block">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-3">Fees &amp; revenue</div>
-            <div class="text-3xl font-bold text-amber-300 font-mono mb-1">{{ gross }}</div>
-            <div class="text-[11px] text-slate-500">
+        <a href="{% url 'console-fee-overview' %}" class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] hover:border-amber-500 transition block shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 font-medium">Fees &amp; revenue</div>
+            <div class="text-3xl font-bold text-amber-600 dark:text-amber-400 font-mono mb-1">{{ gross }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">
                 Platform {{ platform_fee }} · Teachers {{ teacher_share }}
-                {% if pending_payments %}· <span class="text-amber-400">{{ pending_payments }} awaiting review</span>{% endif %}
+                {% if pending_payments %}· <span class="text-amber-600 dark:text-amber-400">{{ pending_payments }} awaiting review</span>{% endif %}
             </div>
-            <div class="text-xs text-amber-400 mt-4">Open fee overview &rarr;</div>
+            <div class="text-xs text-amber-600 dark:text-amber-400 font-semibold mt-4">Open fee overview &rarr;</div>
         </a>
 
         <!-- Users -->
-        <a href="{% url 'console-user-create' %}" class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-600 transition block">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-3">Provisioning</div>
-            <div class="text-3xl font-bold text-emerald-400 mb-1">+ Account</div>
-            <div class="text-[11px] text-slate-500">Create a student, teacher or administrator</div>
-            <div class="text-xs text-emerald-400 mt-4">Create account &rarr;</div>
+        <a href="{% url 'console-user-create' %}" class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] hover:border-emerald-500 transition block shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 font-medium">Provisioning</div>
+            <div class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">+ Account</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">Create a student, teacher or administrator</div>
+            <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-4">Create account &rarr;</div>
         </a>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
-            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Quick actions</h3>
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-[#F1F5F9] uppercase tracking-wider mb-4">Quick actions</h3>
             <div class="flex flex-wrap gap-2 text-xs">
-                <a href="{% url 'console-log-list' %}" class="px-3 py-2 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-700 text-cyan-300 font-semibold transition">📋 Audit Logs</a>
-                <a href="{% url 'cyber-home' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">🛡️ Cyber Range</a>
-                <a href="{% url 'cyber-lab-upload' %}" class="px-3 py-2 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 transition">⬆️ Upload Lab Bundle</a>
-                <a href="{% url 'console-user-list' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Find a user</a>
-                <a href="{% url 'payment-list' %}" class="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold transition">Payment queue</a>
-                <a href="{% url 'manage-home' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Content Studio</a>
-                <a href="{% url 'report-earnings' %}" class="px-3 py-2 rounded-lg bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 text-emerald-300 transition">Earnings report</a>
-                <a href="{% url 'admin-dashboard' %}" class="px-3 py-2 rounded-lg bg-purple-950 hover:bg-purple-900 border border-purple-800 text-purple-300 transition">System telemetry</a>
-                <a href="/admin/" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 transition">Django admin</a>
+                <a href="{% url 'console-log-list' %}" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#162235] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#26364B] font-semibold transition">📋 Audit Logs</a>
+                <a href="{% url 'cyber-home' %}" class="px-3 py-2 rounded-xl bg-[#E0F2FE] hover:bg-sky-100 dark:bg-[#172B40] dark:hover:bg-[#1f3752] border border-[#BAE6FD] dark:border-[#26364B] text-[#075985] dark:text-[#7DD3FC] font-semibold transition">🛡️ Cyber Range</a>
+                <a href="{% url 'cyber-lab-upload' %}" class="px-3 py-2 rounded-xl bg-[#F0FDF4] hover:bg-emerald-100 dark:bg-[#142B25] dark:hover:bg-[#1a3830] border border-[#BBF7D0] dark:border-[#1E3A30] text-[#166534] dark:text-[#86EFAC] font-semibold transition">⬆️ Upload Lab Bundle</a>
+                <a href="{% url 'console-user-list' %}" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#162235] dark:hover:bg-slate-800 border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-200 transition">Find a user</a>
+                <a href="{% url 'payment-list' %}" class="px-3 py-2 rounded-xl bg-[#FFFBEB] hover:bg-amber-100 dark:bg-[#302719] dark:hover:bg-[#423522] border border-[#FDE68A] dark:border-[#423522] text-[#92400E] dark:text-[#FCD34D] font-semibold transition">Payment queue</a>
+                <a href="{% url 'manage-home' %}" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#162235] dark:hover:bg-slate-800 border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-200 transition">Content Studio</a>
+                <a href="{% url 'report-earnings' %}" class="px-3 py-2 rounded-xl bg-[#F0FDF4] hover:bg-emerald-100 dark:bg-[#142B25] dark:hover:bg-[#1a3830] border border-[#BBF7D0] dark:border-[#1E3A30] text-[#166534] dark:text-[#86EFAC] font-semibold transition">Earnings report</a>
+                <a href="{% url 'admin-dashboard' %}" class="px-3 py-2 rounded-xl bg-[#F5F3FF] hover:bg-purple-100 dark:bg-[#272341] dark:hover:bg-[#352f58] border border-[#DDD6FE] dark:border-[#3D3765] text-[#5B21B6] dark:text-[#C4B5FD] font-semibold transition">System telemetry</a>
+                <a href="/admin/" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#162235] dark:hover:bg-slate-800 border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 transition">Django admin</a>
             </div>
         </div>
 
-        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
-            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Account status</h3>
-            <ul class="text-sm space-y-2 text-slate-400">
-                <li class="flex justify-between"><span>Active accounts</span><span class="font-mono text-white">{{ counts.active|default:0 }}</span></li>
-                <li class="flex justify-between"><span>Deactivated accounts</span><span class="font-mono text-red-400">{{ counts.inactive|default:0 }}</span></li>
-                <li class="flex justify-between"><span>Pending payments</span><span class="font-mono text-amber-400">{{ pending_payments }}</span></li>
-                <li class="flex justify-between"><span>Free / paid courses</span><span class="font-mono text-white">{{ published_courses }}</span></li>
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-[#F1F5F9] uppercase tracking-wider mb-4">Account status</h3>
+            <ul class="text-sm space-y-2.5 text-slate-600 dark:text-slate-400">
+                <li class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800"><span>Active accounts</span><span class="font-mono font-bold text-slate-900 dark:text-[#F1F5F9]">{{ counts.active|default:0 }}</span></li>
+                <li class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800"><span>Deactivated accounts</span><span class="font-mono font-bold text-rose-600 dark:text-rose-400">{{ counts.inactive|default:0 }}</span></li>
+                <li class="flex justify-between py-1 border-b border-slate-100 dark:border-slate-800"><span>Pending payments</span><span class="font-mono font-bold text-amber-600 dark:text-amber-400">{{ pending_payments }}</span></li>
+                <li class="flex justify-between py-1"><span>Free / paid courses</span><span class="font-mono font-bold text-slate-900 dark:text-[#F1F5F9]">{{ published_courses }}</span></li>
             </ul>
         </div>
     </div>

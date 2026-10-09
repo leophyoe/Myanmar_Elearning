@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Edit Payment Method: {{ object.name }}{% else %}Add Payment Method{% endif %} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div>
+            <a href="{% url 'billing:method-list' %}" class="text-xs text-cyan-400 hover:underline flex items-center gap-1 mb-2">
+                &larr; Back to Payment Methods
+            </a>
+            <h1 class="text-2xl font-bold text-white">
+                {% if object %}Edit Payment Method: {{ object.name }}{% else %}Add Payment Method{% endif %}
+            </h1>
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-6 text-sm">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Method Name *</label>
+                {{ form.name }}
+                {% for error in form.name.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Code (Identifier) *</label>
+                {{ form.code }}
+                {% for error in form.code.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Method Type *</label>
+                {{ form.method_type }}
+                {% for error in form.method_type.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Display Order</label>
+                {{ form.display_order }}
+                {% for error in form.display_order.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Account Name / Holder</label>
+                {{ form.account_name }}
+                {% for error in form.account_name.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+            <div>
+                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Account / Phone Number</label>
+                {{ form.account_number }}
+                {% for error in form.account_number.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">QR Code Image</label>
+            {{ form.qr_image }}
+            {% for error in form.qr_image.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div>
+            <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Instructions (English)</label>
+            {{ form.instructions }}
+            {% for error in form.instructions.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div>
+            <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Instructions (Myanmar)</label>
+            {{ form.instructions_my }}
+            {% for error in form.instructions_my.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+        </div>
+
+        <div class="flex items-center gap-3 pt-2">
+            {{ form.is_active }}
+            <label for="{{ form.is_active.id_for_label }}" class="text-xs text-slate-300 font-medium cursor-pointer">
+                Active (display in checkout and pricing options)
+            </label>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+            <a href="{% url 'billing:method-list' %}" class="px-4 py-2 text-xs rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2 text-xs font-bold rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 transition">
+                Save Method
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

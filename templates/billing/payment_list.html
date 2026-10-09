@@ -3,18 +3,18 @@
 {% block title %}Payment Review - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <div class="flex flex-col md:flex-row md:items-end justify-between pb-6 mb-8 border-b border-slate-800 gap-4">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+    <div class="flex flex-col md:flex-row md:items-end justify-between pb-6 mb-8 border-b border-slate-200 dark:border-[#26364B] gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-white tracking-wide">Payment Review</h1>
-            <p class="text-xs text-slate-400 mt-1">
-                Manual payments submitted by students (KBZ Pay, Wave Pay, bank transfer).
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-[#F1F5F9] tracking-wide">Payment Review</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Student payment submissions verification queue (MMQR, mobile wallets, bank transfer slips).
             </p>
         </div>
-        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-right">
-            <div class="text-[11px] uppercase tracking-wider text-slate-500">Platform earnings to date</div>
-            <div class="text-xl font-bold text-emerald-300 font-mono">{{ platform_earnings }} MMK</div>
-            <div class="text-[10px] text-slate-500 mt-0.5">25% of every approved payment</div>
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-right shadow-sm">
+            <div class="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-medium">Platform earnings to date</div>
+            <div class="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">{{ platform_earnings }} MMK</div>
+            <div class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Retained platform margin</div>
         </div>
     </div>
 
@@ -22,55 +22,55 @@
     <div class="flex flex-wrap gap-2 mb-6">
         {% for value, label, count in status_tabs %}
         <a href="{% url 'payment-list' %}?status={{ value }}"
-           class="text-xs px-4 py-2 rounded-lg font-semibold transition border
-           {% if status == value %}bg-cyan-600 border-cyan-500 text-white
-           {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+           class="text-xs px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+           {% if status == value %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+           {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
             {{ label }}
-            <span class="ml-1.5 font-mono {% if status == value %}text-cyan-100{% else %}text-slate-600{% endif %}">{{ count }}</span>
+            <span class="ml-1.5 font-mono {% if status == value %}text-sky-100 dark:text-sky-950 font-bold{% else %}text-slate-500 dark:text-slate-400{% endif %}">{{ count }}</span>
         </a>
         {% endfor %}
     </div>
 
     {% if payments %}
-    <div class="overflow-x-auto rounded-2xl bg-slate-900 border border-slate-800">
+    <div class="overflow-x-auto rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
         <table class="w-full text-sm text-left">
-            <thead class="text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-800">
+            <thead class="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#162235] border-b border-slate-200 dark:border-[#26364B]">
                 <tr>
-                    <th class="px-5 py-3">Submitted</th>
-                    <th class="px-5 py-3">Student</th>
-                    <th class="px-5 py-3">Course</th>
-                    <th class="px-5 py-3">Amount</th>
-                    <th class="px-5 py-3">Split</th>
-                    <th class="px-5 py-3">Method / Reference</th>
-                    <th class="px-5 py-3"></th>
+                    <th class="px-5 py-3.5">Submitted</th>
+                    <th class="px-5 py-3.5">Student</th>
+                    <th class="px-5 py-3.5">Course</th>
+                    <th class="px-5 py-3.5">Amount</th>
+                    <th class="px-5 py-3.5">Split</th>
+                    <th class="px-5 py-3.5">Method / Reference</th>
+                    <th class="px-5 py-3.5"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-800">
+            <tbody class="divide-y divide-slate-100 dark:divide-[#26364B]">
                 {% for payment in payments %}
-                <tr>
-                    <td class="px-5 py-3 text-slate-400 whitespace-nowrap text-xs">{{ payment.created_at|date:"d M Y, H:i" }}</td>
-                    <td class="px-5 py-3">
-                        <div class="text-white">{{ payment.student.username }}</div>
-                        <div class="text-[11px] text-slate-500">{{ payment.student.email }}</div>
+                <tr class="hover:bg-slate-50/70 dark:hover:bg-[#162235]/50 transition">
+                    <td class="px-5 py-4 text-slate-500 dark:text-slate-400 whitespace-nowrap text-xs font-mono">{{ payment.created_at|date:"d M Y, H:i" }}</td>
+                    <td class="px-5 py-4">
+                        <div class="font-bold text-slate-900 dark:text-white">{{ payment.student.username }}</div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400">{{ payment.student.email }}</div>
                     </td>
-                    <td class="px-5 py-3 text-slate-300">{{ payment.course.title }}</td>
-                    <td class="px-5 py-3 font-mono text-amber-300 whitespace-nowrap">
+                    <td class="px-5 py-4 text-slate-800 dark:text-slate-200 font-medium">{{ payment.course.title }}</td>
+                    <td class="px-5 py-4 font-mono font-bold text-[#0284C7] dark:text-[#38BDF8] whitespace-nowrap">
                         {{ payment.amount }} {{ payment.currency }}
                     </td>
-                    <td class="px-5 py-3 whitespace-nowrap text-xs">
-                        <span class="text-emerald-400">{{ payment.platform_fee }}</span>
-                        <span class="text-slate-600">/</span>
-                        <span class="text-cyan-300">{{ payment.teacher_amount }}</span>
+                    <td class="px-5 py-4 whitespace-nowrap text-xs font-mono">
+                        <span class="text-emerald-600 dark:text-emerald-400 font-semibold">{{ payment.platform_fee }}</span>
+                        <span class="text-slate-400">/</span>
+                        <span class="text-[#0284C7] dark:text-[#38BDF8] font-semibold">{{ payment.teacher_amount }}</span>
                     </td>
-                    <td class="px-5 py-3 text-xs text-slate-400">
-                        <div>{{ payment.get_method_display }}</div>
+                    <td class="px-5 py-4 text-xs text-slate-600 dark:text-slate-300">
+                        <div class="font-medium">{{ payment.get_method_display }}</div>
                         {% if payment.reference %}
-                        <div class="font-mono text-[11px] text-slate-500">{{ payment.reference }}</div>
+                        <div class="font-mono text-[11px] text-slate-500 dark:text-slate-400">{{ payment.reference }}</div>
                         {% endif %}
                     </td>
-                    <td class="px-5 py-3 text-right whitespace-nowrap">
+                    <td class="px-5 py-4 text-right whitespace-nowrap">
                         <a href="{% url 'payment-review' payment_id=payment.id %}"
-                           class="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                           class="text-xs px-3.5 py-1.5 rounded-lg bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] font-bold shadow-sm transition">
                             Review &rarr;
                         </a>
                     </td>
@@ -80,8 +80,9 @@
         </table>
     </div>
     {% else %}
-    <div class="p-12 rounded-2xl bg-slate-900 border border-slate-800 text-center">
-        <p class="text-sm text-slate-400">No payments in this queue.</p>
+    <div class="p-12 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-center shadow-sm">
+        <span class="text-3xl block mb-2">✅</span>
+        <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">No payments in this queue.</p>
     </div>
     {% endif %}
 </div>

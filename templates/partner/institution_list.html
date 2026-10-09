@@ -1,42 +1,83 @@
 {% extends 'base.html' %}
 
-{% block title %}Educational Partners & Affiliates — {{ PLATFORM_NAME }}{% endblock %}
+{% block title %}Educational Partners &amp; Affiliates — {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <div class="text-center mb-10">
-        <span class="text-xs font-semibold uppercase tracking-wider text-cyan-400 bg-cyan-950/60 border border-cyan-800 rounded-full px-3 py-1">
-            Academic Partnerships
-        </span>
-        <h1 class="text-3xl sm:text-4xl font-extrabold text-white mt-3">Partner Institutions & Academies</h1>
-        <p class="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto mt-2">
-            Myanmar E-Learning collaborates with universities, secondary schools, and certified vocational training centers to provide unified online learning.
-        </p>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+    <!-- Header Banner -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pb-6 border-b border-slate-200 dark:border-slate-800">
+        <div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 mb-3">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="lang-en">Academic &amp; Institutional Alliances</span>
+                <span class="lang-my">ပညာရေးနှင့် မိတ်ဖက်အဖွဲ့အစည်းများ</span>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                <span class="lang-en">Partner Institutions &amp; Academies</span>
+                <span class="lang-my">မိတ်ဖက် တက္ကသိုလ်များနှင့် အဖွဲ့အစည်းများ</span>
+            </h1>
+            <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 max-w-2xl mt-2 leading-relaxed">
+                <span class="lang-en">THUTA collaborates with leading universities, schools, technical academies, and enterprise training centers across Myanmar to deliver accredited online education and verifiable credentials.</span>
+                <span class="lang-my">THUTA သည် မြန်မာနိုင်ငံရှိ ထိပ်တန်းတက္ကသိုလ်များ၊ ကျောင်းများနှင့် ပူးပေါင်း၍ အရည်အသွေးပြည့်မီသော အွန်လိုင်းပညာရေးနှင့် အသိအမှတ်ပြု လက်မှတ်များကို ပေးအပ်လျက်ရှိပါသည်။</span>
+            </p>
+        </div>
+        <div class="shrink-0">
+            <a href="{% url 'partner-apply' %}" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition">
+                <span>🏛️</span>
+                <span class="lang-en">Apply as Partner &rarr;</span>
+                <span class="lang-my">မိတ်ဖက်အဖြစ် လျှောက်ထားရန် &rarr;</span>
+            </a>
+        </div>
     </div>
 
+    <!-- Institutions Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for institution in institutions %}
-        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl flex flex-col justify-between hover:border-cyan-700/60 transition">
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm flex flex-col justify-between hover:border-emerald-500 dark:hover:border-emerald-500 transition group">
             <div>
-                <span class="text-xs px-2.5 py-0.5 rounded bg-slate-800 text-cyan-400 font-medium">
-                    {{ institution.get_institution_type_display }}
-                </span>
-                <h3 class="text-xl font-bold text-white mt-3">{{ institution.name }}</h3>
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    {% if institution.logo %}
+                    <img src="{{ institution.logo.url }}" alt="{{ institution.name }}" class="h-10 w-auto max-w-[120px] object-contain">
+                    {% else %}
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 font-black text-sm flex items-center justify-center">
+                        {{ institution.name|slice:":2"|upper }}
+                    </div>
+                    {% endif %}
+                    <span class="text-[11px] px-2.5 py-1 rounded-full font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase">
+                        {{ institution.get_institution_type_display }}
+                    </span>
+                </div>
+
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                    {{ institution.name }}
+                </h3>
                 {% if institution.address %}
-                    <p class="text-xs text-slate-400 mt-2">{{ institution.address|truncatewords:20 }}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 line-clamp-2 leading-relaxed">
+                        📍 {{ institution.address }}
+                    </p>
                 {% endif %}
             </div>
 
-            <div class="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center text-xs">
-                <span class="text-slate-500">{{ institution.cohorts.count }} Active Batches</span>
-                <a href="{% url 'partner-detail' slug=institution.slug %}" class="text-cyan-400 font-semibold hover:underline">
-                    View Profile &rarr;
+            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs">
+                <span class="text-slate-500 font-semibold">{{ institution.cohorts.count }} Active Batches</span>
+                <a href="{% url 'partner-detail' slug=institution.slug %}" class="text-sky-600 dark:text-sky-400 font-bold hover:underline flex items-center gap-1">
+                    <span>View Portal</span>
+                    <span>&rarr;</span>
                 </a>
             </div>
         </div>
         {% empty %}
-        <div class="col-span-full py-12 text-center text-slate-500">
-            No partner institutions listed at this time.
+        <div class="col-span-full py-16 px-6 text-center rounded-3xl bg-white dark:bg-[#111C2E] border border-dashed border-slate-200 dark:border-slate-800">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mx-auto mb-3">
+                🏛️
+            </div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Partner Program Open for Applications</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1 mb-5 leading-relaxed">
+                Are you an educational academy, university department, or technical training center? Join THUTA to co-publish coursework and host verified cohorts.
+            </p>
+            <a href="{% url 'partner-apply' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition">
+                <span>Apply as Institutional Partner</span> &rarr;
+            </a>
         </div>
         {% endfor %}
     </div>

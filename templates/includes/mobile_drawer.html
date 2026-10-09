@@ -5,12 +5,15 @@
         <!-- Drawer Header -->
         <div class="flex items-center justify-between pb-4 border-b border-slate-800">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-sky-600 flex items-center justify-center font-bold text-white shadow-sm shrink-0">
-                    M
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-black text-white shadow-sm shrink-0">
+                    T
                 </div>
                 <div>
-                    <span class="font-bold text-sm tracking-wide text-white block">MEL Platform</span>
-                    <span class="text-[10px] text-slate-400 block uppercase">Navigation</span>
+                    <span class="font-bold text-sm tracking-wide text-white block">THUTA</span>
+                    <span class="text-[10px] text-slate-400 block uppercase">
+                        <span class="lang-en">Education Platform</span>
+                        <span class="lang-my">ပညာရေး ပလက်ဖောင်း</span>
+                    </span>
                 </div>
             </div>
             <button type="button" id="melDrawerCloseBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Close Navigation">
@@ -21,104 +24,175 @@
         <!-- Navigation Links -->
         <nav class="space-y-1 text-sm">
             <div class="px-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Curriculum &amp; Programs
+                <span class="lang-en">Curriculum &amp; Programs</span>
+                <span class="lang-my">သင်ရိုးနှင့် ပရိုဂရမ်များ</span>
             </div>
             <a href="{% url 'course-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>📚</span>
-                <span>All Courses</span>
+                <span class="lang-en">All Courses</span>
+                <span class="lang-my">သင်ရိုးများအားလုံး</span>
             </a>
             <a href="{% url 'pricing' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>💎</span>
-                <span>Pricing Plans</span>
+                <span class="lang-en">Pricing Plans</span>
+                <span class="lang-my">အသင်းဝင် အစီအစဉ်များ</span>
             </a>
             <a href="{% url 'certificate-lookup' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>📜</span>
-                <span>Verify Certificates</span>
+                <span class="lang-en">Verify Certificates</span>
+                <span class="lang-my">အောင်လက်မှတ် စစ်ဆေးရန်</span>
             </a>
             <a href="{% url 'blog:article-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>📰</span>
-                <span>Knowledge Hub</span>
+                <span class="lang-en">Knowledge Hub</span>
+                <span class="lang-my">ဗဟုသုတ ဆောင်းပါးများ</span>
             </a>
             <a href="{% url 'portfolio-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>💼</span>
-                <span>Talent Showcase</span>
+                <span class="lang-en">Talent Showcase</span>
+                <span class="lang-my">ကျောင်းသား ပရိုဖိုင်များ</span>
+            </a>
+            <a href="{% url 'partner-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
+                <span>🏛️</span>
+                <span class="lang-en">Partner Directory</span>
+                <span class="lang-my">မိတ်ဖက် အဖွဲ့အစည်းများ</span>
+            </a>
+            <a href="{% url 'partner-apply' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-emerald-400 hover:bg-slate-800 transition font-medium">
+                <span>🤝</span>
+                <span class="lang-en">Partner With Us</span>
+                <span class="lang-my">မိတ်ဖက်အဖြစ် ပူးပေါင်းရန်</span>
             </a>
             <a href="{% url 'leaderboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>🏆</span>
-                <span>Leaderboard</span>
+                <span class="lang-en">Leaderboard</span>
+                <span class="lang-my">ဦးဆောင်သူများ ဇယား</span>
             </a>
 
             {% if is_student %}
             <div class="pt-4 px-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                My Workspace
+                <span class="lang-en">My Workspace</span>
+                <span class="lang-my">ကျွန်ုပ်၏ နေရာ</span>
             </div>
             <a href="{{ DASHBOARD_URL }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>📊</span>
-                <span>Dashboard</span>
+                <span class="lang-en">Dashboard</span>
+                <span class="lang-my">ဒက်ရှ်ဘုတ်</span>
             </a>
             <a href="{% url 'my-courses' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>🎓</span>
-                <span>My Courses</span>
+                <span class="lang-en">My Courses</span>
+                <span class="lang-my">ကျွန်ုပ်၏ သင်ရိုးများ</span>
             </a>
             <a href="{% url 'project-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>🎯</span>
-                <span>Capstone Projects</span>
+                <span class="lang-en">Capstone Projects</span>
+                <span class="lang-my">လက်တွေ့ ပရောဂျက်များ</span>
             </a>
             <a href="{% url 'lab-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>🧪</span>
-                <span>Docker Labs</span>
+                <span class="lang-en">Docker Labs</span>
+                <span class="lang-my">ဒေါ့ကာ လက်တွေ့ခန်းများ</span>
             </a>
             <a href="{% url 'ctf-board' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>🚩</span>
-                <span>CTF Challenges</span>
+                <span class="lang-en">CTF Challenges</span>
+                <span class="lang-my">CTF စိန်ခေါ်မှုများ</span>
             </a>
             <a href="{% url 'vpn-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>🛡️</span>
-                <span>VPN Access</span>
+                <span class="lang-en">VPN Access</span>
+                <span class="lang-my">VPN ချိတ်ဆက်မှု</span>
+            </a>
+            <a href="{% url 'apply-instructor' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
+                <span>👨‍🏫</span>
+                <span class="lang-en">Become an Instructor</span>
+                <span class="lang-my">ဆရာအဖြစ် လျှောက်ထားရန်</span>
             </a>
             {% endif %}
 
             {% if is_teacher and not is_admin %}
             <div class="pt-4 px-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Instructor Hub
+                <span class="lang-en">Instructor Hub</span>
+                <span class="lang-my">သင်ကြားရေး နေရာ</span>
             </div>
             <a href="{% url 'teacher-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-emerald-400 hover:bg-slate-800 transition">
                 <span>📊</span>
-                <span>Instructor Hub</span>
+                <span class="lang-en">Instructor Hub</span>
+                <span class="lang-my">ဆရာ ဒက်ရှ်ဘုတ်</span>
             </a>
             <a href="{% url 'my-courses' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>📚</span>
-                <span>My Teaching</span>
+                <span class="lang-en">My Teaching</span>
+                <span class="lang-my">ကျွန်ုပ်၏ သင်ကြားမှုများ</span>
             </a>
             <a href="{% url 'manage-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>🛠️</span>
-                <span>Manage Courses</span>
+                <span class="lang-en">Manage Courses</span>
+                <span class="lang-my">သင်ရိုးများ စီမံခန့်ခွဲရန်</span>
             </a>
             <a href="{% url 'submission-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>📝</span>
-                <span>Grading Queue</span>
+                <span class="lang-en">Grading Queue</span>
+                <span class="lang-my">အမှတ်ပေးရန် စာရင်း</span>
             </a>
             <a href="{% url 'live-session-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>📹</span>
-                <span>Live Classes</span>
+                <span class="lang-en">Live Classes</span>
+                <span class="lang-my">တိုက်ရိုက် အတန်းများ</span>
+            </a>
+            {% endif %}
+
+            {% if is_partner and not is_admin %}
+            <div class="pt-4 px-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                <span class="lang-en">Partner Portal</span>
+                <span class="lang-my">မိတ်ဖက် ပေါ်တယ်လ်</span>
+            </div>
+            <a href="{% url 'partner-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-emerald-400 hover:bg-slate-800 transition">
+                <span>🏛️</span>
+                <span class="lang-en">Partner Dashboard</span>
+                <span class="lang-my">မိတ်ဖက် ဒက်ရှ်ဘုတ်</span>
+            </a>
+            <a href="{% url 'partner-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
+                <span>📋</span>
+                <span class="lang-en">Institution Directory</span>
+                <span class="lang-my">အဖွဲ့အစည်းများ စာရင်း</span>
+            </a>
+            <a href="{% url 'partner-revenue-report' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
+                <span>💰</span>
+                <span class="lang-en">Revenue &amp; Settlements</span>
+                <span class="lang-my">ဝင်ငွေနှင့် ရှင်းတမ်းများ</span>
             </a>
             {% endif %}
 
             {% if is_admin %}
             <div class="pt-4 px-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Administration
+                <span class="lang-en">Administration</span>
+                <span class="lang-my">စီမံခန့်ခွဲမှု</span>
             </div>
             <a href="{% url 'console-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sky-400 hover:bg-slate-800 transition">
                 <span>⚙️</span>
-                <span>Admin Console</span>
+                <span class="lang-en">Admin Console</span>
+                <span class="lang-my">စီမံခန့်ခွဲသူ နေရာ</span>
+            </a>
+            <a href="{% url 'console-instructor-application-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
+                <span>📝</span>
+                <span class="lang-en">Instructor Applications</span>
+                <span class="lang-my">ဆရာ လျှောက်လွှာများ</span>
+            </a>
+            <a href="{% url 'console-partner-application-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
+                <span>🏛️</span>
+                <span class="lang-en">Partner Applications</span>
+                <span class="lang-my">မိတ်ဖက် လျှောက်လွှာများ</span>
             </a>
             <a href="{% url 'manage-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-emerald-400 hover:bg-slate-800 transition">
                 <span>🛠️</span>
-                <span>Content Studio</span>
+                <span class="lang-en">Content Studio</span>
+                <span class="lang-my">သင်ရိုး ဖန်တီးမှု စတူဒီယို</span>
             </a>
             <a href="{% url 'payment-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>💰</span>
-                <span>Payments Review</span>
+                <span class="lang-en">Payments Review</span>
+                <span class="lang-my">ငွေပေးချေမှု စစ်ဆေးခြင်း</span>
             </a>
             {% endif %}
         </nav>
@@ -128,21 +202,28 @@
     <div class="pt-4 border-t border-slate-800 space-y-3">
         {% if user.is_authenticated %}
         <div class="flex items-center justify-between text-xs">
-            <span class="text-slate-400">Signed in as <strong class="text-white">{{ user.username }}</strong></span>
+            <span class="text-slate-400">
+                <span class="lang-en">Signed in as</span>
+                <span class="lang-my">အကောင့်ဝင်ထားသူ -</span>
+                <strong class="text-white">{{ user.username }}</strong>
+            </span>
         </div>
         <form method="POST" action="{% url 'logout' %}">
             {% csrf_token %}
             <button type="submit" class="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-400 text-xs font-semibold text-center transition">
-                Sign Out
+                <span class="lang-en">Sign Out</span>
+                <span class="lang-my">အကောင့်ထွက်မည်</span>
             </button>
         </form>
         {% else %}
         <div class="flex flex-col gap-2">
             <a href="{% url 'login' %}" class="w-full py-2 rounded-lg border border-slate-700 text-xs font-medium text-center text-slate-200 hover:bg-slate-800 transition">
-                Sign In
+                <span class="lang-en">Sign In</span>
+                <span class="lang-my">အကောင့်ဝင်ရန်</span>
             </a>
             <a href="{% url 'register' %}" class="w-full py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-xs font-semibold text-center text-white transition">
-                Enroll Now
+                <span class="lang-en">Enroll Now</span>
+                <span class="lang-my">အကောင့်ဖွင့်ရန်</span>
             </a>
         </div>
         {% endif %}

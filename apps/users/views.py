@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 
-from .models import User, UserRole, StudentProfile, TeacherProfile, AdminProfile, InstructorApplication
+from .models import User, UserRole, StudentProfile, TeacherProfile, AdminProfile, InstructorApplication, Notification
 from .forms import RegistrationForm, UserLoginForm, StudentProfileUpdateForm, UnifiedProfileForm, InstructorApplicationForm
 from .services import switch_user_mode
 from .serializers import UserProfileSerializer, UserRegistrationSerializer, UserLoginSerializer
@@ -20,10 +20,14 @@ def role_dashboard_url(user):
     """Resolve the dashboard route that matches a user's role and active mode."""
     if user.is_admin:
         return 'admin-dashboard'
+    if getattr(user, 'role', None) == UserRole.PARTNER or (user.is_partner and not user.is_teacher):
+        return 'partner-dashboard'
     if user.is_teacher:
         if getattr(user, 'active_mode', None) == 'student':
             return 'dashboard'
         return 'teacher-dashboard'
+    if user.is_partner:
+        return 'partner-dashboard'
     return 'dashboard'
 
 
@@ -98,6 +102,8 @@ class StudentDashboardView(LoginRequiredMixin, TemplateView):
         if request.user.is_authenticated:
             if request.user.is_admin:
                 return redirect('admin-dashboard')
+            if request.user.role == UserRole.PARTNER or (request.user.is_partner and not request.user.is_student):
+                return redirect('partner-dashboard')
             if request.user.is_teacher and getattr(request.user, 'active_mode', None) != 'student':
                 return redirect('teacher-dashboard')
             if not request.user.is_student and getattr(request.user, 'active_mode', None) != 'student':
@@ -250,15 +256,48 @@ class InstructorApplyView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['existing_app'] = self.request.user.instructor_applications.filter(
+        user = self.request.user
+        pending_app = user.instructor_applications.filter(
             status=InstructorApplication.Status.PENDING
         ).first()
+        latest_app = user.instructor_applications.first()
+        is_teacher = user.is_teacher or (hasattr(user, 'teacher_profile') and user.teacher_profile.is_verified)
+
+        context['pending_app'] = pending_app
+        context['existing_app'] = pending_app  # backwards compatibility
+        context['latest_app'] = latest_app
+        context['is_pending'] = pending_app is not None
+        context['is_teacher'] = is_teacher
+        context['is_rejected'] = (
+            latest_app is not None and
+            latest_app.status == InstructorApplication.Status.REJECTED and
+            not pending_app and
+            not is_teacher
+        )
         return context
+
+    def post(self, request, *args, **kwargs):
+        if request.user.instructor_applications.filter(status=InstructorApplication.Status.PENDING).exists():
+            messages.warning(
+                request,
+                "You already have an instructor application pending administrative review."
+            )
+            return redirect('apply-instructor')
+        return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
         form.instance.user = self.request.user
         form.instance.status = InstructorApplication.Status.PENDING
         response = super().form_valid(form)
+
+        Notification.objects.create(
+            user=self.request.user,
+            title="Instructor Application Submitted",
+            message="Your instructor application has been submitted and is awaiting admin review.",
+            level=Notification.Level.INFO,
+            link=reverse('apply-instructor'),
+        )
+
         messages.success(
             self.request,
             "Your application to become a verified instructor has been submitted successfully and is pending academic review."

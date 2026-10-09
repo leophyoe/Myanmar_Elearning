@@ -1,319 +1,536 @@
 {% extends 'base.html' %}
 
-{% block title %}Myanmar E-Learning - Multi-Disciplinary Online Courses, Labs &amp; Certificates{% endblock %}
+{% block title %}THUTA - Multi-Disciplinary Online Courses, Labs &amp; Certificates{% endblock %}
 
 {% block sidebar %}{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="relative overflow-hidden py-20 lg:py-28 border-b border-slate-800 bg-gradient-to-b from-[#0c1326] to-[#0a0f1d] font-mono">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-700/60 text-cyan-400 text-xs font-semibold uppercase tracking-widest mb-6">
-            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-            <span>Multi-Disciplinary E-Learning Academy / ဘာသာရပ်စုံ နည်းပညာနှင့် ပညာရေး</span>
-        </div>
-        <h1 class="text-4xl sm:text-6xl font-extrabold text-white tracking-tight leading-tight mb-6">
-            MYANMAR <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500">E-LEARNING</span>
-        </h1>
-        <p class="max-w-3xl mx-auto text-lg text-slate-400 mb-10 leading-relaxed">
-            Myanmar's online academy for students, software engineers, and IT professionals. Comprehensive structured curricula across
-            Python Programming, Computer Science, Artificial Intelligence, Enterprise ICT, and Academic Preparations — along with
-            specialized hands-on cyber defense labs, live CTF challenges, and verifiable credentials.
-        </p>
+<!-- Hero Section (2-Column Split: Tech Academy Architecture) -->
+<section class="relative overflow-hidden py-12 sm:py-16 lg:py-20 border-b border-slate-200 dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#0B1220]">
+    <!-- Blueprint / Dot Grid Background Texture (Eliminates flat white void) -->
+    <div class="absolute inset-0 opacity-[0.35] dark:opacity-[0.15] pointer-events-none" style="background-image: radial-gradient(#94a3b8 1px, transparent 1px); background-size: 24px 24px;"></div>
+    <!-- Soft Ambient Sky Gradient Orbs -->
+    <div class="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-sky-200/40 dark:bg-sky-500/10 blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-blue-200/40 dark:bg-blue-500/10 blur-3xl pointer-events-none"></div>
 
-        <div class="flex flex-col sm:flex-row justify-center gap-4">
-            <a href="{% url 'course-list' %}" class="px-8 py-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-lg shadow-cyan-600/30 transition text-sm">
-                Explore All Courses &amp; Disciplines &rarr;
-            </a>
-            <a href="{% url 'portfolio-list' %}" class="px-8 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-slate-700 font-bold transition text-sm">
-                Public Portfolios &amp; Talent
-            </a>
-            <a href="{% url 'lab-list' %}" class="px-8 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 font-bold transition text-sm">
-                Cyber Lab Sandboxes
-            </a>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+
+            <!-- Left Column: Copy, Search, CTAs & Social Proof (7 Cols) -->
+            <div class="lg:col-span-7 space-y-6 text-left">
+                <!-- Eyebrow Pill Badge -->
+                <div class="inline-flex items-center space-x-2.5 px-3.5 py-1.5 rounded-full bg-sky-100/90 dark:bg-sky-950/80 border border-sky-300 dark:border-sky-800 text-sky-900 dark:text-sky-300 text-xs font-bold uppercase tracking-wider shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-sky-600 dark:bg-sky-400 animate-pulse"></span>
+                    <span class="lang-en">THUTA ACADEMY • Multi-Disciplinary E-Learning</span>
+                    <span class="lang-my">သုတ အကယ်ဒမီ • ဘာသာရပ်စုံ နည်းပညာနှင့် ပညာရေး</span>
+                </div>
+
+                <!-- Main Heading -->
+                <h1 class="text-3xl sm:text-5xl lg:text-5xl font-black tracking-tight leading-tight text-slate-900 dark:text-white">
+                    <span class="lang-en">Master In-Demand Tech &amp; Cyber Skills <span class="text-sky-600 dark:text-sky-400 block mt-1">with Verifiable Credentials.</span></span>
+                    <span class="lang-my">ခေတ်မီ နည်းပညာနှင့် ဆိုက်ဘာလုံခြုံရေးကို <span class="text-sky-600 dark:text-sky-400 block mt-1">တရားဝင် အောင်လက်မှတ်များဖြင့် လေ့လာပါ။</span></span>
+                </h1>
+
+                <!-- Subtitle Paragraph -->
+                <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal max-w-2xl">
+                    <span class="lang-en">Myanmar's online academy for students, software engineers, and IT specialists. Master Python, AI, Enterprise Cloud &amp; ICT, hands-on Cyber Defense Labs, and QR-verifiable credentials in one platform.</span>
+                    <span class="lang-my">မြန်မာနိုင်ငံ၏ ခေတ်မီ အွန်လိုင်းနည်းပညာနှင့် ဘာသာရပ်စုံ သင်ကြားရေး ပလက်ဖောင်း — Python Programming, Artificial Intelligence, Enterprise Cloud &amp; ICT, Hands-on Cyber Defense Labs နှင့် တရားဝင် QR-Verified အောင်လက်မှတ်များကို တစ်နေရာတည်းတွင် လေ့လာသင်ယူပါ။</span>
+                </p>
+
+                <!-- In-Hero Search Bar (Instant Action) -->
+                <form action="{% url 'course-list' %}" method="GET" class="relative max-w-xl">
+                    <div class="flex items-center rounded-2xl bg-white dark:bg-[#111C2E] border-2 border-slate-200 dark:border-[#26364B] focus-within:border-sky-500 dark:focus-within:border-sky-400 shadow-md p-1.5 transition">
+                        <div class="pl-3.5 pr-2 text-slate-400 dark:text-slate-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </div>
+                        <input type="text" name="q"
+                               placeholder="What do you want to learn today? (e.g. Python, Cyber Defense, AI)..."
+                               data-placeholder-en="What do you want to learn today? (e.g. Python, Cyber Defense, AI)..."
+                               data-placeholder-my="သင် ဘာကို လေ့လာသင်ယူလိုပါသလဲ? (ဥပမာ- Python, Cyber Defense, AI)..."
+                               class="w-full bg-transparent border-none text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-0 py-2">
+                        <button type="submit" class="shrink-0 px-5 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5">
+                            <span class="lang-en">Search &rarr;</span>
+                            <span class="lang-my">ရှာဖွေမည် &rarr;</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Quick Discipline Chips -->
+                <div class="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                    <span class="text-slate-500 dark:text-slate-400 font-semibold">
+                        <span class="lang-en">Popular:</span>
+                        <span class="lang-my">လူကြိုက်များသော:</span>
+                    </span>
+                    <a href="{% url 'course-list' %}?q=python" class="px-2.5 py-1 rounded-lg bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-400 hover:text-sky-600 transition shadow-2xs font-medium">🐍 Python</a>
+                    <a href="{% url 'course-list' %}?q=cyber" class="px-2.5 py-1 rounded-lg bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-400 hover:text-sky-600 transition shadow-2xs font-medium">
+                        <span class="lang-en">🛡️ Cyber Labs</span>
+                        <span class="lang-my">🛡️ ဆိုက်ဘာ Labs</span>
+                    </a>
+                    <a href="{% url 'course-list' %}?q=ai" class="px-2.5 py-1 rounded-lg bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-sky-400 hover:text-sky-600 transition shadow-2xs font-medium">
+                        <span class="lang-en">🤖 AI &amp; ML</span>
+                        <span class="lang-my">🤖 ဉာဏ်ရည်တု AI</span>
+                    </a>
+                    <a href="{% url 'course-list' %}?price_type=free" class="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 transition shadow-2xs font-medium">
+                        <span class="lang-en">🎁 Free Courses</span>
+                        <span class="lang-my">🎁 အခမဲ့ သင်ရိုးများ</span>
+                    </a>
+                </div>
+
+                <!-- CTAs Row -->
+                <div class="flex flex-wrap items-center gap-3 pt-2">
+                    <a href="{% url 'course-list' %}" class="px-6 py-3 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-xs sm:text-sm shadow-md shadow-sky-600/20 transition flex items-center gap-2">
+                        <span class="lang-en">Explore Full Catalog &rarr;</span>
+                        <span class="lang-my">သင်ရိုးအားလုံး ကြည့်ရှုမည် &rarr;</span>
+                    </a>
+                    <a href="{% url 'lab-list' %}" class="px-5 py-3 rounded-xl bg-white dark:bg-[#111C2E] hover:bg-slate-50 dark:hover:bg-[#162235] text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-[#26364B] font-semibold text-xs sm:text-sm shadow-sm transition flex items-center gap-2">
+                        <span class="lang-en">⚡ Cyber Sandboxes</span>
+                        <span class="lang-my">⚡ လက်တွေ့ Sandboxes</span>
+                    </a>
+                    <a href="{% url 'partner-apply' %}" class="px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-semibold text-xs transition flex items-center gap-1.5">
+                        <span class="lang-en">🏛️ Partner With Us</span>
+                        <span class="lang-my">🏛️ မိတ်ဖက် ပူးပေါင်းမည်</span>
+                    </a>
+                </div>
+
+                <!-- Trust / Proof Badges -->
+                <div class="pt-3 border-t border-slate-200 dark:border-slate-800/80 flex flex-wrap items-center gap-6 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-amber-500 font-bold">★ 4.9/5</span>
+                        <span class="lang-en">Student Reviews</span>
+                        <span class="lang-my">ကျောင်းသား သုံးသပ်ချက်များ</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-sky-600 dark:text-sky-400 font-bold">✓ 100%</span>
+                        <span class="lang-en">QR-Verified Certificates</span>
+                        <span class="lang-my">တရားဝင် အောင်လက်မှတ်များ</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-emerald-600 dark:text-emerald-400 font-bold">🏛️ Academic</span>
+                        <span class="lang-en">Partner Networks</span>
+                        <span class="lang-my">မိတ်ဖက် ကွန်ရက်များ</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Interactive Tech Showcase & Preview (5 Cols) -->
+            <div class="lg:col-span-5 relative">
+                <!-- Stacked Featured Track Showcase Card -->
+                <div class="rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-xl p-5 space-y-4 relative z-10">
+                    <!-- Card Top Header -->
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-sky-50 dark:bg-sky-950/80 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-base">
+                                🛡️
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-900 dark:text-white">
+                                    <span class="lang-en">Flagship Curriculum</span>
+                                    <span class="lang-my">အဓိက ဒီပလိုမာသင်ရိုး</span>
+                                </div>
+                                <div class="text-[10px] text-slate-500 dark:text-slate-400">THUTA Official Diploma</div>
+                            </div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 uppercase">
+                            <span class="lang-en">Active Cohort</span>
+                            <span class="lang-my">ဖွင့်လှစ်ဆဲ သင်တန်း</span>
+                        </span>
+                    </div>
+
+                    <!-- Program Title & Badges -->
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900 dark:text-white">
+                            <span class="lang-en">Python Core, AI &amp; Cyber Defense</span>
+                            <span class="lang-my">Python အခြေခံ၊ ဉာဏ်ရည်တု AI နှင့် ဆိုက်ဘာလုံခြုံရေး</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            <span class="lang-en">Structured path from fundamentals to hands-on defensive operations and CTF challenges.</span>
+                            <span class="lang-my">အခြေခံ ပရိုဂရမ်မင်းမှစ၍ လက်တွေ့ ဆိုက်ဘာစစ်ဆင်ရေးနှင့် CTF အထိ အဆင့်ဆင့် သင်ယူနိုင်သော လမ်းကြောင်း။</span>
+                        </p>
+                    </div>
+
+                    <!-- Curriculum Checklist -->
+                    <div class="space-y-2 py-1 text-xs">
+                        <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                            <span class="w-4 h-4 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center text-[10px] font-black">✓</span>
+                            <span class="lang-en">Python 3.12 OOP &amp; Automation Scripts</span>
+                            <span class="lang-my">Python 3.12 OOP နှင့် Scripting အလိုအလျောက်စနစ်</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                            <span class="w-4 h-4 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center text-[10px] font-black">✓</span>
+                            <span class="lang-en">Linux Virtual Sandboxes &amp; Live CTF Labs</span>
+                            <span class="lang-my">Linux Virtual Sandboxes နှင့် တိုက်ရိုက် CTF Labs</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                            <span class="w-4 h-4 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center text-[10px] font-black">✓</span>
+                            <span class="lang-en">Cryptographic QR-Verified Certificate</span>
+                            <span class="lang-my">QR အတည်ပြုနိုင်သော တရားဝင် ဒီဂျစ်တယ် အောင်လက်မှတ်</span>
+                        </div>
+                    </div>
+
+                    <!-- Mini Live Terminal Window Teaser -->
+                    <div class="rounded-xl bg-[#0B1220] border border-slate-800 p-3.5 font-mono text-[11px] text-slate-300 space-y-1.5 shadow-inner">
+                        <div class="flex items-center justify-between border-b border-slate-800/80 pb-1.5 mb-1.5">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                            </div>
+                            <span class="text-[10px] text-slate-500">thuta-terminal ~ v2.4</span>
+                        </div>
+                        <div class="text-sky-400 font-semibold">$ thuta-verify --credential MEL-2026</div>
+                        <div class="text-emerald-400">[✓] Verification: PASSED (Authentic)</div>
+                        <div class="text-slate-400">[✓] 15/15 CTF Flags Captured • Ready!</div>
+                    </div>
+
+                    <!-- Card Footer Action -->
+                    <div class="pt-2 flex items-center justify-between">
+                        <div class="text-xs">
+                            <span class="font-extrabold text-slate-900 dark:text-white">
+                                <span class="lang-en">Begin Learning</span>
+                                <span class="lang-my">စတင်လေ့လာမည်</span>
+                            </span>
+                            <span class="text-[10px] text-slate-500 block">
+                                <span class="lang-en">Instant self-paced access</span>
+                                <span class="lang-my">အချိန်မရွေး ချက်ချင်းဝင်ရောက်နိုင်</span>
+                            </span>
+                        </div>
+                        <a href="{% url 'course-list' %}" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 hover:text-sky-600 text-slate-800 dark:text-slate-200 text-xs font-bold transition">
+                            <span class="lang-en">View Syllabus &rarr;</span>
+                            <span class="lang-my">သင်ရိုးမာတိကာ &rarr;</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Floating Bottom-Left Pill -->
+                <div class="hidden sm:flex items-center gap-2 absolute -bottom-4 -left-6 z-20 px-3.5 py-2 rounded-xl bg-white dark:bg-[#162235] border border-slate-200 dark:border-[#26364B] shadow-lg text-xs font-bold text-slate-800 dark:text-white animate-bounce">
+                    <span class="text-base">🎓</span>
+                    <span class="lang-en">100% Cryptographic QR Verifiable</span>
+                    <span class="lang-my">၁၀၀% QR ဖြင့် စစ်ဆေးနိုင်သော အောင်လက်မှတ်</span>
+                </div>
+            </div>
+
         </div>
     </div>
 </section>
 
 <!-- Metrics & Capability Highlights -->
-<section class="py-12 border-b border-slate-800/80 bg-[#0d1527] font-mono">
+<section class="py-10 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0B1220]">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800">
-                <div class="text-3xl font-bold text-cyan-400 mb-1">9</div>
-                <div class="text-xs text-slate-400 uppercase tracking-wider">Academic Disciplines</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
+            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-[#111C2E] border border-slate-200/80 dark:border-[#26364B]">
+                <div class="text-3xl font-extrabold text-sky-600 dark:text-sky-400 mb-1">{{ courses_count|default:"10+" }}</div>
+                <div class="text-xs text-slate-600 dark:text-slate-400 font-medium uppercase tracking-wider">
+                    <span class="lang-en">Published Courses</span>
+                    <span class="lang-my">ဖွင့်လှစ်ထားသော သင်ရိုးများ</span>
+                </div>
             </div>
-            <div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800">
-                <div class="text-3xl font-bold text-emerald-400 mb-1">30+</div>
-                <div class="text-xs text-slate-400 uppercase tracking-wider">Structured Modules</div>
+            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-[#111C2E] border border-slate-200/80 dark:border-[#26364B]">
+                <div class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mb-1">{{ modules_count|default:"30+" }}</div>
+                <div class="text-xs text-slate-600 dark:text-slate-400 font-medium uppercase tracking-wider">
+                    <span class="lang-en">Curriculum Modules</span>
+                    <span class="lang-my">သင်ရိုး မော်ဂျူးများ</span>
+                </div>
             </div>
-            <div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800">
-                <div class="text-3xl font-bold text-blue-400 mb-1">70+</div>
-                <div class="text-xs text-slate-400 uppercase tracking-wider">Hands-on Labs &amp; Tasks</div>
+            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-[#111C2E] border border-slate-200/80 dark:border-[#26364B]">
+                <div class="text-3xl font-extrabold text-blue-600 dark:text-blue-400 mb-1">{{ labs_count|default:"70+" }}</div>
+                <div class="text-xs text-slate-600 dark:text-slate-400 font-medium uppercase tracking-wider">
+                    <span class="lang-en">Hands-on Labs &amp; Tasks</span>
+                    <span class="lang-my">လက်တွေ့ လေ့ကျင့်ခန်းများ</span>
+                </div>
             </div>
-            <div class="p-6 rounded-xl bg-slate-900/60 border border-slate-800">
-                <div class="text-3xl font-bold text-purple-400 mb-1">QR-Verified</div>
-                <div class="text-xs text-slate-400 uppercase tracking-wider">Digital Certificates</div>
+            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-[#111C2E] border border-slate-200/80 dark:border-[#26364B]">
+                <div class="text-3xl font-extrabold text-purple-600 dark:text-purple-400 mb-1">QR-Verified</div>
+                <div class="text-xs text-slate-600 dark:text-slate-400 font-medium uppercase tracking-wider">
+                    <span class="lang-en">Digital Certificates</span>
+                    <span class="lang-my">ဒီဂျစ်တယ် အောင်လက်မှတ်များ</span>
+                </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Multi-Disciplinary Tracks Showcase -->
-<section class="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 font-mono">
-    <div class="text-center mb-12">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-950/80 border border-cyan-800 text-cyan-300 mb-3">
-            <span>📚 Wide Range of Disciplines / လေ့လာနိုင်သော ဘာသာရပ်နယ်ပယ်များ</span>
-        </div>
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-3">Explore In-Demand Subject Tracks</h2>
-        <p class="text-slate-400 text-sm max-w-2xl mx-auto">
-            Myanmar E-Learning offers specialized learning paths across software development, AI, computing fundamentals, and systems administration alongside offensive/defensive cybersecurity.
-        </p>
-    </div>
+<!-- 1. Featured Programs & Curricula Carousel -->
+{% include 'includes/_course_carousel.html' with section_id='featured' section_title='Featured Programs & Curricula' section_title_my='အထူးရွေးချယ်ထားသော ပရိုဂရမ်များနှင့် သင်ရိုးများ' section_subtitle='Flagship professional diploma and academic curricula certified by THUTA with hands-on practice.' section_subtitle_my='လက်တွေ့ လေ့ကျင့်ခန်းများနှင့်အတူ သုတမှ အသိအမှတ်ပြုသော အဓိက ပရော်ဖက်ရှင်နယ် ဒီပလိုမာသင်ရိုးများ။' section_badge='★ Highlighted Curricula' section_badge_my='★ အထူးသင်ရိုးများ' section_badge_class='bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300' view_all_url='/courses/' view_all_label='View Full Catalog' view_all_label_my='သင်ရိုးအားလုံး ကြည့်ရှုမည်' courses=featured_courses %}
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Track 1: Python -->
-        <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between group shadow-lg">
-            <div>
-                <div class="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-800 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
-                    🐍
-                </div>
-                <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold uppercase">Software Engineering</span>
-                <h3 class="text-lg font-bold text-white mt-2 mb-2 group-hover:text-cyan-400 transition">Python Programming</h3>
-                <p class="text-xs text-slate-400 leading-relaxed mb-4">
-                    Syntax fundamentals, data structures, object-oriented design, web APIs with FastAPI &amp; Django, and automated testing.
-                </p>
-            </div>
-            <div class="pt-4 border-t border-slate-800 flex items-center justify-between text-xs">
-                <span class="text-slate-500">4 Comprehensive Modules</span>
-                <a href="{% url 'course-list' %}?category=python-programming" class="text-cyan-400 hover:underline font-bold">
-                    View Courses &rarr;
-                </a>
-            </div>
-        </div>
+<!-- 2. Popular & Trending Courses Carousel -->
+{% include 'includes/_course_carousel.html' with section_id='popular' section_title='Popular & Trending Courses' section_title_my='လူကြိုက်အများဆုံး သင်ရိုးများ' section_subtitle='Highest enrolled courses chosen by students and technology specialists in Myanmar.' section_subtitle_my='မြန်မာနိုင်ငံရှိ ကျောင်းသားများနှင့် နည်းပညာရှင်များ အများဆုံး တက်ရောက်နေသော သင်ရိုးများ။' section_badge='🔥 Trending Now' section_badge_my='🔥 လူကြိုက်များဆဲ' section_badge_class='bg-sky-50 dark:bg-sky-950/80 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300' view_all_url='/courses/?sort=popular' view_all_label='Most Popular' view_all_label_my='လူကြိုက်အများဆုံး' courses=popular_courses %}
 
-        <!-- Track 2: AI & ML -->
-        <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between group shadow-lg">
-            <div>
-                <div class="w-12 h-12 rounded-xl bg-purple-950/80 border border-purple-800 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
-                    🤖
-                </div>
-                <span class="text-[10px] px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 font-bold uppercase">Machine Intelligence</span>
-                <h3 class="text-lg font-bold text-white mt-2 mb-2 group-hover:text-purple-400 transition">Artificial Intelligence &amp; Data</h3>
-                <p class="text-xs text-slate-400 leading-relaxed mb-4">
-                    NumPy, Pandas, Scikit-Learn algorithms, deep neural networks with PyTorch, and modern Generative AI / RAG applications.
-                </p>
-            </div>
-            <div class="pt-4 border-t border-slate-800 flex items-center justify-between text-xs">
-                <span class="text-slate-500">4 Comprehensive Modules</span>
-                <a href="{% url 'course-list' %}?category=artificial-intelligence" class="text-purple-400 hover:underline font-bold">
-                    View Courses &rarr;
-                </a>
-            </div>
-        </div>
-
-        <!-- Track 3: Computer Science & Web -->
-        <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between group shadow-lg">
-            <div>
-                <div class="w-12 h-12 rounded-xl bg-blue-950/80 border border-blue-800 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
-                    💻
-                </div>
-                <span class="text-[10px] px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 font-bold uppercase">Web &amp; Foundations</span>
-                <h3 class="text-lg font-bold text-white mt-2 mb-2 group-hover:text-blue-400 transition">Computer Science &amp; Full-Stack</h3>
-                <p class="text-xs text-slate-400 leading-relaxed mb-4">
-                    Core CS algorithms, Big-O analysis, modern frontend engineering (HTML5/Tailwind/JS), SQL databases, and cloud deployments.
-                </p>
-            </div>
-            <div class="pt-4 border-t border-slate-800 flex items-center justify-between text-xs">
-                <span class="text-slate-500">4 Comprehensive Modules</span>
-                <a href="{% url 'course-list' %}?category=computer-science" class="text-blue-400 hover:underline font-bold">
-                    View Courses &rarr;
-                </a>
-            </div>
-        </div>
-
-        <!-- Track 4: Cyber Security -->
-        <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between group shadow-lg">
-            <div>
-                <div class="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-800 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
-                    🛡️
-                </div>
-                <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold uppercase">Offensive &amp; Defensive</span>
-                <h3 class="text-lg font-bold text-white mt-2 mb-2 group-hover:text-emerald-400 transition">Cyber Security &amp; Cyber Range</h3>
-                <p class="text-xs text-slate-400 leading-relaxed mb-4">
-                    Network defense, Linux permissions, ethical hacking, web vulnerabilities (OWASP), Wazuh SIEM triage, and live CTFs.
-                </p>
-            </div>
-            <div class="pt-4 border-t border-slate-800 flex items-center justify-between text-xs">
-                <span class="text-slate-500">14 Diploma Modules + Labs</span>
-                <a href="{% url 'course-list' %}?category=cyber-security" class="text-emerald-400 hover:underline font-bold">
-                    View Courses &rarr;
-                </a>
-            </div>
-        </div>
-
-        <!-- Track 5: ICT & Networking -->
-        <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between group shadow-lg">
-            <div>
-                <div class="w-12 h-12 rounded-xl bg-amber-950/80 border border-amber-800 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
-                    📡
-                </div>
-                <span class="text-[10px] px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 font-bold uppercase">Infrastructure &amp; IT</span>
-                <h3 class="text-lg font-bold text-white mt-2 mb-2 group-hover:text-amber-400 transition">Enterprise ICT &amp; Networking</h3>
-                <p class="text-xs text-slate-400 leading-relaxed mb-4">
-                    Computer hardware diagnostics, TCP/IP networking, routing, switching, Active Directory, cloud office, and IT support.
-                </p>
-            </div>
-            <div class="pt-4 border-t border-slate-800 flex items-center justify-between text-xs">
-                <span class="text-slate-500">3 Comprehensive Modules</span>
-                <a href="{% url 'course-list' %}?category=ict" class="text-amber-400 hover:underline font-bold">
-                    View Courses &rarr;
-                </a>
-            </div>
-        </div>
-
-        <!-- Track 6: IGCSE & Academic -->
-        <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between group shadow-lg">
-            <div>
-                <div class="w-12 h-12 rounded-xl bg-rose-950/80 border border-rose-800 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition">
-                    🎓
-                </div>
-                <span class="text-[10px] px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 font-bold uppercase">Secondary &amp; Exam Prep</span>
-                <h3 class="text-lg font-bold text-white mt-2 mb-2 group-hover:text-rose-400 transition">IGCSE &amp; Academic Technology</h3>
-                <p class="text-xs text-slate-400 leading-relaxed mb-4">
-                    International Cambridge secondary curriculum: data representation, logic gates, pseudocode, algorithm design, and exam readiness.
-                </p>
-            </div>
-            <div class="pt-4 border-t border-slate-800 flex items-center justify-between text-xs">
-                <span class="text-slate-500">3 Comprehensive Modules</span>
-                <a href="{% url 'course-list' %}?category=igcse-o-level" class="text-rose-400 hover:underline font-bold">
-                    View Courses &rarr;
-                </a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Featured Flagship Programs -->
-<section class="py-16 border-t border-slate-800/80 bg-slate-950/60 font-mono">
+<!-- 3. Explore In-Demand Disciplines & Categories -->
+<section class="py-12 sm:py-16 border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#0E1726]/40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-3">Featured Certification Programs</h2>
-            <p class="text-slate-400 text-sm max-w-2xl mx-auto">
-                Step-by-step vocational and academic courses designed with video lessons, documentation, checkpoints, and verified credentials.
-            </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Python Course Preview -->
-            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 transition flex flex-col justify-between">
-                <div>
-                    <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold uppercase">Python Programming</span>
-                    <h3 class="text-lg font-bold text-white mt-2 mb-2">Python Programming &amp; Software Development</h3>
-                    <p class="text-xs text-slate-400 leading-relaxed mb-4">From zero syntax to OOP, FastAPI REST APIs, and automated Pytest pipelines.</p>
-                    <div class="space-y-1.5 text-[11px] text-slate-300 mb-4">
-                        <div class="flex items-center gap-2"><span class="text-cyan-400">✓</span> 4 Structured Modules</div>
-                        <div class="flex items-center gap-2"><span class="text-cyan-400">✓</span> 4 Months Duration</div>
-                        <div class="flex items-center gap-2"><span class="text-cyan-400">✓</span> Verified Completion Certificate</div>
-                    </div>
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+            <div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 dark:bg-purple-950/80 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 mb-2.5">
+                    <span class="lang-en">📚 Disciplines &amp; Categories</span>
+                    <span class="lang-my">📚 ဘာသာရပ်နယ်ပယ်များ</span>
                 </div>
-                <a href="{% url 'course-detail' slug='python-programming-software-development' %}" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-cyan-600 hover:text-white border border-slate-700 text-cyan-400 text-xs font-bold transition text-center">
-                    Inspect Syllabus &rarr;
-                </a>
-            </div>
-
-            <!-- AI Course Preview -->
-            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 transition flex flex-col justify-between">
-                <div>
-                    <span class="text-[10px] px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 font-bold uppercase">Artificial Intelligence</span>
-                    <h3 class="text-lg font-bold text-white mt-2 mb-2">Artificial Intelligence &amp; Machine Learning</h3>
-                    <p class="text-xs text-slate-400 leading-relaxed mb-4">Exploratory data analysis, Scikit-Learn algorithms, PyTorch deep learning, and LLM RAG systems.</p>
-                    <div class="space-y-1.5 text-[11px] text-slate-300 mb-4">
-                        <div class="flex items-center gap-2"><span class="text-purple-400">✓</span> 4 Structured Modules</div>
-                        <div class="flex items-center gap-2"><span class="text-purple-400">✓</span> 6 Months Duration</div>
-                        <div class="flex items-center gap-2"><span class="text-purple-400">✓</span> Hands-on AI Capstone</div>
-                    </div>
-                </div>
-                <a href="{% url 'course-detail' slug='artificial-intelligence-machine-learning' %}" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-purple-600 hover:text-white border border-slate-700 text-purple-400 text-xs font-bold transition text-center">
-                    Inspect Syllabus &rarr;
-                </a>
-            </div>
-
-            <!-- Cyber Diploma Preview -->
-            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition flex flex-col justify-between">
-                <div>
-                    <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold uppercase">Cyber Security</span>
-                    <h3 class="text-lg font-bold text-white mt-2 mb-2">Diploma in Cyber Security</h3>
-                    <p class="text-xs text-slate-400 leading-relaxed mb-4">Comprehensive defense engineering, penetration testing, Wazuh SIEM, and capstone cyber range.</p>
-                    <div class="space-y-1.5 text-[11px] text-slate-300 mb-4">
-                        <div class="flex items-center gap-2"><span class="text-emerald-400">✓</span> 14 Comprehensive Modules</div>
-                        <div class="flex items-center gap-2"><span class="text-emerald-400">✓</span> 10 Months Diploma</div>
-                        <div class="flex items-center gap-2"><span class="text-emerald-400">✓</span> 70+ Hands-on Lab Sandboxes</div>
-                    </div>
-                </div>
-                <a href="{% url 'course-detail' slug='diploma-in-cyber-security' %}" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-emerald-600 hover:text-white border border-slate-700 text-emerald-400 text-xs font-bold transition text-center">
-                    Inspect Syllabus &rarr;
-                </a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Verifiable Public Portfolios Showcase -->
-<section class="py-16 border-t border-slate-800/80 bg-slate-950/40 font-mono">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="p-8 sm:p-12 rounded-2xl bg-gradient-to-br from-slate-900 via-[#0d1424] to-slate-900 border border-slate-800 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8">
-            <div class="max-w-2xl">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-950/80 border border-cyan-800 text-cyan-300 mb-3">
-                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                    <span>100% Verifiable &amp; Public / အများပြည်သူစစ်ဆေးနိုင်သော ပရိုဖိုင်များ</span>
-                </div>
-                <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                    Showcase Hands-On Skills with Public Portfolios
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    <span class="lang-en">Explore In-Demand Subject Tracks</span>
+                    <span class="lang-my">ခေတ်မီ ဘာသာရပ်နယ်ပယ်များကို လေ့လာပါ</span>
                 </h2>
-                <p class="text-sm text-slate-400 mt-3 leading-relaxed">
-                    Every student and instructor receives a dedicated public portfolio URL with QR verification, verified lab achievements, CTF solver logs, projects, and platform certificates. Employers and recruiters can verify your competency without login credentials.
+                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1.5 max-w-2xl leading-relaxed">
+                    <span class="lang-en">Select from structured technical learning paths across software engineering, data, cloud networking, and security operations.</span>
+                    <span class="lang-my">ဆော့ဖ်ဝဲအင်ဂျင်နီယာ၊ ဒေတာသိပ္ပံ၊ Cloud ကွန်ရက်နှင့် လုံခြုံရေးဆိုင်ရာ စနစ်တကျ ရေးဆွဲထားသော သင်ယူမှုလမ်းကြောင်းများကို ရွေးချယ်ပါ။</span>
                 </p>
-                <div class="mt-6 flex flex-wrap items-center gap-4 text-xs text-slate-300">
-                    <span class="flex items-center gap-1.5 text-cyan-400 font-semibold">✓ Permanent Public URL</span>
-                    <span class="flex items-center gap-1.5 text-emerald-400 font-semibold">✓ Cryptographic QR &amp; NFC</span>
-                    <span class="flex items-center gap-1.5 text-purple-400 font-semibold">✓ Lab Proof &amp; CTF Badges</span>
+            </div>
+            <a href="{% url 'course-list' %}" class="text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors shrink-0">
+                <span class="lang-en">All Disciplines &rarr;</span>
+                <span class="lang-my">ဘာသာရပ်အားလုံး &rarr;</span>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {% for cat in popular_categories %}
+            <a href="{% url 'course-list' %}?category={{ cat.slug }}"
+               class="group p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm hover:shadow-lg hover:border-sky-400 dark:hover:border-sky-500/60 transition-all duration-200 flex flex-col justify-between">
+                <div>
+                    <div class="w-11 h-11 rounded-xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200/80 dark:border-sky-800/80 flex items-center justify-center text-xl mb-3 group-hover:scale-105 transition-transform">
+                        {% if 'cyber' in cat.slug %}
+                            🛡️
+                        {% elif 'python' in cat.slug %}
+                            🐍
+                        {% elif 'ai' in cat.slug or 'machine' in cat.slug %}
+                            🤖
+                        {% elif 'ict' in cat.slug or 'network' in cat.slug %}
+                            📡
+                        {% elif 'igcse' in cat.slug or 'ged' in cat.slug or 'academic' in cat.slug %}
+                            🎓
+                        {% else %}
+                            💻
+                        {% endif %}
+                    </div>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors line-clamp-1">
+                        {{ cat.title }}
+                    </h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                        {{ cat.description|default:"Comprehensive structured courses and practical exercises." }}
+                    </p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                    <span class="font-semibold text-sky-600 dark:text-sky-400">
+                        {{ cat.courses_count }} <span class="lang-en">Course{{ cat.courses_count|pluralize }}</span><span class="lang-my">သင်ရိုး</span>
+                    </span>
+                    <span class="text-slate-400 group-hover:translate-x-1 transition-transform">
+                        &rarr;
+                    </span>
+                </div>
+            </a>
+            {% empty %}
+            <div class="col-span-full p-6 text-center text-slate-500 text-sm">
+                <span class="lang-en">No active categories found.</span>
+                <span class="lang-my">ဘာသာရပ်များ မတွေ့ရှိသေးပါ။</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- 4. Newest Courses Carousel -->
+{% include 'includes/_course_carousel.html' with section_id='new' section_title='Newest Additions & Fresh Tracks' section_title_my='အသစ်ထွက်ရှိသော သင်ရိုးများ' section_subtitle='Recently published courses and updated curricula to expand your technical skills.' section_subtitle_my='သင်၏ နည်းပညာစွမ်းရည်ကို မြှင့်တင်ရန် မကြာသေးမီက ဖွင့်လှစ်ထားသော သင်ရိုးအသစ်များ။' section_badge='✨ Fresh Content' section_badge_my='✨ သင်ရိုးသစ်' section_badge_class='bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300' view_all_url='/courses/?sort=newest' view_all_label='View Latest' view_all_label_my='နောက်ဆုံးပေါ် ကြည့်ရှုမည်' courses=new_courses %}
+
+<!-- 5. Free Courses Carousel -->
+{% include 'includes/_course_carousel.html' with section_id='free' section_title='Free Courses & Open Access' section_title_my='အခမဲ့ သင်ယူနိုင်သော သင်ရိုးများ' section_subtitle='Start learning immediately with zero upfront tuition or subscription fees.' section_subtitle_my='မည်သည့် ကုန်ကျစရိတ်မှ မလိုဘဲ ချက်ချင်း စတင်လေ့လာနိုင်သော အခမဲ့ သင်ရိုးများ။' section_badge='🎁 100% Free Learning' section_badge_my='🎁 ၁၀၀% အခမဲ့' section_badge_class='bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300' view_all_url='/courses/?price_type=free' view_all_label='All Free Courses' view_all_label_my='အခမဲ့သင်ရိုးအားလုံး' courses=free_courses %}
+
+<!-- 6. Top Instructors & Mentors Showcase -->
+<section class="py-12 sm:py-16 border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#0E1726]/40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+            <div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 dark:bg-sky-950/80 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 mb-2.5">
+                    <span class="lang-en">👨‍🏫 Certified Instructors</span>
+                    <span class="lang-my">👨‍🏫 အသိအမှတ်ပြု ကထိကများနှင့် ဆရာများ</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    <span class="lang-en">Learn from Experienced Educators</span>
+                    <span class="lang-my">အတွေ့အကြုံရှိ ကျွမ်းကျင်ပညာရှင်များထံမှ သင်ယူပါ</span>
+                </h2>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1.5 max-w-2xl leading-relaxed">
+                    <span class="lang-en">Courses created and mentored by verified industry practitioners and academic educators.</span>
+                    <span class="lang-my">လက်တွေ့လုပ်ငန်းခွင်မှ ပညာရှင်များနှင့် အတွေ့အကြုံရှိ ဆရာများ ကိုယ်တိုင် သင်ကြားပို့ချပေးသော သင်ရိုးများ။</span>
+                </p>
+            </div>
+            <a href="{% url 'apply-instructor' %}" class="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors shrink-0">
+                <span class="lang-en">Become an Instructor &rarr;</span>
+                <span class="lang-my">သင်တန်းဆရာအဖြစ် လျှောက်ထားမည် &rarr;</span>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {% for instructor in top_instructors %}
+            <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-full bg-sky-100 dark:bg-sky-950/80 border border-sky-300 dark:border-sky-700 flex items-center justify-center font-bold text-base text-sky-700 dark:text-sky-300 shrink-0">
+                        {{ instructor.username|slice:":1"|upper }}
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">
+                            {{ instructor.get_full_name|default:instructor.username }}
+                        </h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            {{ instructor.courses_count }} <span class="lang-en">Course{{ instructor.courses_count|pluralize }} Authored</span><span class="lang-my">သင်ရိုး တာဝန်ယူထားသူ</span>
+                        </p>
+                    </div>
+                </div>
+                <a href="{% url 'course-list' %}?q={{ instructor.username }}" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 transition shrink-0">
+                    <span class="lang-en">Courses</span>
+                    <span class="lang-my">သင်ရိုးများ</span>
+                </a>
+            </div>
+            {% empty %}
+            <div class="col-span-full p-6 text-center text-slate-500 text-sm">
+                <span class="lang-en">Instructors are being assigned to new catalog tracks.</span>
+                <span class="lang-my">ဆရာများကို မကြာမီ စာရင်းသွင်းဖော်ပြပါမည်။</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- 7. Verifiable Public Portfolios Showcase (Elevated Dual-Mode Card with 100% Contrast) -->
+<section class="py-12 sm:py-16 border-t border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#0B1220]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="p-8 sm:p-12 rounded-3xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-xl flex flex-col md:flex-row items-center justify-between gap-8">
+            <div class="max-w-2xl">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-sky-50 dark:bg-sky-950/80 border border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-300 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span>
+                    <span class="lang-en">100% Verifiable &amp; Public Portfolios</span>
+                    <span class="lang-my">အများပြည်သူ စစ်ဆေးနိုင်သော ဒီဂျစ်တယ် ပရိုဖိုင်များ</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    <span class="lang-en">Showcase Hands-On Skills with Public Portfolios</span>
+                    <span class="lang-my">မိမိ၏ စွမ်းဆောင်ရည်နှင့် အောင်မြင်မှုများကို ကမ္ဘာသို့ ပြသပါ</span>
+                </h2>
+                <p class="text-sm text-slate-600 dark:text-slate-300 mt-3 leading-relaxed">
+                    <span class="lang-en">Every student and instructor receives a dedicated public portfolio URL with QR verification, verified lab achievements, CTF solver logs, projects, and platform certificates. Employers and recruiters can verify your competency without login credentials.</span>
+                    <span class="lang-my">ကျောင်းသားနှင့် ဆရာတိုင်းအတွက် ကိုယ်ပိုင် Public Portfolio URL၊ QR အတည်ပြုစနစ်၊ ဖြေရှင်းပြီးသော Cyber Lab မှတ်တမ်းများ၊ CTF အောင်မြင်မှုများနှင့် တရားဝင် အောင်လက်မှတ်များကို မည်သူမဆို တိုက်ရိုက် စစ်ဆေးကြည့်ရှုနိုင်ပါသည်။</span>
+                </p>
+                <div class="mt-6 flex flex-wrap items-center gap-4 text-xs font-semibold">
+                    <span class="flex items-center gap-1.5 text-sky-600 dark:text-sky-400">
+                        <span>✓</span>
+                        <span class="lang-en">Permanent Public URL</span>
+                        <span class="lang-my">အမြဲတမ်း ပရိုဖိုင် လင့်ခ်</span>
+                    </span>
+                    <span class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                        <span>✓</span>
+                        <span class="lang-en">Cryptographic QR Verification</span>
+                        <span class="lang-my">QR ဖြင့် တိုက်ရိုက် စစ်ဆေးနိုင်မှု</span>
+                    </span>
+                    <span class="flex items-center gap-1.5 text-purple-600 dark:text-purple-400">
+                        <span>✓</span>
+                        <span class="lang-en">Lab Proof &amp; CTF Badges</span>
+                        <span class="lang-my">Lab နှင့် CTF ရမှတ် တံဆိပ်များ</span>
+                    </span>
                 </div>
             </div>
 
             <div class="flex-shrink-0 flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                <a href="{% url 'portfolio-list' %}" class="px-6 py-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition text-center shadow-lg shadow-cyan-600/30">
-                    Explore Public Portfolios &rarr;
+                <a href="{% url 'portfolio-list' %}" class="px-6 py-3.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-xs transition text-center shadow-md shadow-sky-600/20">
+                    <span class="lang-en">Explore Public Portfolios &rarr;</span>
+                    <span class="lang-my">ပရိုဖိုင်များ စစ်ဆေးကြည့်ရှုမည် &rarr;</span>
                 </a>
-                <a href="{% url 'register' %}" class="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs transition text-center">
-                    Enroll Now
+                <a href="{% url 'register' %}" class="px-6 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs transition text-center">
+                    <span class="lang-en">Enroll Now</span>
+                    <span class="lang-my">စာရင်းသွင်းမည်</span>
                 </a>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Knowledge Hub Spotlight -->
-<section class="py-16 border-t border-slate-800/80 bg-slate-950/60 font-mono">
+<!-- 8. Knowledge Hub Spotlight -->
+<section class="py-12 sm:py-16 border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#0E1726]/40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-950/80 border border-blue-800 text-blue-300 mb-3">
-                    <span class="w-2 h-2 rounded-full bg-blue-400"></span>
-                    <span>Engineering &amp; Cyber Knowledge Hub / နည်းပညာ ဆောင်းပါးများ</span>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                    <span class="lang-en">Engineering &amp; Cyber Knowledge Hub</span>
+                    <span class="lang-my">နည်းပညာနှင့် ဆိုက်ဘာ ဗဟုသုတစင်တာ</span>
                 </div>
-                <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                    Technical Tutorials &amp; Security Cheat Sheets
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    <span class="lang-en">Technical Tutorials &amp; Security Cheat Sheets</span>
+                    <span class="lang-my">နည်းပညာ ဆောင်းပါးများနှင့် လမ်းညွှန်ချက်များ</span>
                 </h2>
-                <p class="text-sm text-slate-400 mt-2 max-w-2xl leading-relaxed">
-                    Level up your skills with curated engineering guides on web exploitation, defensive architecture, Docker containerization, and CTF challenges.
+                <p class="text-sm text-slate-600 dark:text-slate-400 mt-2 max-w-2xl leading-relaxed">
+                    <span class="lang-en">Level up your skills with curated engineering guides on web exploitation, defensive architecture, Docker containerization, and CTF challenges.</span>
+                    <span class="lang-my">ဆော့ဖ်ဝဲ တည်ဆောက်ပုံ၊ ဆိုက်ဘာလုံခြုံရေး နည်းစနစ်များနှင့် Docker Container စနစ်များကို လက်တွေ့ကျကျ လေ့လာဖတ်ရှုနိုင်ပါသည်။</span>
                 </p>
             </div>
             <div class="flex-shrink-0">
-                <a href="{% url 'blog:article-list' %}" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition shadow-lg shadow-blue-600/20">
-                    <span>Read Tutorials in Hub &rarr;</span>
+                <a href="{% url 'blog:article-list' %}" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-xs transition shadow-md shadow-sky-600/20">
+                    <span class="lang-en">Read Tutorials in Hub &rarr;</span>
+                    <span class="lang-my">ဆောင်းပါးများ ဖတ်ရှုမည် &rarr;</span>
                 </a>
             </div>
+        </div>
+    </div>
+</section>
+
+<!-- 9. Academic & Institutional Partners Showcase -->
+<section class="py-12 sm:py-16 border-t border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#080d1a]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="lang-en">Institutional Alliances</span>
+                    <span class="lang-my">ပူးပေါင်းဆောင်ရွက်သော မိတ်ဖက်အဖွဲ့အစည်းများ</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    <span class="lang-en">Trusted by Universities, Academies &amp; Enterprises</span>
+                    <span class="lang-my">တက္ကသိုလ်များနှင့် သင်တန်းကျောင်းများ၏ ယုံကြည်စိတ်ချမှု</span>
+                </h2>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mt-2 max-w-2xl leading-relaxed">
+                    <span class="lang-en">Partner institutions empower students with accredited curricula, localized learning centers, sponsored cohort licenses, and verified certificates.</span>
+                    <span class="lang-my">မိတ်ဖက်အဖွဲ့အစည်းများသည် ကျောင်းသားများအတွက် အသိအမှတ်ပြု သင်ရိုးများ၊ ဒေသအလိုက် လေ့ကျင့်ရေးစင်တာများနှင့် တရားဝင် အောင်လက်မှတ်များကို ပူးပေါင်း ပံ့ပိုးပေးပါသည်။</span>
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="{% url 'partner-list' %}" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition">
+                    <span class="lang-en">View Partner Directory &rarr;</span>
+                    <span class="lang-my">မိတ်ဖက်များ စာရင်း &rarr;</span>
+                </a>
+                <a href="{% url 'partner-apply' %}" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-lg shadow-emerald-600/30">
+                    <span class="lang-en">Partner With Us &rarr;</span>
+                    <span class="lang-my">မိတ်ဖက်အဖြစ် လျှောက်ထားမည် &rarr;</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Partners Grid / Logos -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {% for partner in partners %}
+            <a href="{% if partner.website %}{{ partner.website }}{% else %}{% url 'partner-list' %}{% endif %}" target="{% if partner.website %}_blank{% else %}_self{% endif %}" rel="noopener noreferrer" class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-white dark:hover:bg-slate-900 transition flex flex-col items-center justify-center text-center group">
+                {% if partner.logo %}
+                <img src="{{ partner.logo.url }}" alt="{{ partner.name }}" class="h-12 w-auto max-w-full object-contain mb-2 filter grayscale group-hover:grayscale-0 transition duration-300" />
+                {% else %}
+                <div class="w-12 h-12 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center text-emerald-700 dark:text-emerald-300 font-bold text-lg mb-2 group-hover:scale-105 transition">
+                    {{ partner.name|slice:":2"|upper }}
+                </div>
+                {% endif %}
+                <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition line-clamp-1">{{ partner.name }}</span>
+                <span class="text-[10px] text-slate-500 capitalize">{{ partner.institution_type|default:"Academic Partner" }}</span>
+            </a>
+            {% empty %}
+            <!-- Default Institutional Network Showcase -->
+            <div class="col-span-full p-8 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-dashed border-slate-300 dark:border-slate-800 text-center">
+                <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-3 text-xl">
+                    🏛️
+                </div>
+                <h4 class="text-slate-900 dark:text-white font-bold text-sm mb-1">
+                    <span class="lang-en">Become an Institutional or Academic Partner</span>
+                    <span class="lang-my">မိတ်ဖက် အဖွဲ့အစည်းအဖြစ် ပူးပေါင်းပါဝင်ပါ</span>
+                </h4>
+                <p class="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-4">
+                    <span class="lang-en">Collaborate with THUTA to publish accredited coursework, offer joint digital certifications, and sponsor university lab programs across Myanmar.</span>
+                    <span class="lang-my">THUTA နှင့် ပူးပေါင်း၍ အသိအမှတ်ပြု သင်ရိုးများ ဖွင့်လှစ်ခြင်း၊ ပူးတွဲ အောင်လက်မှတ်များ ထုတ်ပေးခြင်းနှင့် တက္ကသိုလ် Lab အစီအစဉ်များကို ဆောင်ရွက်ပါ။</span>
+                </p>
+                <a href="{% url 'partner-apply' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-lg shadow-emerald-600/30">
+                    <span class="lang-en">Apply as Partner Institution &rarr;</span>
+                    <span class="lang-my">မိတ်ဖက်အဖြစ် လျှောက်ထားမည် &rarr;</span>
+                </a>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </section>

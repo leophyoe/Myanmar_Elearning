@@ -512,6 +512,25 @@ class Course(BaseModel):
         return self.price is None or self.price <= 0
 
     @property
+    def effective_price(self):
+        if self.is_free:
+            return Decimal('0.00')
+        if self.discount_price is not None and self.price is not None and self.discount_price < self.price:
+            return self.discount_price
+        return self.price or Decimal('0.00')
+
+    @property
+    def has_discount(self):
+        return bool(self.discount_price is not None and self.price is not None and self.discount_price < self.price)
+
+    @property
+    def is_new_course(self):
+        if not self.created_at:
+            return False
+        from django.utils import timezone
+        return (timezone.now() - self.created_at).days <= 30
+
+    @property
     def instructor(self):
         return self.owner
 
@@ -992,6 +1011,7 @@ class Enrollment(BaseModel):
         PARTNER = 'partner', 'Partner Assigned'
         INSTRUCTOR = 'instructor', 'Instructor Enrolled'
         ADMIN = 'admin', 'Administrator Enrolled'
+        COUPON = 'coupon', 'Coupon Redemption'
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='enrollments')

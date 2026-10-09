@@ -15,7 +15,7 @@ from apps.billing.models import Payment
 from apps.courses.models import Course, Enrollment
 from apps.common.permissions import RoleRequiredMixin
 from apps.portfolio.models import ExternalCertificate
-from apps.users.models import AdminProfile, StudentProfile, TeacherProfile, UserRole
+from apps.users.models import AdminProfile, StudentProfile, TeacherProfile, UserRole, ActiveMode, InstructorApplication, Notification
 from apps.analytics.models import ActivityLog, SystemLog, ActivityAction, SystemLogLevel
 from apps.ctf.models import FlagSubmission
 from .forms import AdminPasswordResetForm, AdminUserCreateForm, AdminUserUpdateForm
@@ -201,6 +201,7 @@ class UserDetailView(AdminRequiredMixin, DetailView):
             ).select_related('course')
         except Exception:
             context['certificates'] = []
+        context['instructor_applications'] = target.instructor_applications.all()
         return context
 
 
@@ -309,8 +310,6 @@ class UserApproveInstructorView(AdminRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         target = get_object_or_404(User, pk=self.kwargs['user_id'])
         from django.contrib.auth.models import Group
-        from django.utils import timezone
-        from apps.users.models import UserRole, ActiveMode, TeacherProfile, InstructorApplication
 
         target.role = UserRole.TEACHER
         target.active_mode = ActiveMode.INSTRUCTOR
@@ -335,11 +334,162 @@ class UserApproveInstructorView(AdminRequiredMixin, View):
                 profile.title = app.title
 
         profile.save()
+
+        Notification.objects.create(
+            user=target,
+            title="Instructor Application Approved",
+            message="Congratulations! Your instructor application has been approved. You can now access the Instructor Dashboard and Content Studio.",
+            level=Notification.Level.SUCCESS,
+            link=reverse('teacher-dashboard'),
+        )
+
         messages.success(request, f'Instructor permissions verified and approved for “{target.username}”.')
         next_url = request.POST.get('next') or request.GET.get('next')
         if next_url:
             return redirect(next_url)
         return redirect('console-user-detail', user_id=target.pk)
+
+
+class InstructorApplicationListView(AdminRequiredMixin, TemplateView):
+    """Administrative review queue for all faculty/instructor applications."""
+    template_name = 'console/instructor_application_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        status_filter = self.request.GET.get('status', 'pending')
+        q = self.request.GET.get('q', '').strip()
+
+        qs = InstructorApplication.objects.select_related('user', 'reviewed_by').order_by('-created_at')
+
+        if status_filter in ['pending', 'approved', 'rejected']:
+            qs = qs.filter(status=status_filter)
+
+        if q:
+            qs = qs.filter(
+                Q(user__username__icontains=q) |
+                Q(user__email__icontains=q) |
+                Q(user__first_name__icontains=q) |
+                Q(user__last_name__icontains=q) |
+                Q(department__icontains=q) |
+                Q(target_subjects__icontains=q)
+            )
+
+        paginator = Paginator(qs, 20)
+        page_obj = paginator.get_page(self.request.GET.get('page'))
+
+        context.update({
+            'active': 'instructor_applications',
+            'page_obj': page_obj,
+            'applications': page_obj.object_list,
+            'status_filter': status_filter,
+            'query': q,
+            'count_pending': InstructorApplication.objects.filter(status=InstructorApplication.Status.PENDING).count(),
+            'count_approved': InstructorApplication.objects.filter(status=InstructorApplication.Status.APPROVED).count(),
+            'count_rejected': InstructorApplication.objects.filter(status=InstructorApplication.Status.REJECTED).count(),
+            'count_all': InstructorApplication.objects.count(),
+        })
+        return context
+
+
+class InstructorApplicationDetailView(AdminRequiredMixin, DetailView):
+    """Detailed view for reviewing applicant credentials and pedagogical rank."""
+    model = InstructorApplication
+    pk_url_kwarg = 'app_id'
+    template_name = 'console/instructor_application_detail.html'
+    context_object_name = 'application'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['active'] = 'instructor_applications'
+        context['awarded_levels'] = InstructorApplication.AwardedLevel.choices
+        return context
+
+
+class InstructorApplicationActionView(AdminRequiredMixin, View):
+    """POST-only: Administrative decision on an instructor application."""
+
+    def post(self, request, *args, **kwargs):
+        app_id = self.kwargs['app_id']
+        action = self.kwargs['action'].lower()
+        app = get_object_or_404(InstructorApplication, pk=app_id)
+        applicant = app.user
+
+        from django.contrib.auth.models import Group
+
+        admin_notes = request.POST.get('admin_notes', '').strip()
+
+        if action == 'approve':
+            level = request.POST.get('awarded_level') or app.awarded_level
+            if level not in dict(InstructorApplication.AwardedLevel.choices):
+                level = InstructorApplication.AwardedLevel.ASSOCIATE
+
+            app.status = InstructorApplication.Status.APPROVED
+            app.awarded_level = level
+            app.admin_notes = admin_notes
+            app.reviewed_by = request.user
+            app.reviewed_at = timezone.now()
+            app.save(update_fields=['status', 'awarded_level', 'admin_notes', 'reviewed_by', 'reviewed_at'])
+
+            applicant.role = UserRole.TEACHER
+            applicant.active_mode = ActiveMode.INSTRUCTOR
+            applicant.save(update_fields=['role', 'active_mode'])
+
+            applicant.add_role(UserRole.TEACHER, assigned_by=request.user)
+
+            profile, _ = TeacherProfile.objects.get_or_create(user=applicant)
+            profile.is_verified = True
+            profile.level = level
+            if app.department:
+                profile.department = app.department
+            if app.title:
+                profile.title = app.title
+            profile.save()
+
+            Notification.objects.create(
+                user=applicant,
+                title="Instructor Application Approved",
+                message="Congratulations! Your instructor application has been approved. You can now access the Instructor Dashboard and Content Studio.",
+                level=Notification.Level.SUCCESS,
+                link=reverse('teacher-dashboard'),
+            )
+
+            messages.success(
+                request,
+                f"Application for “{applicant.username}” has been APPROVED as {app.get_awarded_level_display()}."
+            )
+
+        elif action == 'reject':
+            rejection_feedback = request.POST.get('rejection_feedback', '').strip()
+
+            app.status = InstructorApplication.Status.REJECTED
+            app.rejection_feedback = rejection_feedback
+            app.admin_notes = admin_notes
+            app.reviewed_by = request.user
+            app.reviewed_at = timezone.now()
+            app.save(update_fields=['status', 'rejection_feedback', 'admin_notes', 'reviewed_by', 'reviewed_at'])
+
+            notif_msg = (
+                f"Your instructor application has been reviewed and was not approved. Feedback: {rejection_feedback}"
+                if rejection_feedback else
+                "Your instructor application has been reviewed and was not approved at this time."
+            )
+            Notification.objects.create(
+                user=applicant,
+                title="Instructor Application Update",
+                message=notif_msg,
+                level=Notification.Level.WARNING,
+                link=reverse('apply-instructor'),
+            )
+
+            messages.warning(
+                request,
+                f"Application for “{applicant.username}” has been REJECTED."
+            )
+        else:
+            messages.error(request, f"Unknown action: {action}")
+
+        return redirect('console-instructor-application-detail', app_id=app.pk)
+
 
 
 # ----------------------------------------------------------------------
@@ -584,4 +734,84 @@ class AdminLogListView(AdminRequiredMixin, TemplateView):
             'total_count': paginator.count,
         })
         return context
+
+
+# ----------------------------------------------------------------------
+# Partner Organization Applications
+# ----------------------------------------------------------------------
+class PartnerApplicationListView(AdminRequiredMixin, TemplateView):
+    """Administrative review list for institutional partner applications."""
+    template_name = 'console/partner_application_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from apps.partner.models import PartnerApplication
+
+        status_filter = (self.request.GET.get('status') or 'pending').lower()
+        q = (self.request.GET.get('q') or '').strip()
+
+        qs = PartnerApplication.objects.select_related('applicant', 'reviewed_by').all()
+        if status_filter in ('pending', 'approved', 'rejected'):
+            qs = qs.filter(status=status_filter)
+        if q:
+            qs = qs.filter(
+                Q(organization_name__icontains=q) |
+                Q(applicant__username__icontains=q) |
+                Q(contact_email__icontains=q) |
+                Q(city__icontains=q)
+            )
+
+        paginator = Paginator(qs.order_by('-created_at'), 20)
+        page_number = self.request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
+        context.update({
+            'active': 'partner_applications',
+            'page_obj': page_obj,
+            'applications': page_obj.object_list,
+            'status_filter': status_filter,
+            'query': q,
+            'count_pending': PartnerApplication.objects.filter(status=PartnerApplication.Status.PENDING).count(),
+            'count_approved': PartnerApplication.objects.filter(status=PartnerApplication.Status.APPROVED).count(),
+            'count_rejected': PartnerApplication.objects.filter(status=PartnerApplication.Status.REJECTED).count(),
+            'count_all': PartnerApplication.objects.count(),
+        })
+        return context
+
+
+class PartnerApplicationActionView(AdminRequiredMixin, View):
+    """POST-only: Administrative decision on a partner organization application."""
+
+    def post(self, request, *args, **kwargs):
+        from apps.partner.models import PartnerApplication
+
+        app_id = self.kwargs['app_id']
+        action = self.kwargs['action'].lower()
+        app = get_object_or_404(PartnerApplication, pk=app_id)
+        admin_notes = request.POST.get('admin_notes', '').strip()
+
+        if action == 'approve':
+            inst = app.approve(reviewed_by=request.user)
+            if admin_notes:
+                app.admin_notes = admin_notes
+                app.save(update_fields=['admin_notes'])
+            messages.success(
+                request,
+                f"Partner application for “{app.organization_name}” has been APPROVED. Institution organization ID: {inst.organization_id}."
+            )
+        elif action == 'reject':
+            app.status = PartnerApplication.Status.REJECTED
+            app.admin_notes = admin_notes
+            app.reviewed_by = request.user
+            app.reviewed_at = timezone.now()
+            app.save(update_fields=['status', 'admin_notes', 'reviewed_by', 'reviewed_at'])
+            messages.warning(
+                request,
+                f"Partner application for “{app.organization_name}” has been REJECTED."
+            )
+        else:
+            messages.error(request, f"Unknown action: {action}")
+
+        return redirect('console-partner-application-list')
+
 

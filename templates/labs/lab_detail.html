@@ -18,11 +18,14 @@
         <div class="lg:col-span-2 space-y-6">
             <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
                 <div class="flex items-center space-x-3 mb-3">
-                    {% include 'labs/_lab_badge.html' with difficulty=lab.difficulty label=lab.get_difficulty_display %}
+                    <span class="px-2.5 py-0.5 rounded text-xs font-mono font-bold uppercase
+                        {% if lab.difficulty == 'easy' %} bg-emerald-950 text-emerald-400 border border-emerald-800
+                        {% elif lab.difficulty == 'medium' %} bg-amber-950 text-amber-400 border border-amber-800
+                        {% else %} bg-red-950 text-red-400 border border-red-800 {% endif %}">
+                        {{ lab.get_difficulty_display }}
+                    </span>
                     <span class="text-xs text-slate-400">• {{ lab.get_lab_type_display }}</span>
-                    <div class="ml-auto">
-                        {% include 'labs/_lab_badge.html' with points=lab.points %}
-                    </div>
+                    <span class="text-xs text-amber-400 font-bold ml-auto font-mono">{{ lab.points }} PTS</span>
                 </div>
 
                 <h1 class="text-2xl sm:text-3xl font-bold text-white mb-3">{{ lab.title }}</h1>

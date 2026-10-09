@@ -1,0 +1,92 @@
+<!-- Partner Management Portal Sub-Navigation Tabs -->
+<div class="mb-8 border-b border-slate-200 dark:border-[#26364B]">
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-3 scrollbar-none text-xs font-semibold">
+        <a href="{% url 'partner-dashboard' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'dashboard' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>📊</span>
+            <span class="lang-en">Dashboard</span>
+            <span class="lang-my">ပင်မစာမျက်နှာ</span>
+        </a>
+
+        <a href="{% url 'partner-institution-settings' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'institution' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>🏛️</span>
+            <span class="lang-en">Institution &amp; Branding</span>
+            <span class="lang-my">အဖွဲ့အစည်းနှင့် အမှတ်တံဆိပ်</span>
+        </a>
+
+        <a href="{% url 'partner-learners' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'learners' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>👥</span>
+            <span class="lang-en">Learners</span>
+            <span class="lang-my">ကျောင်းသားများ</span>
+        </a>
+
+        <a href="{% url 'partner-instructors' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'instructors' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>👨‍🏫</span>
+            <span class="lang-en">Faculty Instructors</span>
+            <span class="lang-my">ဆရာများ</span>
+        </a>
+
+        <a href="{% url 'partner-courses' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'courses' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>📚</span>
+            <span class="lang-en">Courses</span>
+            <span class="lang-my">သင်တန်းများ</span>
+        </a>
+
+        <a href="{% url 'partner-cohorts' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'cohorts' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>🏷️</span>
+            <span class="lang-en">Cohorts &amp; Batches</span>
+            <span class="lang-my">သင်တန်းအသုတ်များ</span>
+        </a>
+
+        <a href="{% url 'partner-enrollments' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'enrollments' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>🎓</span>
+            <span class="lang-en">Enrollments</span>
+            <span class="lang-my">အပ်နှံမှုများ</span>
+        </a>
+
+        <a href="{% url 'partner-certificates' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'certificates' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>📜</span>
+            <span class="lang-en">Certificates</span>
+            <span class="lang-my">အောင်လက်မှတ်များ</span>
+        </a>
+
+        <a href="{% url 'partner-reports' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'reports' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>📈</span>
+            <span class="lang-en">Reports</span>
+            <span class="lang-my">အစီရင်ခံစာများ</span>
+        </a>
+
+        <a href="{% url 'partner-revenue-report' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'revenue' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>💰</span>
+            <span class="lang-en">Revenue</span>
+            <span class="lang-my">ဝင်ငွေ</span>
+        </a>
+
+        <a href="{% url 'billing:promotion-list' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'promotions' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>🏷️</span>
+            <span class="lang-en">Promotions</span>
+            <span class="lang-my">ပရိုမိုးရှင်းများ</span>
+        </a>
+    </div>
+</div>

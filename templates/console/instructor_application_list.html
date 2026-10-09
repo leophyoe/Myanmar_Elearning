@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Faculty &amp; Instructor Applications - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="pb-6 mb-8 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white tracking-wide">Faculty &amp; Instructor Applications</h1>
+            <p class="text-xs text-slate-400 mt-1">Review credentials, verify academic backgrounds, and grant instructor privileges.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-xs px-3 py-1.5 rounded-lg bg-amber-950 border border-amber-800 text-amber-300 font-semibold">
+                {{ count_pending }} Pending Review
+            </span>
+        </div>
+    </div>
+
+    {% include 'console/_tabs.html' with active='instructor_applications' %}
+
+    <!-- Filter Bar & Search -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <!-- Status Filter Pills -->
+        <div class="flex flex-wrap gap-2 text-xs">
+            <a href="?status=pending{% if query %}&q={{ query }}{% endif %}"
+               class="px-3.5 py-1.5 rounded-lg font-semibold transition border
+               {% if status_filter == 'pending' %}bg-amber-600 border-amber-500 text-white
+               {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700{% endif %}">
+                Pending ({{ count_pending }})
+            </a>
+            <a href="?status=approved{% if query %}&q={{ query }}{% endif %}"
+               class="px-3.5 py-1.5 rounded-lg font-semibold transition border
+               {% if status_filter == 'approved' %}bg-emerald-600 border-emerald-500 text-white
+               {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700{% endif %}">
+                Approved ({{ count_approved }})
+            </a>
+            <a href="?status=rejected{% if query %}&q={{ query }}{% endif %}"
+               class="px-3.5 py-1.5 rounded-lg font-semibold transition border
+               {% if status_filter == 'rejected' %}bg-rose-600 border-rose-500 text-white
+               {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700{% endif %}">
+                Rejected ({{ count_rejected }})
+            </a>
+            <a href="?status=all{% if query %}&q={{ query }}{% endif %}"
+               class="px-3.5 py-1.5 rounded-lg font-semibold transition border
+               {% if status_filter == 'all' %}bg-cyan-600 border-cyan-500 text-white
+               {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700{% endif %}">
+                All ({{ count_all }})
+            </a>
+        </div>
+
+        <!-- Search Form -->
+        <form method="GET" class="flex items-center gap-2">
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search applicant, subject…"
+                   class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 w-56 sm:w-64">
+            <button type="submit" class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                Search
+            </button>
+            {% if query %}
+            <a href="?status={{ status_filter }}" class="text-xs text-slate-400 hover:text-slate-200 px-1">Reset</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Application Table / Cards -->
+    {% if applications %}
+    <div class="overflow-x-auto rounded-2xl bg-slate-900 border border-slate-800">
+        <table class="w-full text-sm text-left">
+            <thead class="text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-800">
+                <tr>
+                    <th class="px-5 py-3.5">Applicant</th>
+                    <th class="px-5 py-3.5">Department / Title</th>
+                    <th class="px-5 py-3.5">Specialization</th>
+                    <th class="px-5 py-3.5">Rank</th>
+                    <th class="px-5 py-3.5">Status</th>
+                    <th class="px-5 py-3.5">Applied Date</th>
+                    <th class="px-5 py-3.5 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for app in applications %}
+                <tr class="hover:bg-slate-800/40 transition">
+                    <td class="px-5 py-4">
+                        <div class="font-medium text-white flex items-center gap-2">
+                            <span>{{ app.user.get_full_name|default:app.user.username }}</span>
+                            <span class="text-[11px] text-slate-500">(@{{ app.user.username }})</span>
+                        </div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">
+                            {{ app.user.email }}
+                        </div>
+                    </td>
+                    <td class="px-5 py-4">
+                        <div class="text-xs text-slate-200 font-medium">{{ app.department|default:"—" }}</div>
+                        <div class="text-[11px] text-slate-400">{{ app.title|default:"Applicant" }}</div>
+                    </td>
+                    <td class="px-5 py-4">
+                        <div class="text-xs text-slate-300 max-w-xs truncate" title="{{ app.target_subjects }}">
+                            {{ app.target_subjects|default:"—" }}
+                        </div>
+                    </td>
+                    <td class="px-5 py-4">
+                        <span class="text-[11px] text-slate-300 font-medium">
+                            {{ app.get_awarded_level_display }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-4">
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border
+                            {% if app.status == 'approved' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                            {% elif app.status == 'rejected' %}bg-rose-950 text-rose-300 border-rose-800
+                            {% else %}bg-amber-950 text-amber-300 border-amber-800{% endif %}">
+                            {{ app.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-4 text-xs text-slate-400">
+                        {{ app.created_at|date:"d M Y, H:i" }}
+                    </td>
+                    <td class="px-5 py-4 text-right">
+                        <a href="{% url 'console-instructor-application-detail' app_id=app.id %}"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600/10 hover:bg-cyan-600/20 text-cyan-400 border border-cyan-800/50 text-xs font-semibold transition">
+                            Review &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="flex items-center justify-between mt-6 text-xs text-slate-400">
+        <div>
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ page_obj.paginator.count }} total applications)
+        </div>
+        <div class="flex gap-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}{% if query %}&q={{ query }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300">
+                &larr; Previous
+            </a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}{% if query %}&q={{ query }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300">
+                Next &rarr;
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-16 px-4 rounded-2xl bg-slate-900 border border-slate-800">
+        <div class="w-12 h-12 mx-auto rounded-full bg-slate-800 flex items-center justify-center text-slate-400 mb-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+        </div>
+        <h3 class="text-sm font-semibold text-white">No applications found</h3>
+        <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            {% if query %}
+            No instructor applications matched your search query "{{ query }}".
+            {% elif status_filter == 'pending' %}
+            There are currently no pending instructor applications to review.
+            {% else %}
+            No applications found matching the selected status.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

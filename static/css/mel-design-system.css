@@ -5,6 +5,8 @@
    ============================================================================== */
 
 :root {
+    color-scheme: dark;
+
     /* Radii Scale */
     --mel-radius-xs: 4px;       /* Tables, technical containers, code blocks */
     --mel-radius-sm: 8px;       /* Inputs, buttons, dropdowns, form controls */
@@ -25,76 +27,143 @@
     --mel-sidebar-width: 250px;
     --mel-header-height: 64px;
 
-    /* Base Surfaces (Dark Default) */
-    --mel-bg: #0b0f19;
-    --mel-surface-card: #111827;
-    --mel-surface-subtle: #1f2937;
-    --mel-surface-inset: #030712;
-    --mel-border: #1f2937;
-    --mel-border-strong: #374151;
+    /* Brand Tokens (Official THUTA Sky Blue) */
+    --color-brand: #38BDF8;
+    --color-primary: #38BDF8;
+    --color-primary-action: #0284C7;
+    --color-primary-hover: #7DD3FC;
+    --color-deep-blue: #0369A1;
+    --color-pale-blue: #E0F2FE;
+    --color-dark-surface: #172B40;
 
-    /* Text */
-    --mel-text-primary: #f9fafb;
-    --mel-text-secondary: #9ca3af;
-    --mel-text-muted: #6b7280;
+    /* Dark Mode (Default) */
+    --color-background: #0B1220;
+    --color-sidebar: #0F172A;
+    --color-surface: #111C2E;
+    --color-surface-elevated: #162235;
 
-    /* Brand & Accent Tokens */
-    --mel-primary: #0284c7;
-    --mel-primary-hover: #0369a1;
-    --mel-primary-text: #ffffff;
-    --mel-primary-tint: #082f49;
-    --mel-primary-border: #075985;
+    --color-text-primary: #F1F5F9;
+    --color-text-secondary: #94A3B8;
+    --color-text-muted: #94A3B8;
+
+    --color-border: #26364B;
+    --color-border-strong: #334760;
+    --color-selected-background: #172B40;
+    --color-selected-text: #7DD3FC;
+
+    /* Semantic Status (Dark) */
+    --color-success: #86EFAC;
+    --color-success-bg: #142B25;
+    --color-warning: #FCD34D;
+    --color-warning-bg: #302719;
+    --color-danger: #FCA5A5;
+    --color-danger-bg: #321F26;
+    --color-info: #C4B5FD;
+    --color-info-bg: #272341;
+
+    /* Legacy MEL Tokens Mapped */
+    --mel-bg: var(--color-background);
+    --mel-surface-card: var(--color-surface);
+    --mel-surface-subtle: var(--color-surface-elevated);
+    --mel-surface-inset: #080D18;
+    --mel-border: var(--color-border);
+    --mel-border-strong: var(--color-border-strong);
+
+    --mel-text-primary: var(--color-text-primary);
+    --mel-text-secondary: var(--color-text-secondary);
+    --mel-text-muted: var(--color-text-muted);
+
+    --mel-primary: var(--color-primary-action);
+    --mel-primary-hover: #0369A1;
+    --mel-primary-text: #FFFFFF;
+    --mel-primary-tint: #172B40;
+    --mel-primary-border: #26364B;
 
     --mel-success: #059669;
-    --mel-success-tint: #022c22;
-    --mel-success-border: #065f46;
-    --mel-success-text: #6ee7b7;
+    --mel-success-tint: #142B25;
+    --mel-success-border: #1E3A30;
+    --mel-success-text: #86EFAC;
 
-    --mel-warning: #d97706;
-    --mel-warning-tint: #451a03;
-    --mel-warning-border: #92400e;
-    --mel-warning-text: #fcd34d;
+    --mel-warning: #D97706;
+    --mel-warning-tint: #302719;
+    --mel-warning-border: #423522;
+    --mel-warning-text: #FCD34D;
 
-    --mel-danger: #e11d48;
-    --mel-danger-tint: #4c0519;
-    --mel-danger-border: #9f1239;
-    --mel-danger-text: #fda4af;
+    --mel-danger: #E11D48;
+    --mel-danger-tint: #321F26;
+    --mel-danger-border: #452934;
+    --mel-danger-text: #FCA5A5;
 }
 
 /* Light Theme Variable Overrides */
 :root[data-theme="light"],
 html.light {
-    --mel-bg: #f8fafc;
-    --mel-surface-card: #ffffff;
-    --mel-surface-subtle: #f1f5f9;
-    --mel-surface-inset: #e2e8f0;
-    --mel-border: #e2e8f0;
-    --mel-border-strong: #cbd5e1;
+    color-scheme: light;
 
-    --mel-text-primary: #0f172a;
-    --mel-text-secondary: #475569;
-    --mel-text-muted: #64748b;
+    --color-brand: #38BDF8;
+    --color-primary: #0284C7;
+    --color-primary-action: #0284C7;
+    --color-primary-hover: #0369A1;
+    --color-deep-blue: #0369A1;
+    --color-pale-blue: #E0F2FE;
+    --color-dark-surface: #172B40;
 
-    --mel-primary: #0284c7;
-    --mel-primary-hover: #0369a1;
-    --mel-primary-text: #ffffff;
-    --mel-primary-tint: #e0f2fe;
-    --mel-primary-border: #bae6fd;
+    --color-background: #F8FAFC;
+    --color-sidebar: #FFFFFF;
+    --color-surface: #FFFFFF;
+    --color-surface-elevated: #FFFFFF;
 
-    --mel-success: #059669;
-    --mel-success-tint: #d1fae5;
-    --mel-success-border: #a7f3d0;
-    --mel-success-text: #065f46;
+    --color-text-primary: #0F172A;
+    --color-text-secondary: #475569;
+    --color-text-muted: #64748B;
 
-    --mel-warning: #d97706;
-    --mel-warning-tint: #fef3c7;
-    --mel-warning-border: #fde68a;
-    --mel-warning-text: #92400e;
+    --color-border: #E2E8F0;
+    --color-border-strong: #CBD5E1;
+    --color-selected-background: #E0F2FE;
+    --color-selected-text: #075985;
 
-    --mel-danger: #e11d48;
-    --mel-danger-tint: #ffe4e6;
-    --mel-danger-border: #fecdd3;
-    --mel-danger-text: #9f1239;
+    /* Semantic Status (Light) */
+    --color-success: #166534;
+    --color-success-bg: #F0FDF4;
+    --color-warning: #92400E;
+    --color-warning-bg: #FFFBEB;
+    --color-danger: #991B1B;
+    --color-danger-bg: #FEF2F2;
+    --color-info: #5B21B6;
+    --color-info-bg: #F5F3FF;
+
+    /* Legacy MEL Tokens Mapped */
+    --mel-bg: var(--color-background);
+    --mel-surface-card: var(--color-surface);
+    --mel-surface-subtle: var(--color-surface-elevated);
+    --mel-surface-inset: #F8FAFC;
+    --mel-border: var(--color-border);
+    --mel-border-strong: var(--color-border-strong);
+
+    --mel-text-primary: var(--color-text-primary);
+    --mel-text-secondary: var(--color-text-secondary);
+    --mel-text-muted: var(--color-text-muted);
+
+    --mel-primary: #0284C7;
+    --mel-primary-hover: #0369A1;
+    --mel-primary-text: #FFFFFF;
+    --mel-primary-tint: #E0F2FE;
+    --mel-primary-border: #BAE6FD;
+
+    --mel-success: #166534;
+    --mel-success-tint: #F0FDF4;
+    --mel-success-border: #BBF7D0;
+    --mel-success-text: #166534;
+
+    --mel-warning: #92400E;
+    --mel-warning-tint: #FFFBEB;
+    --mel-warning-border: #FDE68A;
+    --mel-warning-text: #92400E;
+
+    --mel-danger: #991B1B;
+    --mel-danger-tint: #FEF2F2;
+    --mel-danger-border: #FECDD3;
+    --mel-danger-text: #991B1B;
 }
 
 /* Modern Accessible Typography (Sans default) */
@@ -395,3 +464,157 @@ code, pre, kbd, samp, .font-mono-strict {
     border-color: var(--mel-border);
     color: var(--mel-text-secondary);
 }
+
+/* ==============================================================================
+   THUTA Course Discovery & Accessible Carousel Styles
+   ============================================================================== */
+
+/* Reusable Course Card */
+.thuta-card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--mel-radius-md);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.thuta-card:hover {
+    border-color: var(--color-brand);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Primary Action Button (Sky Blue) */
+.thuta-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--mel-radius-sm);
+    background-color: var(--color-primary-action);
+    color: #FFFFFF;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    cursor: pointer;
+}
+.thuta-btn-primary:hover {
+    background-color: var(--color-deep-blue);
+    color: #FFFFFF;
+}
+.thuta-btn-primary:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+}
+
+/* Secondary Button */
+.thuta-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--mel-radius-sm);
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    cursor: pointer;
+}
+.thuta-btn-secondary:hover {
+    background-color: var(--color-surface-elevated);
+    border-color: var(--color-border-strong);
+}
+.thuta-btn-secondary:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+}
+
+/* Horizontal Course Carousel */
+.thuta-carousel-container {
+    position: relative;
+    width: 100%;
+}
+.thuta-carousel-track {
+    display: flex;
+    gap: 1.25rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding-bottom: 0.75rem;
+    padding-top: 0.25rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+}
+.thuta-carousel-track::-webkit-scrollbar {
+    display: none;
+}
+.thuta-carousel-item {
+    flex: 0 0 calc(100% - 2rem);
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+}
+@media (min-width: 640px) {
+    .thuta-carousel-item {
+        flex: 0 0 calc(50% - 0.75rem);
+    }
+}
+@media (min-width: 1024px) {
+    .thuta-carousel-item {
+        flex: 0 0 calc(33.333% - 0.85rem);
+    }
+}
+@media (min-width: 1280px) {
+    .thuta-carousel-item {
+        flex: 0 0 calc(25% - 0.95rem);
+    }
+}
+
+/* Carousel Prev/Next Buttons */
+.thuta-carousel-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    cursor: pointer;
+}
+.thuta-carousel-btn:hover:not(:disabled) {
+    background-color: var(--color-surface-elevated);
+    border-color: var(--color-brand);
+    color: var(--color-brand);
+}
+.thuta-carousel-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    border-color: var(--color-border);
+}
+.thuta-carousel-btn:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .thuta-carousel-track {
+        scroll-behavior: auto;
+    }
+    .thuta-card {
+        transition: none;
+    }
+    .thuta-card:hover {
+        transform: none;
+    }
+}
+

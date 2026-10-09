@@ -92,6 +92,38 @@ class FlagVerificationService:
                 from apps.scoring.services import BadgeAwardService
                 BadgeAwardService.evaluate_user_achievements(user)
 
+            # Sync curriculum module/lesson progress if challenge is linked to a course
+            try:
+                target_lesson = None
+                target_module = None
+                target_course = None
+
+                if getattr(challenge, 'lab', None) and challenge.lab.lesson:
+                    target_lesson = challenge.lab.lesson
+                    target_module = target_lesson.module
+                    target_course = target_module.course
+                elif challenge.module:
+                    target_module = challenge.module
+                    target_course = target_module.course
+                    target_lesson = target_module.lessons.filter(lesson_type__in=['lab', 'ctf']).first() or target_module.lessons.first()
+
+                if target_lesson and target_course:
+                    from apps.courses.models import UserProgress
+                    from apps.courses.services.completion import sync_course_completion
+                    prog, _ = UserProgress.objects.get_or_create(
+                        user=user,
+                        course=target_course,
+                        module=target_module,
+                        lesson=target_lesson,
+                    )
+                    if not prog.is_completed:
+                        prog.is_completed = True
+                        prog.completed_at = timezone.now()
+                        prog.save(update_fields=['is_completed', 'completed_at'])
+                        sync_course_completion(user, target_course)
+            except Exception:
+                pass
+
             return {
                 'success': True,
                 'points': challenge.points,

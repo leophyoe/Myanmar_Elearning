@@ -1,0 +1,95 @@
+{# Reusable Accessible Course Carousel Component — Styled like Udemy #}
+{% if courses %}
+<section class="py-10 sm:py-14 border-t border-slate-200 dark:border-slate-800 relative" aria-labelledby="heading-{{ section_id }}">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Section Header with Title and Desktop Controls -->
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+            <div>
+                {% if section_badge %}
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold {{ section_badge_class|default:'bg-sky-50 dark:bg-sky-950/80 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300' }} mb-2">
+                    {% if section_badge_my %}
+                        <span class="lang-en">{{ section_badge }}</span>
+                        <span class="lang-my">{{ section_badge_my }}</span>
+                    {% else %}
+                        <span>{{ section_badge }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <h2 id="heading-{{ section_id }}" class="text-xl sm:text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    {% if section_title_my %}
+                        <span class="lang-en">{{ section_title }}</span>
+                        <span class="lang-my">{{ section_title_my }}</span>
+                    {% else %}
+                        {{ section_title }}
+                    {% endif %}
+                </h2>
+                {% if section_subtitle %}
+                <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                    {% if section_subtitle_my %}
+                        <span class="lang-en">{{ section_subtitle }}</span>
+                        <span class="lang-my">{{ section_subtitle_my }}</span>
+                    {% else %}
+                        {{ section_subtitle }}
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+
+            <!-- Carousel Action Controls & Explore Link -->
+            <div class="flex items-center gap-3 shrink-0">
+                {% if view_all_url %}
+                <a href="{{ view_all_url }}" class="text-xs font-bold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors mr-1">
+                    <span class="lang-en">{{ view_all_label|default:"Explore All" }} &rarr;</span>
+                    <span class="lang-my">{{ view_all_label_my|default:"အားလုံးကြည့်ရှုမည်" }} &rarr;</span>
+                </a>
+                {% endif %}
+
+                <!-- Prev Button (Header) -->
+                <button type="button"
+                        class="thuta-carousel-btn inline-flex items-center justify-center w-9 h-9 rounded-full bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-sky-500 hover:text-sky-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-colors"
+                        data-carousel-prev="{{ section_id }}"
+                        aria-label="Scroll left to previous courses in {{ section_title }}">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+
+                <!-- Next Button (Header) -->
+                <button type="button"
+                        class="thuta-carousel-btn inline-flex items-center justify-center w-9 h-9 rounded-full bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-sky-500 hover:text-sky-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-500 transition-colors"
+                        data-carousel-next="{{ section_id }}"
+                        aria-label="Scroll right to more courses in {{ section_title }}">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Carousel Track Wrapper with Floating Edge Next Arrow (Udemy Style) -->
+        <div class="relative group/track">
+            <div id="carousel-track-{{ section_id }}"
+                 class="thuta-carousel-track flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar py-2 px-1"
+                 role="region"
+                 aria-label="{{ section_title }} list"
+                 tabindex="0">
+                {% for course in courses %}
+                <div class="thuta-carousel-item w-[260px] sm:w-[280px] md:w-[290px] shrink-0 snap-start flex flex-col">
+                    {% include 'courses/_course_card.html' with course=course %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Floating Right Navigation Button (Udemy signature arrow) -->
+            <button type="button"
+                    class="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white dark:bg-[#162235] shadow-lg border border-slate-200 dark:border-[#26364B] items-center justify-center text-slate-700 dark:text-slate-200 hover:border-sky-500 hover:text-sky-600 dark:hover:text-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition opacity-90 hover:opacity-100"
+                    data-carousel-next="{{ section_id }}"
+                    aria-label="Next courses in {{ section_title }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</section>
+{% endif %}

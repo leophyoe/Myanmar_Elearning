@@ -11,7 +11,7 @@
             var target = event.target;
             if (!target || !target.closest) { return; }
             if (!target.closest('[data-theme-toggle]')) { return; }
-            var current = document.documentElement.getAttribute('data-theme') || 'dark';
+            var current = document.documentElement.getAttribute('data-theme') || (document.documentElement.classList.contains('dark') ? 'dark' : 'light');
             applyTheme(current === 'dark' ? 'light' : 'dark');
         });
     })();

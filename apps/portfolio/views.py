@@ -240,6 +240,7 @@ class PortfolioDetailView(DetailView):
             'credentials': len(credentials),
             'projects': target.portfolio_projects.filter(is_published=True).count(),
             'skills': target.skills.count(),
+            'badges': target.badges.count(),
             'courses': len(enrollments),
             'completed': len(completed),
             'articles': len(authored_articles),
@@ -280,6 +281,7 @@ class PortfolioDetailView(DetailView):
                 kind=PortfolioEntry.Kind.EXPERIENCE
             ),
             'skills': list(target.skills.all()),
+            'user_badges': list(target.badges.select_related('badge').all()),
             'enrollments': enrollments,
             'authored_articles': authored_articles,
             'stats': stats,

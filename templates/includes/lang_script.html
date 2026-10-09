@@ -13,6 +13,15 @@
                 var ph = (lang === 'my') ? input.getAttribute('data-placeholder-my') : input.getAttribute('data-placeholder-en');
                 if (ph) { input.setAttribute('placeholder', ph); }
             });
+
+            // Update titles and aria-labels with data-title-en / data-title-my
+            document.querySelectorAll('[data-title-en]').forEach(function(item) {
+                var title = (lang === 'my') ? item.getAttribute('data-title-my') : item.getAttribute('data-title-en');
+                if (title) {
+                    item.setAttribute('title', title);
+                    item.setAttribute('aria-label', title);
+                }
+            });
         }
 
         document.addEventListener('click', function (event) {
@@ -24,7 +33,7 @@
             applyLanguage(nextLang);
         });
 
-        // Initialize placeholders on DOM load
+        // Initialize placeholders and titles on DOM load
         document.addEventListener('DOMContentLoaded', function() {
             var current = document.documentElement.getAttribute('data-lang') || 'en';
             applyLanguage(current);

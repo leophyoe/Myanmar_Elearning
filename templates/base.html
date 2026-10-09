@@ -1,5 +1,6 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,12 +13,32 @@
             theme: {
                 extend: {
                     colors: {
+                        thuta: {
+                            brand: '#38BDF8',
+                            primary: '#0284C7',
+                            primaryHover: '#0369A1',
+                            deep: '#0369A1',
+                            pale: '#E0F2FE',
+                            darkSurface: '#172B40',
+                            bgLight: '#F8FAFC',
+                            bgDark: '#0B1220',
+                            surfaceLight: '#FFFFFF',
+                            surfaceDark: '#111C2E',
+                            surfaceDarkElevated: '#162235',
+                            sidebarDark: '#0F172A',
+                            borderLight: '#E2E8F0',
+                            borderDark: '#26364B',
+                            textLight: '#0F172A',
+                            textDark: '#F1F5F9',
+                            mutedLight: '#64748B',
+                            mutedDark: '#94A3B8',
+                        },
                         mel: {
-                            bg: '#0b0f19',
-                            card: '#111827',
-                            border: '#1f2937',
-                            primary: '#0284c7',
-                            accent: '#0ea5e9',
+                            bg: '#0B1220',
+                            card: '#111C2E',
+                            border: '#26364B',
+                            primary: '#0284C7',
+                            accent: '#38BDF8',
                         }
                     }
                 }
@@ -29,7 +50,7 @@
     {% include 'includes/lang_head.html' %}
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-slate-50 text-slate-900 dark:bg-[#0b0f19] dark:text-slate-100 min-h-screen flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+<body class="bg-[#F8FAFC] text-[#0F172A] dark:bg-[#0B1220] dark:text-[#F1F5F9] min-h-screen flex flex-col font-sans selection:bg-sky-500 selection:text-white">
 
     <!-- Top App Bar / Header (64px) -->
     {% include 'includes/top_header.html' %}
@@ -58,7 +79,9 @@
     <!-- Main Application Layout Shell -->
     <div class="flex-grow flex min-h-[calc(100vh-64px)]">
         {% block sidebar %}
-            {% include 'includes/sidebar.html' %}
+            {% if user.is_authenticated %}
+                {% include 'includes/sidebar.html' %}
+            {% endif %}
         {% endblock %}
 
         <main class="flex-1 min-w-0 w-full">
@@ -71,10 +94,14 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div class="flex items-center gap-2">
                 <span class="text-slate-900 dark:text-white font-semibold">{{ PLATFORM_NAME }}</span>
-                <span>• Online Education Platform &amp; Practical Cyber Labs</span>
+                <span>• 
+                    <span class="lang-en">Online Education Platform &amp; Practical Cyber Labs</span>
+                    <span class="lang-my">အွန်လိုင်း ပညာရေး ပလက်ဖောင်းနှင့် လက်တွေ့ ဆိုက်ဘာဓာတ်ခွဲခန်းများ</span>
+                </span>
             </div>
             <div class="text-slate-500 dark:text-slate-400 text-center sm:text-right text-[11px]">
-                Isolated Docker container execution sandbox. All rights reserved.
+                <span class="lang-en">Isolated Docker container execution sandbox. All rights reserved.</span>
+                <span class="lang-my">လုံခြုံစိတ်ချရသော Docker ကွန်တိန်နာ ပတ်ဝန်းကျင်။ မူပိုင်ခွင့်များ ရယူထားပြီး။</span>
             </div>
         </div>
     </footer>
@@ -148,6 +175,7 @@
             });
         })();
     </script>
+    <script src="{% static 'js/thuta-carousel.js' %}"></script>
 
     {% block extra_scripts %}{% endblock %}
 </body>

@@ -180,7 +180,7 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
 # Platform Business Constants
-PLATFORM_NAME = os.environ.get('PLATFORM_NAME', 'Myanmar E-Learning')
+PLATFORM_NAME = os.environ.get('PLATFORM_NAME', 'THUTA')
 ORGANIZATION_NAME = os.environ.get('ORGANIZATION_NAME', PLATFORM_NAME)
 DIPLOMA_PROGRAM_TITLE = os.environ.get('DIPLOMA_PROGRAM_TITLE', 'Diploma in Cyber Security')
 DIPLOMA_DURATION_MONTHS = 10

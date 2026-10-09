@@ -1,24 +1,53 @@
 {% extends "base.html" %}
 
-{% block title %}Application Submitted — Myanmar E-Learning{% endblock %}
+{% block title %}Application Submitted — THUTA Myanmar E-Learning{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-slate-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full bg-white border border-slate-200 rounded-xl p-8 text-center shadow-sm space-y-4">
-        <div class="w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto text-2xl">
-            🏛️
-        </div>
-        <h1 class="text-xl font-bold text-slate-900">Partner Application Under Review</h1>
-        <p class="text-xs text-slate-600 leading-relaxed">
-            Your application to establish an educational partnership has been received. Our administration will review your institutional credentials and contact your representative within 2-3 business days.
-        </p>
-        <div class="pt-4 border-t border-slate-100 flex justify-center gap-3">
-            <a href="{% url 'landing-page' %}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition">
-                Return Home
-            </a>
-            <a href="{% url 'dashboard' %}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition">
-                My Dashboard
-            </a>
+<div class="min-h-[calc(100vh-140px)] flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-lg w-full rounded-3xl bg-slate-900 border border-slate-800 p-8 sm:p-10 text-center shadow-2xl relative overflow-hidden">
+        <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-64 h-64 bg-cyan-600/15 blur-[80px] rounded-full pointer-events-none"></div>
+
+        <div class="relative z-10 space-y-5">
+            <div class="w-16 h-16 rounded-2xl bg-cyan-950/80 border border-cyan-800 text-cyan-400 flex items-center justify-center mx-auto text-3xl shadow-lg">
+                🏛️
+            </div>
+            
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-800">
+                <span>✓</span> Application Received
+            </span>
+
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-white">
+                Partner Application Submitted
+            </h1>
+
+            <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                Thank you for applying to establish an educational partnership with THUTA. Our institutional relations team will review your organization's credentials and reach out to your contact representative within 1–2 business days.
+            </p>
+
+            <div class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-left text-xs space-y-2">
+                <div class="font-bold text-slate-300">Next Steps:</div>
+                <div class="flex items-start gap-2 text-slate-400">
+                    <span class="text-cyan-400">1.</span>
+                    <span>Admin verification of institutional registration and accreditation.</span>
+                </div>
+                <div class="flex items-start gap-2 text-slate-400">
+                    <span class="text-cyan-400">2.</span>
+                    <span>Activation of your dedicated Partner Organization Portal.</span>
+                </div>
+                <div class="flex items-start gap-2 text-slate-400">
+                    <span class="text-cyan-400">3.</span>
+                    <span>Partner logo placement on the THUTA institutional partner showcase.</span>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-800 flex flex-col sm:flex-row justify-center gap-3">
+                <a href="{% url 'landing-page' %}" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition border border-slate-700">
+                    Return to Home
+                </a>
+                <a href="{% url 'dashboard' %}" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-xl transition shadow-md shadow-cyan-600/30">
+                    My Dashboard &rarr;
+                </a>
+            </div>
         </div>
     </div>
 </div>

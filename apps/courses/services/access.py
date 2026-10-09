@@ -122,6 +122,48 @@ def can_submit_for_review(user, course: Course) -> tuple[bool, str]:
     return True, ""
 
 
+def can_publish_course(user, course: Course) -> tuple[bool, str]:
+    """
+    Validates whether a user can publish a course into the public catalog.
+    Requirements:
+    1. User must be authenticated.
+    2. User must have editorial authority (course owner, platform admin, or partner manager).
+    3. User must have instructor publishing rights (admin, verified teacher, or partner manager).
+    4. Course must contain at least 1 module.
+    5. Course must contain at least 1 lesson.
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return False, "Login required."
+
+    is_owner = bool(course.owner_id and course.owner_id == user.id)
+    is_admin = bool(getattr(user, 'is_admin', False))
+    is_partner_manager = False
+    if course.partner_institution_id:
+        from apps.partner.models import PartnerMembership
+        is_partner_manager = PartnerMembership.objects.filter(
+            institution_id=course.partner_institution_id,
+            user=user,
+            status=PartnerMembership.Status.ACTIVE
+        ).exists()
+
+    if not (is_owner or is_admin or is_partner_manager):
+        return False, "You do not have permission to publish this course."
+
+    # Teacher verification check: unverified teachers cannot publish directly
+    if not is_admin and not is_partner_manager:
+        if not course.can_publish(user):
+            return False, "Only verified instructors can publish courses. Please complete your instructor verification."
+
+    # Curriculum completeness validation
+    if not course.modules.exists():
+        return False, "Course must have at least one module before it can be published."
+
+    if not Lesson.objects.filter(module__course=course).exists():
+        return False, "Course must contain at least one lesson before it can be published."
+
+    return True, ""
+
+
 def can_review_course(user, course: Course) -> bool:
     """
     Checks if a user has administrative authority to approve, publish, or reject a course.
@@ -217,8 +259,16 @@ def can_access_course(user, course: Course) -> bool:
     ).exists():
         return False
 
-    # Free course check
-    if getattr(course, 'is_free', False) or course.access_type == Course.AccessType.FREE or (getattr(course, 'price', None) is not None and course.price <= 0):
+    # Free course or coupon redemption enrollment check
+    if (
+        getattr(course, 'is_free', False)
+        or course.access_type == Course.AccessType.FREE
+        or (getattr(course, 'price', None) is not None and course.price <= 0)
+        or Enrollment.objects.filter(
+            course=course, student=user, source=Enrollment.Source.COUPON,
+            status__in=[Enrollment.Status.ACTIVE, Enrollment.Status.COMPLETED]
+        ).exists()
+    ):
         return True
 
     # 1. Direct course purchase check

@@ -85,7 +85,7 @@ class InstructorCourseSubmitReviewAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        course.status = Course.Status.PENDING
+        course.status = Course.Status.PENDING_REVIEW
         course.save(update_fields=['status'])
 
         return Response({

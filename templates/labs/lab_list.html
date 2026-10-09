@@ -1,34 +1,34 @@
 {% extends 'base.html' %}
 
-{% block title %}Cyber Labs - {{ PLATFORM_NAME }}{% endblock %}
+{% block title %}Cyber Labs &amp; Virtual Sandboxes - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
     <!-- Active Sandbox Hero Banner (when student has a container running) -->
     {% if active_instance %}
-    <div class="mb-8 p-5 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-slate-900 border border-emerald-500/50 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div class="mb-8 p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-700 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div class="flex items-center space-x-3.5">
             <span class="relative flex h-3.5 w-3.5">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
             </span>
             <div>
-                <div class="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-bold">Active Container Sandbox Running</div>
-                <h3 class="text-base font-bold text-white">{{ active_instance.lab.title }}</h3>
-                <div class="text-xs text-slate-400 flex items-center space-x-2 mt-0.5">
-                    <span>Target IP: <code class="font-mono text-cyan-300 font-semibold">{{ active_instance.target_ip|default:"10.10.10.5" }}</code></span>
+                <div class="text-[11px] font-mono uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-bold">Active Container Sandbox Running</div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">{{ active_instance.lab.title }}</h3>
+                <div class="text-xs text-slate-600 dark:text-slate-300 flex items-center space-x-2 mt-0.5">
+                    <span>Target IP: <code class="font-mono text-sky-700 dark:text-cyan-300 font-bold">{{ active_instance.target_ip|default:"10.10.10.5" }}</code></span>
                     <span>•</span>
-                    <span>Time Left: <span class="text-amber-400 font-mono font-semibold">{{ active_instance.remaining_seconds }}s</span></span>
+                    <span>Time Left: <span class="text-amber-600 dark:text-amber-400 font-mono font-bold">{{ active_instance.remaining_seconds }}s</span></span>
                 </div>
             </div>
         </div>
         <div class="flex items-center space-x-3 w-full md:w-auto">
-            <a href="{% url 'lab-detail' slug=active_instance.lab.slug %}" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex-1 md:flex-initial text-center">
+            <a href="{% url 'lab-detail' slug=active_instance.lab.slug %}" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/30 transition flex-1 md:flex-initial text-center">
                 Return to Lab Sandbox &rarr;
             </a>
             <form method="post" action="{% url 'lab-stop' instance_id=active_instance.id %}">
                 {% csrf_token %}
-                <button type="submit" onclick="return confirm('Stop container and release sandbox resources?');" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-red-950/80 hover:text-red-400 border border-slate-700 text-slate-300 font-semibold text-xs transition">
+                <button type="submit" onclick="return confirm('Stop container and release sandbox resources?');" class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-rose-100 dark:bg-slate-800 dark:hover:bg-red-950/80 text-rose-700 dark:text-red-400 border border-slate-300 dark:border-slate-700 font-bold text-xs transition">
                     Stop Sandbox
                 </button>
             </form>
@@ -37,48 +37,62 @@
     {% endif %}
 
     <!-- Catalog Header & Stats -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 mb-8 border-b border-slate-800 gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 mb-8 border-b border-slate-200 dark:border-slate-800 gap-4">
         <div>
-            <div class="flex items-center space-x-2 text-xs font-mono text-cyan-400 font-bold uppercase tracking-wider mb-1">
-                <span>⚡ Cyber Range Sandboxes</span>
+            <div class="inline-flex items-center space-x-2 text-xs font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider mb-2 bg-sky-50 dark:bg-sky-950/80 px-3 py-1 rounded-full border border-sky-200 dark:border-sky-800">
+                <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                <span class="lang-en">⚡ Cyber Range Sandboxes</span>
+                <span class="lang-my">⚡ လက်တွေ့ ဆိုက်ဘာဓာတ်ခွဲခန်းများ</span>
             </div>
-            <h1 class="text-3xl font-bold text-white tracking-wide">Hands-on Cyber Security Labs</h1>
-            <p class="text-xs text-slate-400 mt-1">Docker-based isolated sandboxes. Practice offensive exploitation and defensive incident response safely.</p>
+            <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                <span class="lang-en">Hands-on Cyber Security Labs</span>
+                <span class="lang-my">လက်တွေ့ ဆိုက်ဘာလုံခြုံရေး ဓာတ်ခွဲခန်းများ</span>
+            </h1>
+            <p class="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                <span class="lang-en">Docker-based isolated sandboxes. Practice offensive exploitation and defensive incident response safely with instant browser access.</span>
+                <span class="lang-my">Docker အခြေပြု သီးသန့်ပတ်ဝန်းကျင်တွင် ဆိုက်ဘာတိုက်ခိုက်မှုနှင့် ကာကွယ်မှုများကို ဘရောက်ဆာမှ တိုက်ရိုက် လက်တွေ့လေ့ကျင့်ပါ။</span>
+            </p>
         </div>
 
         <div class="flex items-center space-x-3 text-xs">
-            <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
-                Labs: <strong class="text-white">{{ total_labs_count|default:labs|length }}</strong>
+            <span class="px-3.5 py-2 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 shadow-2xs">
+                <span class="lang-en">Labs:</span>
+                <span class="lang-my">ဓာတ်ခွဲခန်း -</span>
+                <strong class="text-slate-900 dark:text-white">{{ total_labs_count|default:labs|length }}</strong>
             </span>
-            <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
-                Pool: <strong class="text-amber-400 font-mono">{{ total_points_pool|default:"0" }} PTS</strong>
+            <span class="px-3.5 py-2 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 shadow-2xs">
+                <span class="lang-en">Pool:</span>
+                <span class="lang-my">ရမှတ်စုစုပေါင်း -</span>
+                <strong class="text-amber-600 dark:text-amber-400 font-mono">{{ total_points_pool|default:"0" }} PTS</strong>
             </span>
-            <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300">
-                Solved: <strong class="text-emerald-400 font-mono">{{ solved_lab_ids|length }}</strong>
+            <span class="px-3.5 py-2 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 shadow-2xs">
+                <span class="lang-en">Solved:</span>
+                <span class="lang-my">ဖြေဆိုပြီး -</span>
+                <strong class="text-emerald-600 dark:text-emerald-400 font-mono">{{ solved_lab_ids|length }}</strong>
             </span>
         </div>
     </div>
 
     <!-- Filters & Search Toolbar -->
-    <div class="mb-8 space-y-4">
+    <div class="mb-8 p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-4">
         <form method="get" class="flex flex-col md:flex-row gap-3 items-center justify-between">
             <!-- Search Input -->
             <div class="relative w-full md:w-80">
                 <input type="text" name="q" value="{{ search_query }}" placeholder="Search labs by title or keyword..."
-                       class="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 placeholder-slate-500 text-xs focus:border-cyan-500 focus:outline-none transition">
-                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                       class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 text-xs focus:border-sky-500 focus:outline-none transition">
+                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
 
             <!-- Difficulty Pills -->
             <div class="flex flex-wrap items-center gap-1.5 text-xs w-full md:w-auto">
                 <span class="text-[11px] text-slate-500 mr-1 uppercase tracking-wider font-semibold">Difficulty:</span>
-                <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if search_query %}q={{ search_query }}{% endif %}"
-                   class="px-3 py-1.5 rounded-lg {% if not selected_difficulty %}bg-cyan-600 text-white font-bold{% else %}bg-slate-900 border border-slate-800 text-slate-400 hover:text-white{% endif %} transition">
+                <a href="?{% if selected_category %}category={{ selected_category }}&amp;{% endif %}{% if search_query %}q={{ search_query }}{% endif %}"
+                   class="px-3 py-1.5 rounded-lg {% if not selected_difficulty %}bg-[#0284C7] text-white font-bold{% else %}bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-sky-600{% endif %} transition">
                     All
                 </a>
                 {% for diff_key, diff_label in difficulties %}
-                <a href="?difficulty={{ diff_key }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
-                   class="px-3 py-1.5 rounded-lg {% if selected_difficulty == diff_key %}bg-cyan-600 text-white font-bold{% else %}bg-slate-900 border border-slate-800 text-slate-400 hover:text-white{% endif %} transition">
+                <a href="?difficulty={{ diff_key }}{% if selected_category %}&amp;category={{ selected_category }}{% endif %}{% if search_query %}&amp;q={{ search_query }}{% endif %}"
+                   class="px-3 py-1.5 rounded-lg {% if selected_difficulty == diff_key %}bg-[#0284C7] text-white font-bold{% else %}bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-sky-600{% endif %} transition">
                     {{ diff_label }}
                 </a>
                 {% endfor %}
@@ -86,15 +100,15 @@
         </form>
 
         <!-- Category Domain Pills -->
-        <div class="flex flex-wrap items-center gap-2 text-xs pt-2">
+        <div class="flex flex-wrap items-center gap-2 text-xs pt-3 border-t border-slate-100 dark:border-slate-800">
             <span class="text-[11px] text-slate-500 mr-1 uppercase tracking-wider font-semibold">Domain:</span>
             <a href="{% url 'lab-list' %}{% if selected_difficulty %}?difficulty={{ selected_difficulty }}{% endif %}"
-               class="px-3 py-1.5 rounded-lg {% if not selected_category %}bg-slate-800 text-white font-bold border border-slate-700{% else %}bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-white{% endif %} transition">
+               class="px-3 py-1.5 rounded-lg {% if not selected_category %}bg-sky-50 dark:bg-sky-950 border border-sky-300 dark:border-sky-800 text-sky-800 dark:text-sky-300 font-bold{% else %}bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900{% endif %} transition">
                 All Domains
             </a>
             {% for cat_val, cat_label in categories %}
-            <a href="?category={{ cat_val }}{% if selected_difficulty %}&difficulty={{ selected_difficulty }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
-               class="px-3 py-1.5 rounded-lg {% if selected_category == cat_val %}bg-slate-800 text-cyan-300 font-bold border border-cyan-800{% else %}bg-slate-900/60 border border-slate-800 text-slate-400 hover:text-white{% endif %} transition">
+            <a href="?category={{ cat_val }}{% if selected_difficulty %}&amp;difficulty={{ selected_difficulty }}{% endif %}{% if search_query %}&amp;q={{ search_query }}{% endif %}"
+               class="px-3 py-1.5 rounded-lg {% if selected_category == cat_val %}bg-sky-50 dark:bg-sky-950 border border-sky-300 dark:border-sky-800 text-sky-800 dark:text-sky-300 font-bold{% else %}bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900{% endif %} transition">
                 {{ cat_label }}
             </a>
             {% endfor %}
@@ -104,39 +118,44 @@
     <!-- Labs Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for lab in labs %}
-        <div class="p-6 rounded-2xl bg-slate-900 border {% if active_instance and active_instance.lab_id == lab.id %}border-emerald-500/80 shadow-emerald-950/40{% elif lab.id in solved_lab_ids %}border-emerald-900/60{% else %}border-slate-800 hover:border-cyan-500/50{% endif %} transition flex flex-col justify-between shadow-xl relative overflow-hidden group">
-            
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border {% if active_instance and active_instance.lab_id == lab.id %}border-emerald-500 shadow-md shadow-emerald-500/10{% elif lab.id in solved_lab_ids %}border-emerald-400 dark:border-emerald-900{% else %}border-slate-200 dark:border-[#26364B] hover:border-sky-400 dark:hover:border-sky-500{% endif %} transition flex flex-col justify-between shadow-sm hover:shadow-md relative overflow-hidden group">
+
             {% if active_instance and active_instance.lab_id == lab.id %}
             <div class="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] font-mono font-bold px-3 py-0.5 rounded-bl-lg tracking-wider uppercase flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> RUNNING NOW
             </div>
             {% elif lab.id in solved_lab_ids %}
-            <div class="absolute top-0 right-0 bg-emerald-950 border-b border-l border-emerald-800 text-emerald-400 text-[10px] font-mono font-bold px-3 py-0.5 rounded-bl-lg tracking-wider uppercase">
+            <div class="absolute top-0 right-0 bg-emerald-50 dark:bg-emerald-950 border-b border-l border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-[10px] font-mono font-bold px-3 py-0.5 rounded-bl-lg tracking-wider uppercase">
                 ✓ SOLVED
             </div>
             {% endif %}
 
             <div>
                 <div class="flex justify-between items-center text-xs mb-3 pt-1">
-                    {% include 'labs/_lab_badge.html' with difficulty=lab.difficulty label=lab.get_difficulty_display %}
-                    {% include 'labs/_lab_badge.html' with points=lab.points %}
+                    <span class="px-2.5 py-0.5 rounded font-mono font-bold uppercase tracking-wider text-[10px]
+                        {% if lab.difficulty == 'easy' %} bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800
+                        {% elif lab.difficulty == 'medium' %} bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800
+                        {% else %} bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950 dark:text-rose-400 dark:border-rose-800 {% endif %}">
+                        {{ lab.get_difficulty_display }}
+                    </span>
+                    <span class="text-amber-600 dark:text-amber-400 font-bold font-mono">{{ lab.points }} PTS</span>
                 </div>
 
-                <h2 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-400 transition">{{ lab.title }}</h2>
-                <p class="text-xs text-slate-400 leading-relaxed mb-4 line-clamp-3">{{ lab.description }}</p>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white mb-2 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition">{{ lab.title }}</h2>
+                <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4 line-clamp-3">{{ lab.description }}</p>
 
-                <div class="text-[11px] text-slate-500 mb-4 space-y-1.5 border-t border-slate-800/80 pt-3">
+                <div class="text-[11px] text-slate-500 mb-4 space-y-1.5 border-t border-slate-100 dark:border-slate-800 pt-3">
                     <div class="flex justify-between">
                         <span class="text-slate-500">Domain:</span>
-                        <span class="text-slate-300 font-medium">{{ lab.template.get_category_display }}</span>
+                        <span class="text-slate-800 dark:text-slate-200 font-medium">{{ lab.template.get_category_display }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">Format:</span>
-                        <span class="text-slate-300 font-medium">{{ lab.get_lab_type_display }}</span>
+                        <span class="text-slate-800 dark:text-slate-200 font-medium">{{ lab.get_lab_type_display }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-slate-500">Est. Time:</span>
-                        <span class="text-slate-300 font-mono">{{ lab.estimated_minutes }} mins</span>
+                        <span class="text-slate-800 dark:text-slate-200 font-mono">{{ lab.estimated_minutes }} mins</span>
                     </div>
                 </div>
             </div>
@@ -146,16 +165,16 @@
                 <span>⚡ Resume Active Sandbox &rarr;</span>
             </a>
             {% else %}
-            <a href="{% url 'lab-detail' slug=lab.slug %}" class="w-full text-center py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md shadow-cyan-600/20 transition flex items-center justify-center gap-1.5">
+            <a href="{% url 'lab-detail' slug=lab.slug %}" class="w-full text-center py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold shadow-md shadow-sky-600/20 transition flex items-center justify-center gap-1.5">
                 <span>Configure &amp; Launch Lab &rarr;</span>
             </a>
             {% endif %}
         </div>
         {% empty %}
-        <div class="col-span-3 text-center py-16 text-slate-500 text-sm bg-slate-900/40 rounded-2xl border border-slate-800">
-            <svg class="w-12 h-12 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <div class="col-span-3 text-center py-16 text-slate-500 text-sm bg-white dark:bg-[#111C2E] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <svg class="w-12 h-12 text-slate-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <p>No cyber labs found matching the selected filters.</p>
-            <a href="{% url 'lab-list' %}" class="mt-2 inline-block text-xs text-cyan-400 hover:underline">Clear all filters</a>
+            <a href="{% url 'lab-list' %}" class="mt-2 inline-block text-xs text-sky-600 dark:text-sky-400 font-bold hover:underline">Clear all filters</a>
         </div>
         {% endfor %}
     </div>

@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Academic Analytics & Reports — {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    {% include 'partner/_partner_nav.html' %}
+
+    <!-- Header & Export Actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/60 p-6 rounded-2xl border border-slate-800">
+        <div>
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Institutional Analytics & Executive Reports
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Real-time academic performance indicators, cohort completion rates, and learner progress summaries.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a href="{% url 'partner-reports-learners-csv' %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export Learners CSV
+            </a>
+            <a href="{% url 'partner-enrollment-export-csv' %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                <svg class="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export Enrollments CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Section 1: Cohort Completion Matrix -->
+    <div class="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                    Cohort Completion & Progress Matrix
+                </h2>
+                <p class="text-xs text-slate-400">Average academic completion by class cohort</p>
+            </div>
+            <a href="{% url 'partner-cohorts' %}" class="text-xs text-cyan-400 hover:underline">Manage Cohorts &rarr;</a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Cohort Code</th>
+                        <th class="py-3 px-4">Cohort Name</th>
+                        <th class="py-3 px-4">Curriculum</th>
+                        <th class="py-3 px-4 text-center">Students</th>
+                        <th class="py-3 px-4">Avg Progress</th>
+                        <th class="py-3 px-4 text-center">Completed</th>
+                        <th class="py-3 px-4 text-right">Roster Report</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for item in cohort_reports %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3.5 px-4 font-mono font-bold text-cyan-400">{{ item.cohort.code }}</td>
+                        <td class="py-3.5 px-4 font-semibold text-white">{{ item.cohort.name }}</td>
+                        <td class="py-3.5 px-4 text-slate-300">{{ item.cohort.course.title|default:"General Program" }}</td>
+                        <td class="py-3.5 px-4 text-center font-mono font-bold">{{ item.students_count }}</td>
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-24 bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
+                                    <div class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full rounded-full" style="width: {{ item.avg_progress }}%"></div>
+                                </div>
+                                <span class="font-mono text-[11px] font-bold text-slate-200">{{ item.avg_progress }}%</span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 text-center font-mono text-emerald-400 font-bold">
+                            {{ item.completed_count }}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <a href="{% url 'partner-cohort-export-csv' cohort_id=item.cohort.id %}" class="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                CSV
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-slate-500">No cohorts registered yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 2: Course Enrollment Performance -->
+    <div class="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    Program Curriculum Performance
+                </h2>
+                <p class="text-xs text-slate-400">Total student enrollments and completion ratios across institutional courses</p>
+            </div>
+            <a href="{% url 'partner-courses' %}" class="text-xs text-cyan-400 hover:underline">Manage Courses &rarr;</a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Program / Course Title</th>
+                        <th class="py-3 px-4">Level</th>
+                        <th class="py-3 px-4">Access Type</th>
+                        <th class="py-3 px-4 text-center">Enrollments</th>
+                        <th class="py-3 px-4 text-center">Completions</th>
+                        <th class="py-3 px-4 text-right">Completion Rate</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for item in course_reports %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3.5 px-4 font-bold text-white">{{ item.course.title }}</td>
+                        <td class="py-3.5 px-4 text-slate-400">{{ item.course.get_level_display }}</td>
+                        <td class="py-3.5 px-4">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300">
+                                {{ item.course.get_access_type_display }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-center font-mono font-bold">{{ item.enrollments_count }}</td>
+                        <td class="py-3.5 px-4 text-center font-mono text-emerald-400 font-bold">{{ item.completed_count }}</td>
+                        <td class="py-3.5 px-4 text-right">
+                            <span class="font-mono font-bold text-cyan-400 text-xs">{{ item.completion_rate }}%</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-500">No institutional courses registered yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 3: Learner Academic Snapshot -->
+    <div class="bg-slate-900/60 rounded-2xl border border-slate-800 p-6 space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                    Institutional Learner Roster Snapshot
+                </h2>
+                <p class="text-xs text-slate-400">Recently affiliated students across all partner cohorts</p>
+            </div>
+            <a href="{% url 'partner-learners' %}" class="text-xs text-cyan-400 hover:underline">View All Learners &rarr;</a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Student</th>
+                        <th class="py-3 px-4">Account ID</th>
+                        <th class="py-3 px-4">Institution</th>
+                        <th class="py-3 px-4">Class Group</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4 text-right">Affiliated Date</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for ps in partner_students %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3.5 px-4 font-bold text-white">
+                            {{ ps.student.get_full_name|default:ps.student.username }}
+                            <span class="text-[11px] font-normal text-slate-400 block font-mono">@{{ ps.student.username }}</span>
+                        </td>
+                        <td class="py-3.5 px-4 font-mono font-bold text-cyan-400">{{ ps.student.account_id|default:"MEL-NEW" }}</td>
+                        <td class="py-3.5 px-4 text-slate-300">{{ ps.institution.name }}</td>
+                        <td class="py-3.5 px-4 font-mono text-slate-300">{{ ps.class_group|default:"-" }}</td>
+                        <td class="py-3.5 px-4">
+                            {% if ps.status == 'active' %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">Active</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400">{{ ps.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-400 font-mono text-right text-[11px]">{{ ps.enrolled_at|date:"M d, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-500">No learners affiliated yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

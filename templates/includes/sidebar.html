@@ -1,163 +1,413 @@
-<!-- Desktop Application Sidebar (250px) -->
-<aside class="mel-sidebar hidden md:flex flex-col justify-between p-4" aria-label="Main Navigation">
+<aside id="melSidebar" class="mel-sidebar hidden md:flex flex-col justify-between p-4" aria-label="Main Navigation">
     <div class="space-y-6">
         <!-- Brand & Platform Identity -->
         <div class="flex items-center gap-3 px-2 py-1">
-            <div class="w-8 h-8 rounded-lg bg-sky-600 flex items-center justify-center font-bold text-white shadow-sm shrink-0">
-                M
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-black text-white text-base shadow-sm shrink-0">
+                T
             </div>
             <div class="min-w-0">
-                <span class="font-bold text-sm tracking-wide text-white block truncate">MYANMAR E-LEARNING</span>
-                <span class="text-[10px] text-slate-400 block tracking-wider uppercase">Education SaaS</span>
+                <span class="font-bold text-sm tracking-wide text-white block truncate">THUTA</span>
+                <span class="text-[10px] text-slate-400 block tracking-wider uppercase">
+                    <span class="lang-en">Education Platform</span>
+                    <span class="lang-my">ပညာရေး ပလက်ဖောင်း</span>
+                </span>
             </div>
         </div>
 
-        <!-- Navigation Sections -->
+        <!-- Role-Specific Navigation Sections -->
         <nav class="space-y-1">
-            <!-- Academic & Core Learning -->
-            <div class="px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Curriculum
-            </div>
-            <a href="{% url 'course-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">📚</span>
-                <span>Courses &amp; Tracks</span>
-            </a>
-            <a href="{% url 'pricing' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">💎</span>
-                <span>Plans &amp; Pricing</span>
-            </a>
-            <a href="{% url 'certificate-lookup' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">📜</span>
-                <span>Verify Certificates</span>
-            </a>
-            <a href="{% url 'blog:article-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">📰</span>
-                <span>Knowledge Hub</span>
-            </a>
-            <a href="{% url 'portfolio-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">💼</span>
-                <span>Talent Showcase</span>
-            </a>
-
-            <!-- Student Specific -->
-            {% if user.is_authenticated and is_student %}
-            <div class="pt-4 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                My Learning
-            </div>
-            <a href="{{ DASHBOARD_URL }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">📊</span>
-                <span>Dashboard</span>
-            </a>
-            <a href="{% url 'my-courses' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">🎓</span>
-                <span>My Courses</span>
-            </a>
-            <a href="{% url 'project-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">🎯</span>
-                <span>Capstone Projects</span>
-            </a>
-            <a href="{% url 'lab-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">🧪</span>
-                <span>Docker Labs</span>
-            </a>
-            <a href="{% url 'ctf-board' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">🚩</span>
-                <span>CTF Challenges</span>
-            </a>
-            <a href="{% url 'payment-history' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">💳</span>
-                <span>My Payments</span>
-            </a>
-            {% endif %}
-
-            <!-- Instructor Specific -->
-            {% if user.is_authenticated and is_teacher and not is_admin %}
-            <div class="pt-4 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Instructor Hub
-            </div>
-            <a href="{% url 'teacher-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">📊</span>
-                <span>Instructor Hub</span>
-            </a>
-            <a href="{% url 'my-courses' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">📚</span>
-                <span>My Teaching</span>
-            </a>
-            <a href="{% url 'manage-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">🛠️</span>
-                <span>Manage Courses</span>
-            </a>
-            <a href="{% url 'submission-list' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <div class="flex items-center gap-3">
-                    <span class="text-sm">📝</span>
-                    <span>Grading Queue</span>
+            {% if is_admin %}
+                <!-- Admin Sidebar -->
+                <div class="px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Administration</span>
+                    <span class="lang-my">စီမံခန့်ခွဲမှု</span>
                 </div>
-                {% if ungraded_count %}
-                <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300 border border-amber-800">{{ ungraded_count }}</span>
-                {% endif %}
-            </a>
-            <a href="{% url 'live-session-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">📹</span>
-                <span>Live Classes</span>
-            </a>
-            {% endif %}
+                <a href="{% url 'admin-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📊</span>
+                    <span class="lang-en">Admin Dashboard</span>
+                    <span class="lang-my">စီမံခန့်ခွဲသူ ဒက်ရှ်ဘုတ်</span>
+                </a>
+                <a href="{% url 'console-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">⚙️</span>
+                    <span class="lang-en">Admin Console</span>
+                    <span class="lang-my">စီမံခန့်ခွဲသူ နေရာ</span>
+                </a>
 
-            <!-- Institutional Partner Portal -->
-            {% if user.is_authenticated %}
-            <div class="pt-4 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Partnerships
-            </div>
-            <a href="{% url 'partner-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">🏛️</span>
-                <span>Partner Portal</span>
-            </a>
-            {% endif %}
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Users</span>
+                    <span class="lang-my">အသုံးပြုသူများ</span>
+                </div>
+                <a href="{% url 'console-user-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">👥</span>
+                    <span class="lang-en">Users &amp; Roles</span>
+                    <span class="lang-my">အသုံးပြုသူများနှင့် ကဏ္ဍများ</span>
+                </a>
+                <a href="{% url 'console-instructor-application-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📝</span>
+                    <span class="lang-en">Instructor Applications</span>
+                    <span class="lang-my">ဆရာ လျှောက်လွှာများ</span>
+                </a>
 
-            <!-- Admin Specific -->
-            {% if user.is_authenticated and is_admin %}
-            <div class="pt-4 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Administration
-            </div>
-            <a href="{% url 'console-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">⚙️</span>
-                <span>Admin Console</span>
-            </a>
-            <a href="{% url 'manage-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">🛠️</span>
-                <span>Content Studio</span>
-            </a>
-            <a href="{% url 'payment-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">💰</span>
-                <span>Payment Approvals</span>
-            </a>
-            <a href="{% url 'console-log-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">📋</span>
-                <span>Audit Logs</span>
-            </a>
-            <a href="{% url 'cyber-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
-                <span class="text-sm">🛡️</span>
-                <span>Cyber Range Ops</span>
-            </a>
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Academic</span>
+                    <span class="lang-my">ပညာရေး</span>
+                </div>
+                <a href="{% url 'course-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📚</span>
+                    <span class="lang-en">Courses</span>
+                    <span class="lang-my">သင်ရိုးများ</span>
+                </a>
+                <a href="{% url 'manage-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🛠️</span>
+                    <span class="lang-en">Content Studio</span>
+                    <span class="lang-my">သင်ရိုး စတူဒီယို</span>
+                </a>
+                <a href="{% url 'course-review-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🔍</span>
+                    <span class="lang-en">Review Queue</span>
+                    <span class="lang-my">စိစစ်ရန် စာရင်း</span>
+                </a>
+                <a href="{% url 'certificate-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📜</span>
+                    <span class="lang-en">Certificates</span>
+                    <span class="lang-my">အောင်လက်မှတ်များ</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Cyber Range</span>
+                    <span class="lang-my">ဆိုက်ဘာ လက်တွေ့ခန်း</span>
+                </div>
+                <a href="{% url 'cyber-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🛡️</span>
+                    <span class="lang-en">Range Ops</span>
+                    <span class="lang-my">လက်တွေ့ခန်း စီမံခန့်ခွဲမှု</span>
+                </a>
+                <a href="{% url 'lab-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🧪</span>
+                    <span class="lang-en">Labs</span>
+                    <span class="lang-my">ဓာတ်ခွဲခန်းများ</span>
+                </a>
+                <a href="{% url 'ctf-board' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🚩</span>
+                    <span class="lang-en">CTF Challenges</span>
+                    <span class="lang-my">CTF စိန်ခေါ်မှုများ</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Partners</span>
+                    <span class="lang-my">မိတ်ဖက်များ</span>
+                </div>
+                <a href="{% url 'partner-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🏛️</span>
+                    <span class="lang-en">Institutions</span>
+                    <span class="lang-my">အဖွဲ့အစည်းများ</span>
+                </a>
+                <a href="{% url 'console-partner-application-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📋</span>
+                    <span class="lang-en">Partner Applications</span>
+                    <span class="lang-my">မိတ်ဖက် လျှောက်လွှာများ</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Finance</span>
+                    <span class="lang-my">ဘဏ္ဍာရေး</span>
+                </div>
+                <a href="{% url 'pricing' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">💎</span>
+                    <span class="lang-en">Plans &amp; Pricing</span>
+                    <span class="lang-my">အစီအစဉ်နှင့် ဈေးနှုန်း</span>
+                </a>
+                <a href="{% url 'payment-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">💰</span>
+                    <span class="lang-en">Payment Approvals</span>
+                    <span class="lang-my">ငွေပေးချေမှု အတည်ပြုခြင်း</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">System</span>
+                    <span class="lang-my">စနစ်</span>
+                </div>
+                <a href="{% url 'console-log-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📋</span>
+                    <span class="lang-en">Audit Logs</span>
+                    <span class="lang-my">မှတ်တမ်းများ</span>
+                </a>
+                <a href="{% url 'profile' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">👤</span>
+                    <span class="lang-en">Profile &amp; Settings</span>
+                    <span class="lang-my">ပရိုဖိုင်နှင့် ဆက်တင်များ</span>
+                </a>
+
+            {% elif is_partner %}
+                <!-- Partner Sidebar -->
+                <div class="px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Home</span>
+                    <span class="lang-my">ပင်မ</span>
+                </div>
+                <a href="{% url 'partner-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📊</span>
+                    <span class="lang-en">Partner Dashboard</span>
+                    <span class="lang-my">မိတ်ဖက် ဒက်ရှ်ဘုတ်</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Organization</span>
+                    <span class="lang-my">အဖွဲ့အစည်း</span>
+                </div>
+                <a href="{% url 'partner-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🏛️</span>
+                    <span class="lang-en">Institution Directory</span>
+                    <span class="lang-my">အဖွဲ့အစည်းများ စာရင်း</span>
+                </a>
+                <a href="{% url 'partner-instructors' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">👨‍🏫</span>
+                    <span class="lang-en">Faculty Instructors</span>
+                    <span class="lang-my">သင်ကြားသူ ဆရာများ</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Academic</span>
+                    <span class="lang-my">ပညာရေး</span>
+                </div>
+                <a href="{% url 'partner-courses' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📚</span>
+                    <span class="lang-en">Partner Courses</span>
+                    <span class="lang-my">မိတ်ဖက် သင်ရိုးများ</span>
+                </a>
+                <a href="{% url 'partner-enrollments' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🎓</span>
+                    <span class="lang-en">Cohorts &amp; Enrollments</span>
+                    <span class="lang-my">အတန်းခွဲများနှင့် ကျောင်းသားများ</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Finance</span>
+                    <span class="lang-my">ဘဏ္ဍာရေး</span>
+                </div>
+                <a href="{% url 'partner-revenue-report' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">💰</span>
+                    <span class="lang-en">Revenue &amp; Settlements</span>
+                    <span class="lang-my">ဝင်ငွေနှင့် ရှင်းတမ်းများ</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Account</span>
+                    <span class="lang-my">အကောင့်</span>
+                </div>
+                <a href="{% url 'profile' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">👤</span>
+                    <span class="lang-en">Partner Profile</span>
+                    <span class="lang-my">မိတ်ဖက် ပရိုဖိုင်</span>
+                </a>
+
+            {% elif is_teacher %}
+                <!-- Teacher Sidebar -->
+                <div class="px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Home</span>
+                    <span class="lang-my">ပင်မ</span>
+                </div>
+                <a href="{% url 'teacher-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📊</span>
+                    <span class="lang-en">Instructor Dashboard</span>
+                    <span class="lang-my">ဆရာ ဒက်ရှ်ဘုတ်</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Teaching</span>
+                    <span class="lang-my">သင်ကြားမှု</span>
+                </div>
+                <a href="{% url 'my-courses' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📚</span>
+                    <span class="lang-en">My Courses</span>
+                    <span class="lang-my">ကျွန်ုပ်၏ သင်ရိုးများ</span>
+                </a>
+                <a href="{% url 'manage-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🛠️</span>
+                    <span class="lang-en">Course Builder</span>
+                    <span class="lang-my">သင်ရိုး ဖန်တီးရန်</span>
+                </a>
+                <a href="{% url 'submission-list' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm">📝</span>
+                        <span class="lang-en">Grading Queue</span>
+                        <span class="lang-my">အမှတ်ပေးရန် စာရင်း</span>
+                    </div>
+                    {% if ungraded_count %}
+                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300 border border-amber-800">{{ ungraded_count }}</span>
+                    {% endif %}
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Live</span>
+                    <span class="lang-my">တိုက်ရိုက်</span>
+                </div>
+                <a href="{% url 'live-session-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📹</span>
+                    <span class="lang-en">Live Classes</span>
+                    <span class="lang-my">တိုက်ရိုက် အတန်းများ</span>
+                </a>
+                <a href="{% url 'live-session-create' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📅</span>
+                    <span class="lang-en">Schedule Class</span>
+                    <span class="lang-my">အတန်းချိန် သတ်မှတ်ရန်</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Practical</span>
+                    <span class="lang-my">လက်တွေ့</span>
+                </div>
+                <a href="{% url 'lab-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🧪</span>
+                    <span class="lang-en">Cyber Labs</span>
+                    <span class="lang-my">ဆိုက်ဘာ ဓာတ်ခွဲခန်းများ</span>
+                </a>
+                <a href="{% url 'ctf-board' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🚩</span>
+                    <span class="lang-en">CTF Challenges</span>
+                    <span class="lang-my">CTF စိန်ခေါ်မှုများ</span>
+                </a>
+                <a href="{% url 'project-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🎯</span>
+                    <span class="lang-en">Projects</span>
+                    <span class="lang-my">ပရောဂျက်များ</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Account</span>
+                    <span class="lang-my">အကောင့်</span>
+                </div>
+                <a href="{% url 'profile' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">👤</span>
+                    <span class="lang-en">Teacher Profile</span>
+                    <span class="lang-my">ဆရာ ပရိုဖိုင်</span>
+                </a>
+
+            {% else %}
+                <!-- Student Sidebar -->
+                <div class="px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Home</span>
+                    <span class="lang-my">ပင်မ</span>
+                </div>
+                <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📊</span>
+                    <span class="lang-en">Dashboard</span>
+                    <span class="lang-my">ဒက်ရှ်ဘုတ်</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Learning</span>
+                    <span class="lang-my">သင်ယူမှု</span>
+                </div>
+                <a href="{% url 'my-courses' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🎓</span>
+                    <span class="lang-en">My Courses</span>
+                    <span class="lang-my">ကျွန်ုပ်၏ သင်ရိုးများ</span>
+                </a>
+                <a href="{% url 'course-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📚</span>
+                    <span class="lang-en">Course Catalog</span>
+                    <span class="lang-my">သင်ရိုးများ စာရင်း</span>
+                </a>
+                <a href="{% url 'pricing' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">💎</span>
+                    <span class="lang-en">Plans &amp; Pricing</span>
+                    <span class="lang-my">အစီအစဉ်နှင့် ဈေးနှုန်း</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Practice</span>
+                    <span class="lang-my">လက်တွေ့ လေ့ကျင့်မှု</span>
+                </div>
+                <a href="{% url 'lab-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🧪</span>
+                    <span class="lang-en">Cyber Labs</span>
+                    <span class="lang-my">ဆိုက်ဘာ ဓာတ်ခွဲခန်းများ</span>
+                </a>
+                <a href="{% url 'ctf-board' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🚩</span>
+                    <span class="lang-en">CTF Challenges</span>
+                    <span class="lang-my">CTF စိန်ခေါ်မှုများ</span>
+                </a>
+                <a href="{% url 'project-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🎯</span>
+                    <span class="lang-en">Capstone Projects</span>
+                    <span class="lang-my">လက်တွေ့ ပရောဂျက်များ</span>
+                </a>
+                <a href="{% url 'leaderboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🏆</span>
+                    <span class="lang-en">Leaderboard</span>
+                    <span class="lang-my">ဦးဆောင်သူများ ဇယား</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Achievement</span>
+                    <span class="lang-my">အောင်မြင်မှု</span>
+                </div>
+                <a href="{% url 'certificate-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📜</span>
+                    <span class="lang-en">My Certificates</span>
+                    <span class="lang-my">ကျွန်ုပ်၏ အောင်လက်မှတ်များ</span>
+                </a>
+                <a href="{% url 'certificate-lookup' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🔍</span>
+                    <span class="lang-en">Verify Credential</span>
+                    <span class="lang-my">အောင်လက်မှတ် စစ်ဆေးရန်</span>
+                </a>
+                <a href="{% url 'portfolio-detail' username=user.username %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">💼</span>
+                    <span class="lang-en">Career Portfolio</span>
+                    <span class="lang-my">အလုပ်အကိုင် ပရိုဖိုင်</span>
+                </a>
+
+                <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <span class="lang-en">Account</span>
+                    <span class="lang-my">အကောင့်</span>
+                </div>
+                <a href="{% url 'payment-history' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">💳</span>
+                    <span class="lang-en">Payments &amp; History</span>
+                    <span class="lang-my">ငွေပေးချေမှု မှတ်တမ်း</span>
+                </a>
+                <a href="{% url 'profile' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">👤</span>
+                    <span class="lang-en">Profile &amp; Settings</span>
+                    <span class="lang-my">ပရိုဖိုင်နှင့် ဆက်တင်များ</span>
+                </a>
+                <a href="{% url 'apply-instructor' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">👨‍🏫</span>
+                    <span class="lang-en">Become an Instructor</span>
+                    <span class="lang-my">ဆရာအဖြစ် လျှောက်ထားရန်</span>
+                </a>
+                <a href="{% url 'partner-apply' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-emerald-400 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🏛️</span>
+                    <span class="lang-en">Partner With Us</span>
+                    <span class="lang-my">မိတ်ဖက်အဖြစ် ပူးပေါင်းရန်</span>
+                </a>
+                <a href="{% url 'vpn-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🛡️</span>
+                    <span class="lang-en">OpenVPN Tunnel</span>
+                    <span class="lang-my">OpenVPN ချိတ်ဆက်မှု</span>
+                </a>
             {% endif %}
         </nav>
     </div>
 
-    <!-- User Mini Profile / VPN Quick Status -->
-    <div class="pt-4 border-t border-slate-800 space-y-3">
-        {% if user.is_authenticated %}
+    <!-- Bottom User Bar -->
+    <div class="pt-4 border-t border-slate-800 space-y-2">
         <div class="flex items-center justify-between px-2 text-xs">
-            <a href="{% url 'vpn-dashboard' %}" class="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>VPN Access</span>
-            </a>
-            <a href="{% url 'portfolio-detail' username=user.username %}" class="text-sky-400 hover:underline text-[11px]">
-                Portfolio
-            </a>
+            <span class="text-slate-400">
+                <span class="lang-en">Signed in as</span>
+                <span class="lang-my">အကောင့် -</span>
+            </span>
+            <span class="font-semibold text-white truncate max-w-[120px]">{{ user.username }}</span>
         </div>
-        {% endif %}
-        <div class="flex items-center justify-between px-2 pt-1 text-[11px] text-slate-400">
-            <span>MEL v2.5</span>
-            <span>Myanmar SaaS</span>
-        </div>
+        <form method="POST" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-rose-400 text-xs font-semibold transition border border-slate-800">
+                <span>🚪</span>
+                <span class="lang-en">Sign Out</span>
+                <span class="lang-my">အကောင့်ထွက်မည်</span>
+            </button>
+        </form>
     </div>
 </aside>

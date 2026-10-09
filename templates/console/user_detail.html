@@ -126,6 +126,47 @@
         </div>
     </div>
 
+    <!-- Instructor Applications -->
+    {% if instructor_applications %}
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 mt-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider">Faculty / Instructor Applications</h3>
+            <span class="text-xs text-slate-400">{{ instructor_applications.count }} record{{ instructor_applications.count|pluralize }}</span>
+        </div>
+        <div class="space-y-3">
+            {% for app in instructor_applications %}
+            <div class="flex items-center justify-between gap-4 p-4 rounded-xl bg-slate-950 border border-slate-800">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-semibold text-white">{{ app.department|default:"Faculty Applicant" }}</span>
+                        <span class="text-xs text-slate-400">· Rank: {{ app.get_awarded_level_display }}</span>
+                    </div>
+                    <div class="text-xs text-slate-400 mt-1">
+                        Applied {{ app.created_at|date:"d M Y, H:i" }}
+                        {% if app.target_subjects %} · Specialization: {{ app.target_subjects }}{% endif %}
+                    </div>
+                    {% if app.rejection_feedback %}
+                    <div class="text-xs text-rose-400 mt-1">Rejection feedback: {{ app.rejection_feedback }}</div>
+                    {% endif %}
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                    <span class="text-xs px-2.5 py-1 rounded-full font-bold uppercase border
+                        {% if app.status == 'approved' %}bg-emerald-950 text-emerald-300 border-emerald-800
+                        {% elif app.status == 'rejected' %}bg-rose-950 text-rose-300 border-rose-800
+                        {% else %}bg-amber-950 text-amber-300 border-amber-800{% endif %}">
+                        {{ app.get_status_display }}
+                    </span>
+                    <a href="{% url 'console-instructor-application-detail' app_id=app.id %}"
+                       class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-400 font-medium transition">
+                        Review &rarr;
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Certificates -->
     <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 mt-6">
         <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Certificates</h3>

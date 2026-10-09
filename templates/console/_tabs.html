@@ -1,46 +1,58 @@
 <div class="flex flex-wrap gap-2 mb-8 text-xs">
     <a href="{% url 'console-home' %}"
-       class="px-4 py-2 rounded-lg font-semibold transition border
-       {% if active == 'home' %}bg-cyan-600 border-cyan-500 text-white
-       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+       {% if active == 'home' %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+       {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
         Overview
     </a>
     <a href="{% url 'console-user-list' %}"
-       class="px-4 py-2 rounded-lg font-semibold transition border
-       {% if active == 'users' %}bg-cyan-600 border-cyan-500 text-white
-       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+       {% if active == 'users' %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+       {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
         Users
     </a>
+    <a href="{% url 'console-instructor-application-list' %}"
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+       {% if active == 'instructor_applications' %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+       {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
+        Faculty applications
+    </a>
+    <a href="{% url 'console-partner-application-list' %}"
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+       {% if active == 'partner_applications' %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+       {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
+        Partner applications
+    </a>
     <a href="{% url 'console-course-list' %}"
-       class="px-4 py-2 rounded-lg font-semibold transition border
-       {% if active == 'courses' %}bg-cyan-600 border-cyan-500 text-white
-       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+       {% if active == 'courses' %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+       {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
         Courses &amp; fees
     </a>
     <a href="{% url 'console-fee-overview' %}"
-       class="px-4 py-2 rounded-lg font-semibold transition border
-       {% if active == 'fees' %}bg-cyan-600 border-cyan-500 text-white
-       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+       {% if active == 'fees' %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+       {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
         Revenue
     </a>
     <a href="{% url 'console-credential-list' %}"
-       class="px-4 py-2 rounded-lg font-semibold transition border
-       {% if active == 'credentials' %}bg-cyan-600 border-cyan-500 text-white
-       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+       {% if active == 'credentials' %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+       {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
         Credentials
     </a>
     <a href="{% url 'console-log-list' %}"
-       class="px-4 py-2 rounded-lg font-semibold transition border
-       {% if active == 'logs' %}bg-cyan-600 border-cyan-500 text-white
-       {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+       {% if active == 'logs' %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+       {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
         Audit logs
     </a>
     <a href="{% url 'payment-list' %}"
-       class="px-4 py-2 rounded-lg font-semibold transition border bg-amber-950 border-amber-800 text-amber-300 hover:bg-amber-900">
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm bg-[#FFFBEB] dark:bg-[#302719] border-[#FDE68A] dark:border-[#423522] text-[#92400E] dark:text-[#FCD34D] hover:bg-amber-100 dark:hover:bg-[#423522]">
         Payment queue
     </a>
     <a href="{% url 'cyber-home' %}"
-       class="px-4 py-2 rounded-lg font-semibold transition border bg-cyan-950 border-cyan-800 text-cyan-300 hover:bg-cyan-900">
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm bg-[#E0F2FE] dark:bg-[#172B40] border-[#BAE6FD] dark:border-[#26364B] text-[#075985] dark:text-[#7DD3FC] hover:bg-sky-100 dark:hover:bg-[#26364B]">
         Cyber Range
     </a>
 </div>

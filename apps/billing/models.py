@@ -224,6 +224,97 @@ class UserSubscription(BaseModel):
         return self
 
 
+class PaymentMethod(BaseModel):
+    """
+    Accepted payment methods managed dynamically by administrators.
+    Supports national MMQR, mobile wallets, and bank transfers.
+    """
+    class MethodType(models.TextChoices):
+        QR = 'qr', 'QR Code (MMQR / Dynamic QR)'
+        WALLET = 'wallet', 'Mobile Wallet'
+        BANK_TRANSFER = 'bank_transfer', 'Bank Transfer'
+        OTHER = 'other', 'Other'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    is_active = models.BooleanField(default=True, db_index=True)
+    name = models.CharField(max_length=64)
+    code = models.CharField(max_length=32, unique=True, db_index=True)
+    method_type = models.CharField(
+        max_length=20, choices=MethodType.choices, default=MethodType.QR
+    )
+    account_name = models.CharField(max_length=128, blank=True)
+    account_number = models.CharField(max_length=128, blank=True)
+    qr_image = models.FileField(upload_to='payments/qrs/', null=True, blank=True)
+    instructions = models.TextField(blank=True)
+    instructions_my = models.TextField(
+        blank=True, help_text="Myanmar language payment instructions."
+    )
+    display_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'Payment Method'
+        verbose_name_plural = 'Payment Methods'
+        ordering = ['display_order', 'name']
+
+    def __str__(self):
+        status = "Active" if self.is_active else "Disabled"
+        return f"{self.name} ({self.get_method_type_display()}) - {status}"
+
+    @classmethod
+    def ensure_default_methods(cls):
+        defaults = [
+            {
+                'code': 'mmqr',
+                'name': 'MMQR',
+                'method_type': cls.MethodType.QR,
+                'account_name': 'THUTA E-Learning Platform',
+                'instructions': 'Scan the MMQR with any supported Myanmar banking or wallet app.',
+                'instructions_my': 'မည်သည့် မြန်မာ မိုဘိုင်းဘဏ် သို့မဟုတ် ဝေါလက် အက်ပ်ဖြင့်မဆို MMQR ကို စကင်ဖတ်၍ ပေးချေနိုင်ပါသည်။',
+                'display_order': 1,
+                'is_active': False,
+            },
+            {
+                'code': 'kbz_pay',
+                'name': 'KBZPay (KPay)',
+                'method_type': cls.MethodType.WALLET,
+                'account_name': 'THUTA Academy',
+                'account_number': '09-974288199',
+                'instructions': 'Transfer to the KBZPay phone number and attach screenshot.',
+                'instructions_my': 'KBZPay ဖုန်းနံပါတ်သို့ လွှဲပြီး ငွေလွှဲပြေစာ screenshot ထည့်သွင်းပါ။',
+                'display_order': 2,
+                'is_active': True,
+            },
+            {
+                'code': 'wave_pay',
+                'name': 'Wave Money (WavePay)',
+                'method_type': cls.MethodType.WALLET,
+                'account_name': 'THUTA Academy',
+                'account_number': '09-974288199',
+                'instructions': 'Transfer to the WavePay phone number and attach screenshot.',
+                'instructions_my': 'WavePay ဖုန်းနံပါတ်သို့ လွှဲပြီး ငွေလွှဲပြေစာ screenshot ထည့်သွင်းပါ။',
+                'display_order': 3,
+                'is_active': True,
+            },
+            {
+                'code': 'bank_transfer',
+                'name': 'KBZ Bank Transfer',
+                'method_type': cls.MethodType.BANK_TRANSFER,
+                'account_name': 'THUTA E-Learning Co., Ltd.',
+                'account_number': '1234-5678-9012-3456',
+                'instructions': 'Transfer to KBZ Bank account and attach bank receipt.',
+                'instructions_my': 'KBZ ဘဏ်အကောင့်သို့ လွှဲပြီး ငွေလွှဲစလစ် ထည့်သွင်းပါ။',
+                'display_order': 4,
+                'is_active': True,
+            },
+        ]
+        created_or_updated = []
+        for d in defaults:
+            code = d.pop('code')
+            obj, _ = cls.objects.update_or_create(code=code, defaults=d)
+            created_or_updated.append(obj)
+        return created_or_updated
+
+
 class Payment(BaseModel):
     """
     Payment abstraction model for manual and gateway payments.
@@ -247,6 +338,7 @@ class Payment(BaseModel):
         REJECTED = 'rejected', 'Rejected'
 
     class Method(models.TextChoices):
+        MMQR = 'mmqr', 'MMQR'
         KBZ_PAY = 'kbz_pay', 'KBZ Pay'
         WAVE_PAY = 'wave_pay', 'Wave Pay'
         BANK_TRANSFER = 'bank_transfer', 'Bank transfer'
@@ -264,11 +356,31 @@ class Payment(BaseModel):
         SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='payments'
     )
+    payment_method = models.ForeignKey(
+        PaymentMethod, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='payments'
+    )
     payment_type = models.CharField(
         max_length=32, choices=PaymentType.choices, default=PaymentType.COURSE_PURCHASE, db_index=True
     )
     provider = models.CharField(max_length=32, default='manual_transfer', db_index=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    original_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text="Original price before discount."
+    )
+    discount_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text="Total discount applied."
+    )
+    coupon_code = models.CharField(
+        max_length=64, blank=True, db_index=True,
+        help_text="Coupon code redeemed at checkout."
+    )
+    promotion = models.ForeignKey(
+        'billing.Promotion', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='payments'
+    )
     currency = models.CharField(max_length=8, default='MMK')
     platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     teacher_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -284,7 +396,7 @@ class Payment(BaseModel):
     )
 
     method = models.CharField(
-        max_length=16, choices=Method.choices, default=Method.KBZ_PAY
+        max_length=32, choices=Method.choices, default=Method.KBZ_PAY
     )
     reference = models.CharField(
         max_length=128, blank=True,
@@ -401,6 +513,12 @@ class Payment(BaseModel):
         if self.period_end is None:
             return True
         return self.period_end >= timezone.localdate()
+
+    @property
+    def method_display(self):
+        if self.payment_method:
+            return self.payment_method.name
+        return self.get_method_display()
 
 
 class PartnerRevenueRecord(BaseModel):
@@ -551,4 +669,231 @@ def has_paid_certificate_fee(user, course):
         payment_type=Payment.PaymentType.CERTIFICATE_FEE,
         status__in=[Payment.Status.APPROVED, Payment.Status.SUCCESS]
     ).exists()
+
+
+def generate_unique_coupon_code(prefix='THUTA'):
+    """Generates an uppercase unique coupon code formatted like THUTA-XXXX-XXXX."""
+    import secrets
+    token = secrets.token_hex(4).upper()
+    return f"{prefix}-{token[:4]}-{token[4:]}"
+
+
+class Promotion(BaseModel):
+    """
+    Promotions and Discount Codes created by Admin, Teachers, or Partners.
+    """
+    class DiscountType(models.TextChoices):
+        PERCENTAGE = 'percentage', 'Percentage (%)'
+        FIXED = 'fixed', 'Fixed Amount (MMK)'
+
+    class CreatorRole(models.TextChoices):
+        ADMIN = 'admin', 'Platform Administrator'
+        TEACHER = 'teacher', 'Teacher / Instructor'
+        PARTNER = 'partner', 'Partner Institution'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=128, help_text="Internal campaign or promotion name")
+    code = models.CharField(
+        max_length=64, unique=True, db_index=True,
+        help_text="Coupon code applied at checkout (normalized to uppercase)."
+    )
+    description = models.TextField(blank=True)
+
+    discount_type = models.CharField(
+        max_length=16, choices=DiscountType.choices, default=DiscountType.PERCENTAGE
+    )
+    discount_value = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        help_text="Discount value: e.g. 20 for 20% or 10000 for 10,000 MMK. Use 100% for 100% free."
+    )
+
+    # Scoping: Blank means platform-wide (Admin only).
+    # Teachers and Partners MUST select only their authorized courses.
+    courses = models.ManyToManyField(
+        'courses.Course', blank=True, related_name='promotions',
+        help_text="Specific courses this coupon applies to. Empty applies platform-wide (Admin only)."
+    )
+
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='created_promotions'
+    )
+    creator_role = models.CharField(
+        max_length=16, choices=CreatorRole.choices, default=CreatorRole.ADMIN
+    )
+    partner_institution = models.ForeignKey(
+        'partner.Institution', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='promotions',
+        help_text="Set if created on behalf of a partner institution."
+    )
+
+    start_at = models.DateTimeField(null=True, blank=True, help_text="Promotion start time (null for immediate)")
+    end_at = models.DateTimeField(null=True, blank=True, help_text="Promotion expiration time (null for no expiry)")
+
+    usage_limit = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Global maximum usage count across all users (null for unlimited)."
+    )
+    usage_count = models.PositiveIntegerField(default=0)
+    per_user_limit = models.PositiveIntegerField(
+        default=1, blank=True,
+        help_text="Maximum redemptions allowed per student."
+    )
+
+    minimum_purchase = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'), blank=True,
+        help_text="Minimum course price required to apply this coupon."
+    )
+    maximum_discount = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text="Maximum discount cap for percentage discounts."
+    )
+
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['code', 'is_active']),
+            models.Index(fields=['creator', 'is_active']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.code:
+            self.code = self.code.strip().upper()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        val_str = f"{self.discount_value}%" if self.discount_type == self.DiscountType.PERCENTAGE else f"{self.discount_value:,.0f} MMK"
+        return f"{self.code} ({val_str} off) - {self.name}"
+
+    @property
+    def is_expired(self):
+        now = timezone.now()
+        if self.end_at and now > self.end_at:
+            return True
+        return False
+
+    @property
+    def is_scheduled(self):
+        now = timezone.now()
+        if self.start_at and now < self.start_at:
+            return True
+        return False
+
+    @property
+    def is_limit_reached(self):
+        if self.usage_limit is not None and self.usage_count >= self.usage_limit:
+            return True
+        return False
+
+    @property
+    def computed_status(self):
+        if not self.is_active:
+            return 'disabled'
+        if self.is_scheduled:
+            return 'scheduled'
+        if self.is_expired:
+            return 'expired'
+        if self.is_limit_reached:
+            return 'limit_reached'
+        return 'active'
+
+    @property
+    def is_valid_now(self):
+        return self.computed_status == 'active'
+
+    def validate_for_course_and_user(self, course, user=None):
+        """
+        Validates whether this coupon can be applied to `course` by `user`.
+        Returns (is_valid: bool, error_message: str).
+        """
+        if not self.is_active:
+            return False, "This coupon code is currently disabled."
+
+        now = timezone.now()
+        if self.start_at and now < self.start_at:
+            return False, f"This coupon is scheduled to start on {self.start_at.strftime('%Y-%m-%d %H:%M')}."
+
+        if self.end_at and now > self.end_at:
+            return False, "This coupon code has expired."
+
+        if self.usage_limit is not None and self.usage_count >= self.usage_limit:
+            return False, "This coupon code has reached its maximum total usage limit."
+
+        # Check course scoping
+        if self.courses.exists():
+            if not self.courses.filter(id=course.id).exists():
+                return False, f"This coupon is not valid for '{course.title}'."
+
+        # Check minimum purchase
+        course_price = getattr(course, 'price', Decimal('0.00')) or Decimal('0.00')
+        if self.minimum_purchase > 0 and course_price < self.minimum_purchase:
+            return False, f"This coupon requires a minimum course price of {self.minimum_purchase:,.0f} MMK."
+
+        # Check per-user limit
+        if user and getattr(user, 'is_authenticated', False):
+            user_usages = self.usages.filter(user=user).count()
+            if user_usages >= self.per_user_limit:
+                return False, f"You have already redeemed this coupon the maximum allowed times ({self.per_user_limit})."
+
+        return True, ""
+
+    def calculate_discount(self, original_price: Decimal):
+        """
+        Calculates (discount_amount, final_price) given original_price.
+        Final price will never be negative.
+        """
+        orig = Decimal(str(original_price))
+        if orig <= Decimal('0.00'):
+            return Decimal('0.00'), Decimal('0.00')
+
+        if self.discount_type == self.DiscountType.PERCENTAGE:
+            pct = Decimal(str(self.discount_value))
+            if pct >= Decimal('100.00'):
+                discount = orig
+            elif pct <= Decimal('0.00'):
+                discount = Decimal('0.00')
+            else:
+                discount = (orig * (pct / Decimal('100.00'))).quantize(Decimal('0.01'))
+            
+            # Apply maximum discount cap if configured
+            if self.maximum_discount is not None and self.maximum_discount > Decimal('0.00'):
+                discount = min(discount, self.maximum_discount)
+        else:
+            # Fixed discount
+            discount = Decimal(str(self.discount_value))
+
+        # Ensure discount does not exceed original price
+        discount = min(discount, orig)
+        discount = max(discount, Decimal('0.00')).quantize(Decimal('0.01'))
+        final_price = max(orig - discount, Decimal('0.00')).quantize(Decimal('0.01'))
+        return discount, final_price
+
+
+class PromotionUsage(BaseModel):
+    """
+    Audit log of each coupon redemption by a student.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    promotion = models.ForeignKey(Promotion, on_delete=models.CASCADE, related_name='usages')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='promotion_usages')
+    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name='promotion_usages')
+    payment = models.ForeignKey('billing.Payment', on_delete=models.SET_NULL, null=True, blank=True, related_name='promotion_usages')
+
+    original_price = models.DecimalField(max_digits=10, decimal_places=2)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    final_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['promotion', 'user']),
+            models.Index(fields=['course', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} used {self.promotion.code} for {self.course.title} (-{self.discount_amount} MMK)"
+
 

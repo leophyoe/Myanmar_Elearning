@@ -3,117 +3,245 @@
 {% block title %}Checkout - {{ course.title }} - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <a href="{% url 'course-detail' slug=course.slug %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to course</a>
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+    <a href="{% url 'course-detail' slug=course.slug %}" class="text-xs text-[#0284C7] dark:text-[#38BDF8] hover:underline inline-flex items-center gap-1 font-medium mb-4">
+        &larr; <span class="lang-en">Back to course</span><span class="lang-my">သင်တန်းအသေးစိတ်သို့ ပြန်သွားမည်</span>
+    </a>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4">
-        <!-- Order summary -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Order summary & Coupon -->
         <div class="lg:col-span-1 space-y-6">
-            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
-                <h1 class="text-sm uppercase tracking-wider text-slate-500 mb-4">Order summary</h1>
-                <h2 class="text-lg font-bold text-white leading-snug">{{ course.title }}</h2>
+            <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+                <h1 class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-3">
+                    <span class="lang-en">Order summary</span>
+                    <span class="lang-my">အော်ဒါ အကျဉ်းချုပ်</span>
+                </h1>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white leading-snug">{{ course.title }}</h2>
                 {% if course.subject %}
-                <p class="text-[11px] text-cyan-400 mt-1">{{ course.subject.title }}</p>
+                <p class="text-[11px] text-[#0284C7] dark:text-[#38BDF8] mt-1 font-medium">{{ course.subject.title }}</p>
                 {% endif %}
-                <div class="flex items-end justify-between mt-6 pt-4 border-t border-slate-800">
-                    <span class="text-xs text-slate-400">{{ course.get_billing_period_display }}</span>
-                    <div class="text-right">
-                        {% if pricing.discount_amount and pricing.discount_amount > 0 %}
-                            <div class="text-xs text-slate-400 line-through">{{ course.price }} {{ course.currency }}</div>
-                        {% endif %}
-                        <span class="text-2xl font-bold text-amber-300">
-                            {{ effective_price|default:course.price }} <span class="text-sm">{{ course.currency }}</span>
+
+                <!-- Pricing Breakdown -->
+                <div class="mt-5 pt-4 border-t border-slate-200 dark:border-[#26364B] space-y-2">
+                    <div class="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+                        <span><span class="lang-en">Original Price</span><span class="lang-my">မူရင်းဈေးနှုန်း</span></span>
+                        <span class="{% if discount_amount > 0 %}line-through text-slate-400 dark:text-slate-500{% else %}text-slate-800 dark:text-slate-200 font-medium{% endif %}">
+                            {{ base_price|default:course.price|floatformat:0 }} {{ course.currency }}
                         </span>
-                        {% if pricing.pricing_tier and pricing.pricing_tier != 'standard' %}
-                            <div class="text-[10px] text-cyan-400 uppercase font-semibold">{{ pricing.reason }}</div>
-                        {% endif %}
+                    </div>
+
+                    {% if promotion and discount_amount > 0 %}
+                    <div class="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400">
+                        <span class="flex items-center gap-1 font-medium">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            <span class="lang-en">Coupon ({{ promotion.code }})</span>
+                            <span class="lang-my">လျှော့စျေးကုဒ် ({{ promotion.code }})</span>
+                        </span>
+                        <span class="font-bold font-mono">-{{ discount_amount|floatformat:0 }} {{ course.currency }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="flex items-end justify-between pt-3 border-t border-slate-200 dark:border-[#26364B]">
+                        <span class="text-xs text-slate-700 dark:text-slate-300 font-semibold">
+                            <span class="lang-en">Total to Pay</span>
+                            <span class="lang-my">ပေးသွင်းရမည့် စုစုပေါင်း</span>
+                        </span>
+                        <div class="text-right">
+                            <span class="text-2xl font-bold font-mono {% if is_free_with_coupon %}text-emerald-600 dark:text-emerald-400{% else %}text-[#0284C7] dark:text-[#38BDF8]{% endif %}">
+                                {{ effective_price|floatformat:0 }} <span class="text-sm font-normal text-slate-500 dark:text-slate-400">{{ course.currency }}</span>
+                            </span>
+                        </div>
                     </div>
                 </div>
-                <p class="text-[11px] text-slate-500 mt-3 leading-relaxed">
-                    {{ course.duration_months }} months of access to {{ total_lessons|default:"all" }}
-                    lessons, quizzes, assignments and the certificate of completion.
-                </p>
-            </div>
 
-            <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800">
-                <h3 class="text-sm uppercase tracking-wider text-slate-500 mb-3">How to pay</h3>
-                <ol class="text-[12px] text-slate-400 space-y-2 leading-relaxed list-decimal list-inside">
-                    <li>Send <strong class="text-white">{{ effective_price|default:course.price }} {{ course.currency }}</strong>
-                        to <strong class="text-white">09-974288199</strong> with
-                        <strong class="text-white">KBZ&nbsp;Pay</strong> or <strong class="text-white">Wave&nbsp;Pay</strong>,
-                        or transfer to <strong class="text-white">KBZ Bank 1234-5678</strong>.</li>
-                    <li>Enter the transaction ID below and attach the screenshot.</li>
-                    <li>An administrator reviews it — usually within a few hours — and unlocks the course.</li>
-                </ol>
+                <!-- Coupon Code Entry Form -->
+                {% if not pending and not existing %}
+                <div class="mt-5 pt-4 border-t border-slate-200 dark:border-[#26364B]">
+                    <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-2">
+                        <span class="lang-en">Promo / Coupon Code</span>
+                        <span class="lang-my">ပရိုမိုးရှင်း / ကူပွန်ကုဒ်</span>
+                    </label>
+                    <form method="POST" class="space-y-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="apply_coupon">
+                        <div class="flex gap-2">
+                            <input type="text" name="coupon_code" value="{{ coupon_code|default:'' }}"
+                                   placeholder="e.g. PYTHON20"
+                                   class="w-full px-3 py-2 text-xs uppercase font-mono rounded-xl bg-slate-50 dark:bg-[#162235] border border-slate-300 dark:border-[#26364B] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-[#0284C7]">
+                            <button type="submit"
+                                    class="px-4 py-2 text-xs font-bold rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] transition whitespace-nowrap shadow-sm">
+                                <span class="lang-en">Apply</span>
+                                <span class="lang-my">အသုံးပြုမည်</span>
+                            </button>
+                        </div>
+                        {% if coupon_error %}
+                        <p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1.5">{{ coupon_error }}</p>
+                        {% elif promotion %}
+                        <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1.5 flex items-center gap-1 font-medium">
+                            &check; Code <strong>{{ promotion.code }}</strong> applied successfully!
+                            <a href="{% url 'checkout' slug=course.slug %}" class="text-slate-500 hover:text-rose-500 ml-2 underline text-[10px]">Remove</a>
+                        </p>
+                        {% endif %}
+                    </form>
+                </div>
+                {% endif %}
+
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-4 leading-relaxed">
+                    {{ course.duration_months }} <span class="lang-en">months of full access to all lessons, hands-on labs, assignments, and digital certificate.</span><span class="lang-my">လကြာ သင်ခန်းစာများ၊ လက်တွေ့လေ့ကျင့်ခန်းများနှင့် အောင်လက်မှတ် ရရှိခွင့်။</span>
+                </p>
             </div>
 
             {% if pending %}
-            <div class="p-6 rounded-2xl bg-amber-950/60 border border-amber-800">
-                <p class="text-sm text-amber-200 font-semibold mb-1">Awaiting review</p>
-                <p class="text-[12px] text-amber-300/80 leading-relaxed">
-                    You already submitted a payment for this course on
-                    {{ pending.created_at|date:"d M Y, H:i" }}. An administrator will review it soon.
+            <div class="p-6 rounded-2xl bg-[#FFFBEB] dark:bg-[#302719] border border-[#FDE68A] dark:border-[#423522] shadow-sm">
+                <p class="text-sm text-[#92400E] dark:text-[#FCD34D] font-bold mb-1">
+                    <span class="lang-en">Awaiting Review</span>
+                    <span class="lang-my">စိစစ်အတည်ပြုချက် စောင့်ဆိုင်းနေဆဲ</span>
                 </p>
-                <a href="{% url 'payment-history' %}"
-                   class="inline-block mt-3 text-xs px-3 py-1.5 rounded bg-amber-500 text-slate-950 font-bold">
-                    View my payments
+                <p class="text-[12px] text-[#92400E]/90 dark:text-[#FCD34D]/90 leading-relaxed">
+                    <span class="lang-en">You already submitted a payment for this course on {{ pending.created_at|date:"d M Y, H:i" }}. Our administration team is reviewing it.</span>
+                    <span class="lang-my">သင်သည် ဤသင်တန်းအတွက် {{ pending.created_at|date:"d M Y, H:i" }} တွင် ငွေလွှဲပြေစာ တင်ထားပြီးဖြစ်ပါသည်။ မကြာမီ စိစစ်အတည်ပြုပေးပါမည်။</span>
+                </p>
+                <a href="{% url 'billing:payment-history' %}"
+                   class="inline-block mt-3 text-xs px-3.5 py-1.5 rounded-lg bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] font-bold shadow-sm transition">
+                    <span class="lang-en">View my payments &rarr;</span>
+                    <span class="lang-my">ငွေလွှဲမှတ်တမ်း ကြည့်မည် &rarr;</span>
                 </a>
             </div>
             {% elif existing %}
-            <div class="p-6 rounded-2xl bg-emerald-950/60 border border-emerald-800">
-                <p class="text-sm text-emerald-200 font-semibold mb-1">You already own this course</p>
-                <a href="{% url 'my-courses' %}" class="inline-block mt-1 text-xs text-emerald-300 hover:underline">
-                    Go to My Courses &rarr;
+            <div class="p-6 rounded-2xl bg-[#F0FDF4] dark:bg-[#142B25] border border-[#BBF7D0] dark:border-[#1E3A30] shadow-sm">
+                <p class="text-sm text-[#166534] dark:text-[#86EFAC] font-bold mb-1">
+                    <span class="lang-en">You already own this course</span>
+                    <span class="lang-my">ဤသင်တန်းကို သင် အပ်နှံထားပြီးဖြစ်ပါသည်</span>
+                </p>
+                <a href="{% url 'my-courses' %}" class="inline-block mt-1 text-xs text-[#166534] dark:text-[#86EFAC] hover:underline font-semibold">
+                    <span class="lang-en">Go to My Courses &rarr;</span>
+                    <span class="lang-my">သင်တန်းများသို့ သွားမည် &rarr;</span>
                 </a>
             </div>
             {% endif %}
         </div>
 
-        <!-- Payment form -->
-        <div class="lg:col-span-2">
-            <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
-                <div class="pb-5 mb-6 border-b border-slate-800 flex items-center justify-between">
-                    <h2 class="text-xl font-bold text-white">Submit your payment</h2>
-                    <span class="text-[11px] px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 uppercase">
-                        Manual review
+        <!-- Payment or Free Enrollment Form -->
+        <div class="lg:col-span-2 space-y-6">
+            {% if pending or existing %}
+            <div class="p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-center py-16 shadow-sm">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                    <span class="lang-en">Checkout is closed</span>
+                    <span class="lang-my">အပ်နှံမှု ပြီးပြည့်စုံပြီးဖြစ်ပါသည်</span>
+                </h3>
+                <p class="text-sm text-slate-600 dark:text-slate-400">
+                    <span class="lang-en">You already have an active enrollment or a pending review for this course.</span>
+                    <span class="lang-my">သင်သည် ဤသင်တန်းသို့ တက်ရောက်ခွင့်ရရှိပြီး (သို့မဟုတ်) စိစစ်ဆဲဖြစ်ပါသည်။</span>
+                </p>
+                <div class="mt-5">
+                    <a href="{% url 'course-detail' slug=course.slug %}" class="px-5 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] text-xs font-bold shadow-sm transition">
+                        <span class="lang-en">Back to Course Details</span>
+                        <span class="lang-my">သင်တန်းစာမျက်နှာသို့ ပြန်သွားမည်</span>
+                    </a>
+                </div>
+            </div>
+            {% elif is_free_with_coupon %}
+            <!-- 100% Free Coupon Enrollment (Direct 1-Click Access) -->
+            <div class="p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-[#BBF7D0] dark:border-[#1E3A30] shadow-sm space-y-6">
+                <div class="flex items-center gap-3 pb-5 border-b border-slate-200 dark:border-[#26364B]">
+                    <div class="w-10 h-10 rounded-full bg-[#F0FDF4] dark:bg-[#142B25] border border-[#BBF7D0] dark:border-[#1E3A30] flex items-center justify-center text-[#166534] dark:text-[#86EFAC]">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+                            <span class="lang-en">100% Free Coupon Access</span>
+                            <span class="lang-my">၁၀၀% အခမဲ့ ကူပွန်ဖြင့် အပ်နှံခွင့်</span>
+                        </h2>
+                        <p class="text-xs text-[#166534] dark:text-[#86EFAC]">
+                            <span class="lang-en">Your coupon code covers the full price of this course. No payment is required.</span>
+                            <span class="lang-my">ကူပွန်ကုဒ်ဖြင့် အခမဲ့ လေ့လာခွင့်ရရှိသဖြင့် ငွေပေးသွင်းရန် မလိုပါ။</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-[#F0FDF4] dark:bg-[#142B25] border border-[#BBF7D0] dark:border-[#1E3A30] text-sm text-[#166534] dark:text-[#86EFAC] leading-relaxed">
+                    <span class="lang-en">Coupon <strong>{{ promotion.code }}</strong> gives you complete, instant access to <strong>{{ course.title }}</strong>. Click below to activate your enrollment immediately.</span>
+                    <span class="lang-my">ကူပွန် <strong>{{ promotion.code }}</strong> ဖြင့် <strong>{{ course.title }}</strong> ကို တိုက်ရိုက် လေ့လာနိုင်ပါသည်။ အောက်ပါခလုတ်ကို နှိပ်၍ စတင်အပ်နှံပါ။</span>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="coupon_code" value="{{ promotion.code }}">
+                    <button type="submit"
+                            class="w-full py-3.5 px-6 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-base font-bold transition shadow-sm flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <span class="lang-en">Enroll Free with Coupon Now</span>
+                        <span class="lang-my">ကူပွန်ဖြင့် အခမဲ့ စတင်အပ်နှံမည်</span>
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <!-- Normal Paid / Discounted Checkout with Payment Proof -->
+            <div class="p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-6">
+                <div class="pb-4 border-b border-slate-200 dark:border-[#26364B] flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+                            <span class="lang-en">Submit Payment Proof</span>
+                            <span class="lang-my">ငွေလွှဲပြေစာ တင်သွင်းရန်</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span class="lang-en">Transfer via MMQR, Mobile Wallet or Bank and submit your transaction slip.</span>
+                            <span class="lang-my">MMQR၊ မိုဘိုင်းပိုက်ဆံအိတ် သို့မဟုတ် ဘဏ်ဖြင့် လွှဲပြောင်းပြီး ပြေစာတင်ပါ။</span>
+                        </p>
+                    </div>
+                    <span class="text-[11px] px-2.5 py-1 rounded-full bg-slate-100 dark:bg-[#162235] border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 uppercase font-mono font-semibold">
+                        <span class="lang-en">Manual Verification</span>
+                        <span class="lang-my">စိစစ်အတည်ပြုစနစ်</span>
                     </span>
                 </div>
 
-                {% if pending or existing %}
-                <p class="text-sm text-slate-400">Checkout is closed for this course right now.</p>
-                {% else %}
-                <form method="POST" enctype="multipart/form-data" class="space-y-5 text-sm">
+                <!-- Myanmar Payment Channels -->
+                <div>
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-3">
+                        <span class="lang-en">Accepted Payment Methods</span>
+                        <span class="lang-my">လက်ခံသော ငွေပေးချေမှု နည်းလမ်းများ</span>
+                    </h3>
+                    {% include 'billing/components/_payment_methods.html' %}
+                </div>
+
+                <!-- Payment Proof Submission Form -->
+                <form method="POST" enctype="multipart/form-data" class="space-y-5 text-sm pt-4 border-t border-slate-200 dark:border-[#26364B]">
                     {% csrf_token %}
+                    {% if promotion %}
+                    <input type="hidden" name="coupon_code" value="{{ promotion.code }}">
+                    {% endif %}
 
                     {% if form.non_field_errors %}
-                    <div class="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs">
+                    <div class="p-3 rounded-xl bg-[#FEF2F2] dark:bg-[#321F26] border border-[#FECDD3] dark:border-[#452934] text-[#991B1B] dark:text-[#FCA5A5] text-xs">
                         {{ form.non_field_errors }}
                     </div>
                     {% endif %}
 
                     {% for field in form %}
                     <div>
-                        <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">
-                            {{ field.label }}{% if field.field.required %} <span class="text-red-400">*</span>{% endif %}
+                        <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-medium">
+                            {{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}
                         </label>
                         {{ field }}
-                        {% if field.help_text %}<p class="text-[10px] text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
-                        {% for error in field.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                        {% if field.help_text %}<p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{{ field.help_text }}</p>{% endif %}
+                        {% for error in field.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{{ error }}</p>{% endfor %}
                     </div>
                     {% endfor %}
 
-                    <div class="flex items-center justify-between gap-3 pt-2 border-t border-slate-800">
-                        <span class="text-[11px] text-slate-500">
-                            Paying <strong class="text-amber-300">{{ effective_price|default:course.price }} {{ course.currency }}</strong>
+                    <div class="flex items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-[#26364B]">
+                        <span class="text-xs text-slate-600 dark:text-slate-400">
+                            <span class="lang-en">Payable Amount:</span><span class="lang-my">ပေးသွင်းရမည့်ငွေ:</span>
+                            <strong class="text-[#0284C7] dark:text-[#38BDF8] font-bold text-base font-mono ml-1">{{ effective_price|floatformat:0 }} {{ course.currency }}</strong>
                         </span>
                         <button type="submit"
-                                class="px-6 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-bold transition">
-                            Submit for review
+                                class="px-6 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] text-sm font-bold shadow-sm transition">
+                            <span class="lang-en">Submit for Review &rarr;</span>
+                            <span class="lang-my">စိစစ်ရန် တင်သွင်းမည် &rarr;</span>
                         </button>
                     </div>
                 </form>
-                {% endif %}
             </div>
+            {% endif %}
         </div>
     </div>
 </div>

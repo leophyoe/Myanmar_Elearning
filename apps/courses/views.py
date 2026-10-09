@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.views.generic import (
     ListView, DetailView, View, CreateView, UpdateView, DeleteView, TemplateView
 )
@@ -29,8 +30,9 @@ from .forms import (
 # ----------------------------------------------------------------------
 from apps.courses.services.access import (
     can_view_course, can_manage_course, can_submit_for_review,
-    can_review_course, can_enroll_course, can_access_course,
-    can_start_course, can_take_course_exam, enroll_student_in_course,
+    can_publish_course, can_review_course, can_enroll_course,
+    can_access_course, can_start_course, can_take_course_exam,
+    enroll_student_in_course,
 )
 from apps.courses.selectors import (
     get_published_courses, get_instructor_courses, get_pending_review_courses,
@@ -92,11 +94,14 @@ class CourseListView(ListView):
     model = Course
     template_name = 'courses/course_list.html'
     context_object_name = 'courses'
+    paginate_by = 12
 
     def get_queryset(self):
         category_slug = self.request.GET.get('category')
         level = self.request.GET.get('level')
         access_type = self.request.GET.get('access')
+        price_type = self.request.GET.get('price_type')
+        sort = self.request.GET.get('sort', '')
         query = self.request.GET.get('q')
 
         return get_published_courses(
@@ -104,6 +109,8 @@ class CourseListView(ListView):
             level=level,
             access_type=access_type,
             search_query=query,
+            price_type=price_type,
+            sort=sort,
         )
 
     def get_context_data(self, **kwargs):
@@ -113,7 +120,12 @@ class CourseListView(ListView):
         context['selected_category'] = self.request.GET.get('category', '')
         context['selected_level'] = self.request.GET.get('level', '')
         context['selected_access'] = self.request.GET.get('access', '')
+        context['selected_price_type'] = self.request.GET.get('price_type', '')
+        context['selected_sort'] = self.request.GET.get('sort', '')
         context['search_query'] = self.request.GET.get('q', '')
+        # Compute total matching items for display
+        qs = self.get_queryset()
+        context['total_matches'] = qs.count() if hasattr(qs, 'count') else len(qs)
         return context
 
 
@@ -673,17 +685,25 @@ class CourseCreateView(TeacherRequiredMixin, CreateView):
         return redirect('course-edit', slug=course.slug)
 
 
-class CourseUpdateView(TeacherRequiredMixin, UpdateView):
+class CourseUpdateView(RoleRequiredMixin, UpdateView):
     model = Course
     form_class = CourseForm
     template_name = 'courses/manage/course_form.html'
     slug_url_kwarg = 'slug'
     success_url = reverse_lazy('manage-home')
+    allowed_roles = ['teacher', 'instructor', 'partner']
 
     def get_queryset(self):
         # Admins edit everything; instructors only their own non-official courses.
         if self.request.user.is_admin:
             return Course.objects.all()
+        if getattr(self.request.user, 'is_partner', False):
+            from apps.partner.views import get_user_partner_institutions
+            institutions = get_user_partner_institutions(self.request.user)
+            return Course.objects.filter(
+                Q(owner=self.request.user) | Q(partner_institution__in=institutions),
+                is_official=False
+            ).distinct()
         return Course.objects.filter(
             owner=self.request.user,
             is_official=False,
@@ -714,6 +734,9 @@ class CourseUpdateView(TeacherRequiredMixin, UpdateView):
         can_submit, submit_reason = can_submit_for_review(self.request.user, course)
         context['can_submit_for_review'] = can_submit
         context['submit_reason'] = submit_reason
+        can_pub, pub_reason = can_publish_course(self.request.user, course)
+        context['can_publish'] = can_pub
+        context['publish_reason'] = pub_reason
         return context
 
     def form_valid(self, form):
@@ -724,12 +747,19 @@ class CourseUpdateView(TeacherRequiredMixin, UpdateView):
         if self.request.user.is_admin:
             if course.owner is None or course.owner.is_admin:
                 course.is_official = True
+            if form.cleaned_data.get('is_published'):
+                course.status = Course.Status.PUBLISHED
+                course.is_published = True
+            elif course.status == Course.Status.PUBLISHED and not form.cleaned_data.get('is_published'):
+                course.status = Course.Status.DRAFT
+                course.is_published = False
         else:
             course.is_official = False
-            # Instructors cannot publish directly: if edited, course remains draft/rejected
-            if course.status not in [Course.Status.DRAFT, Course.Status.REJECTED]:
-                course.status = Course.Status.DRAFT
-            course.is_published = False
+            # Preserve published status on edits: updating course details does NOT demote published courses to draft!
+            if course.status == Course.Status.PUBLISHED:
+                course.is_published = True
+            elif course.status in [Course.Status.DRAFT, Course.Status.REJECTED]:
+                course.is_published = False
 
         course.save()
         messages.success(self.request, f"Course “{course.title}” updated.")
@@ -755,6 +785,52 @@ class CourseSubmitReviewView(TeacherRequiredMixin, View):
             request,
             f"Course “{course.title}” has been submitted for administrative review! An administrator will review your curriculum."
         )
+        next_url = request.POST.get('next') or request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect('manage-home')
+
+
+class CoursePublishToggleView(TeacherRequiredMixin, View):
+    """
+    POST-only: Allows verified teachers and admins to publish or unpublish a course.
+    - If currently PUBLISHED -> Unpublishes to DRAFT.
+    - If currently DRAFT / APPROVED / REJECTED -> Validates curriculum completeness and transitions to PUBLISHED.
+    """
+    def post(self, request, slug):
+        course = get_object_or_404(Course, slug=slug)
+        if not can_manage_course(request.user, course):
+            messages.error(request, "You do not have permission to manage this course.")
+            return redirect('manage-home')
+
+        if course.status == Course.Status.PUBLISHED:
+            course.status = Course.Status.DRAFT
+            course.is_published = False
+            course.save(update_fields=['status', 'is_published'])
+            messages.info(
+                request,
+                f"Course “{course.title}” has been unpublished and reverted to Draft status. It is no longer visible to students in the catalog."
+            )
+        else:
+            can_pub, reason = can_publish_course(request.user, course)
+            if not can_pub:
+                messages.error(request, reason)
+                next_url = request.POST.get('next') or request.GET.get('next')
+                if next_url:
+                    return redirect(next_url)
+                return redirect('course-edit', slug=course.slug)
+
+            course.status = Course.Status.PUBLISHED
+            course.is_published = True
+            course.save(update_fields=['status', 'is_published'])
+            messages.success(
+                request,
+                f"Course “{course.title}” is now published and live in the Course Catalog! Students can now view, enrol, and learn."
+            )
+
+        next_url = request.POST.get('next') or request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
         return redirect('manage-home')
 
 
@@ -841,6 +917,11 @@ class ModuleCreateView(TeacherRequiredMixin, CreateView):
         initial['order'] = (Module.objects.count() + 1)
         return initial
 
+    def get_success_url(self):
+        if self.object and self.object.course:
+            return reverse('course-edit', kwargs={'slug': self.object.course.slug})
+        return reverse('manage-home')
+
     def form_valid(self, form):
         messages.success(self.request, f"Module {form.cleaned_data['code']} created.")
         return super().form_valid(form)
@@ -861,8 +942,37 @@ class ModuleUpdateView(TeacherRequiredMixin, UpdateView):
             course__is_official=False,
         )
 
+    def get_success_url(self):
+        if self.object and self.object.course:
+            return reverse('course-edit', kwargs={'slug': self.object.course.slug})
+        return reverse('manage-home')
+
     def form_valid(self, form):
         messages.success(self.request, "Module updated.")
+        return super().form_valid(form)
+
+
+class ModuleDeleteView(TeacherRequiredMixin, DeleteView):
+    model = Module
+    template_name = 'courses/manage/module_confirm_delete.html'
+    pk_url_kwarg = 'module_id'
+    success_url = reverse_lazy('manage-home')
+
+    def get_queryset(self):
+        if self.request.user.is_admin:
+            return Module.objects.all()
+        return Module.objects.filter(
+            course__owner=self.request.user,
+            course__is_official=False,
+        )
+
+    def get_success_url(self):
+        if self.object and self.object.course:
+            return reverse('course-edit', kwargs={'slug': self.object.course.slug})
+        return reverse('manage-home')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Module “{self.object.title}” deleted.")
         return super().form_valid(form)
 
 
@@ -881,6 +991,8 @@ class LessonCreateView(TeacherRequiredMixin, CreateView):
         return initial
 
     def get_success_url(self):
+        if self.object and self.object.module and self.object.module.course:
+            return reverse('course-edit', kwargs={'slug': self.object.module.course.slug})
         return reverse('module-edit', kwargs={'module_id': self.object.module_id})
 
     def form_valid(self, form):
@@ -903,6 +1015,8 @@ class LessonUpdateView(TeacherRequiredMixin, UpdateView):
         )
 
     def get_success_url(self):
+        if self.object and self.object.module and self.object.module.course:
+            return reverse('course-edit', kwargs={'slug': self.object.module.course.slug})
         return reverse('module-edit', kwargs={'module_id': self.object.module_id})
 
     def form_valid(self, form):
@@ -923,6 +1037,11 @@ class LessonDeleteView(TeacherRequiredMixin, DeleteView):
             module__course__owner=self.request.user,
             module__course__is_official=False,
         )
+
+    def get_success_url(self):
+        if self.object and self.object.module and self.object.module.course:
+            return reverse('course-edit', kwargs={'slug': self.object.module.course.slug})
+        return reverse('manage-home')
 
     def form_valid(self, form):
         messages.success(self.request, "Lesson deleted.")
@@ -1155,6 +1274,14 @@ class SubmissionGradeView(TeacherRequiredMixin, UpdateView):
         submission.graded_at = timezone.now()
         submission.save()
         mark_assignment_progress(submission)
+        from apps.users.models import Notification
+        Notification.objects.create(
+            user=submission.student,
+            title="Assignment Graded",
+            message=f"Your assignment “{submission.assignment.title}” has been graded: {submission.score}/{submission.assignment.max_score}.",
+            level=Notification.Level.SUCCESS if submission.score and submission.score >= (submission.assignment.max_score * 0.6) else Notification.Level.INFO,
+            link=reverse('assignment-detail', kwargs={'assignment_id': submission.assignment.id}),
+        )
         messages.success(
             self.request,
             f'Graded {submission.student.get_full_name() or submission.student.username}: '

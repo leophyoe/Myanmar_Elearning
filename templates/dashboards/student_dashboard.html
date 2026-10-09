@@ -6,43 +6,47 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     <!-- Header & Student Banner -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 mb-8 border-b border-slate-800 gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 mb-8 border-b border-slate-200 dark:border-slate-800 gap-4">
         <div>
             <div class="flex items-center space-x-3">
-                <h1 class="text-2xl font-bold text-white tracking-wide">
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-wide">
                     {{ user.get_full_name|default:user.username }}
                 </h1>
-                <span class="text-xs px-2.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono">
+                <span class="text-xs px-2.5 py-0.5 rounded bg-sky-50 dark:bg-cyan-950 border border-sky-200 dark:border-cyan-800 text-sky-700 dark:text-cyan-300 font-mono font-semibold">
                     {{ profile.student_id }}
                 </span>
-                <span class="text-xs px-2.5 py-0.5 rounded bg-blue-950 border border-blue-800 text-blue-300">
+                <span class="text-xs px-2.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-semibold">
                     {{ profile.batch }}
                 </span>
             </div>
-            <p class="text-xs text-slate-400 mt-1">Enrolled in: <strong class="text-slate-300">{{ DIPLOMA_PROGRAM_TITLE }}</strong> (10 Months)</p>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Enrolled in: <strong class="text-slate-900 dark:text-slate-300">{{ DIPLOMA_PROGRAM_TITLE }}</strong> (10 Months)</p>
         </div>
 
         <div class="flex items-center space-x-3">
-            <a href="{% url 'course-list' %}" class="px-4 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+            <a href="{% url 'course-list' %}" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-sm transition">
                 Continue Learning
             </a>
-            <a href="{% url 'profile' %}" class="px-4 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition">
+            <a href="{% url 'apply-instructor' %}" class="px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/80 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+                <span>👨‍🏫</span>
+                <span>Become an Instructor</span>
+            </a>
+            <a href="{% url 'profile' %}" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700">
                 Edit Profile
             </a>
         </div>
     </div>
 
     {% if pending_invitations %}
-    <div class="mb-8 p-5 rounded-xl bg-blue-900/30 border border-blue-700/50 space-y-3">
-        <h2 class="text-sm font-bold text-white flex items-center gap-2">
+    <div class="mb-8 p-5 rounded-2xl bg-blue-50/70 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 space-y-3">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <span>🏛️</span> Institutional Partnership Invitations
         </h2>
         <div class="space-y-2">
             {% for inv in pending_invitations %}
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-slate-900 border border-slate-800 rounded-lg gap-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl gap-3 shadow-sm">
                 <div>
-                    <p class="text-sm font-semibold text-white">{{ inv.institution.name }} wants to associate you with their organization.</p>
-                    <p class="text-xs text-slate-400">
+                    <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ inv.institution.name }} wants to associate you with their organization.</p>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">
                         {{ inv.class_group|default:"Cohort affiliation" }}
                         {% if inv.invitation_note %} · Note: {{ inv.invitation_note }}{% endif %}
                     </p>
@@ -50,13 +54,13 @@
                 <div class="flex items-center gap-2 shrink-0">
                     <form method="post" action="{% url 'partner-invitation-accept' pk=inv.id %}">
                         {% csrf_token %}
-                        <button type="submit" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-lg transition shadow-sm">
+                        <button type="submit" class="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-lg transition shadow-sm">
                             Accept
                         </button>
                     </form>
                     <form method="post" action="{% url 'partner-invitation-decline' pk=inv.id %}">
                         {% csrf_token %}
-                        <button type="submit" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs rounded-lg transition">
+                        <button type="submit" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-lg transition border border-slate-200 dark:border-slate-700">
                             Decline
                         </button>
                     </form>
@@ -68,16 +72,16 @@
     {% endif %}
 
     {% if student_recognitions %}
-    <div class="mb-8 p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-4">
+    <div class="mb-8 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 shadow-sm">
         <div class="flex items-center gap-3">
             <span class="text-2xl">🎖️</span>
             <div>
-                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Student Honors & Merit Recognition</h3>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Student Honors & Merit Recognition</h3>
                 <div class="flex flex-wrap items-center gap-2 mt-1">
                     {% for rec in student_recognitions %}
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-950/60 border border-amber-800 text-amber-300">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
                         <span>★</span> {{ rec.title }}
-                        <span class="text-[10px] text-amber-400/80 font-mono">({{ rec.credential_code }})</span>
+                        <span class="text-[10px] text-amber-600 dark:text-amber-400 font-mono">({{ rec.credential_code }})</span>
                     </span>
                     {% endfor %}
                 </div>
@@ -87,18 +91,18 @@
     {% endif %}
 
     <!-- Membership Status Card -->
-    <div class="mb-8 p-5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="mb-8 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
         <div class="flex items-center gap-3.5">
-            <div class="w-10 h-10 rounded-lg {% if membership_subscription and membership_subscription.plan.plan_type == 'premium' %}bg-amber-600/20 text-amber-400 border border-amber-600/30{% elif membership_subscription and membership_subscription.plan.plan_type == 'standard' %}bg-blue-600/20 text-blue-400 border border-blue-600/30{% else %}bg-slate-800 text-slate-300 border border-slate-700{% endif %} flex items-center justify-center font-bold text-lg shrink-0">
+            <div class="w-10 h-10 rounded-xl {% if membership_subscription and membership_subscription.plan.plan_type == 'premium' %}bg-amber-100 text-amber-600 dark:bg-amber-600/20 dark:text-amber-400 border border-amber-200 dark:border-amber-600/30{% elif membership_subscription and membership_subscription.plan.plan_type == 'standard' %}bg-sky-100 text-sky-600 dark:bg-blue-600/20 dark:text-blue-400 border border-sky-200 dark:border-blue-600/30{% else %}bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700{% endif %} flex items-center justify-center font-bold text-lg shrink-0">
                 {% if membership_subscription and membership_subscription.plan.plan_type == 'premium' %}👑{% elif membership_subscription and membership_subscription.plan.plan_type == 'standard' %}⭐{% else %}🌱{% endif %}
             </div>
             <div>
-                <div class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Membership</div>
+                <div class="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">Membership</div>
                 <div class="flex items-center gap-2 mt-0.5">
-                    <span class="text-base font-bold text-white">
+                    <span class="text-base font-bold text-slate-900 dark:text-white">
                         {% if membership_subscription %}{{ membership_subscription.plan.name }} Membership{% else %}Starter (Free){% endif %}
                     </span>
-                    <span class="text-xs text-slate-400">
+                    <span class="text-xs text-slate-600 dark:text-slate-400">
                         {% if membership_subscription %}
                             {% if membership_subscription.plan.plan_type == 'starter' %}Free{% else %}{{ membership_subscription.amount|default:membership_subscription.plan.monthly_price|floatformat:0 }} MMK / {{ membership_subscription.billing_cycle }}{% endif %}
                         {% else %}
@@ -107,8 +111,8 @@
                     </span>
                 </div>
                 {% if membership_subscription and membership_subscription.end_date %}
-                <div class="text-[11px] text-slate-400 mt-0.5">
-                    Renews: <span class="text-slate-300 font-mono">{{ membership_subscription.end_date|date:"M d, Y" }}</span>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Renews: <span class="text-slate-700 dark:text-slate-300 font-mono">{{ membership_subscription.end_date|date:"M d, Y" }}</span>
                 </div>
                 {% endif %}
             </div>
@@ -116,19 +120,19 @@
 
         <div class="flex items-center gap-2.5">
             {% if membership_subscription and membership_subscription.plan.plan_type != 'starter' %}
-                <a href="{% url 'billing:my-subscription' %}" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700">
+                <a href="{% url 'billing:my-subscription' %}" class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition border border-slate-200 dark:border-slate-700">
                     Manage Membership
                 </a>
                 {% if membership_subscription.plan.plan_type != 'premium' %}
-                    <a href="{% url 'billing:subscribe' plan_type='premium' %}" class="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold transition shadow-sm">
+                    <a href="{% url 'billing:subscribe' plan_type='premium' %}" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-sm">
                         Upgrade to Premium
                     </a>
                 {% endif %}
             {% else %}
-                <a href="{% url 'course-list' %}" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700">
+                <a href="{% url 'course-list' %}" class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition border border-slate-200 dark:border-slate-700">
                     Explore Courses
                 </a>
-                <a href="{% url 'billing:pricing' %}" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition shadow-sm">
+                <a href="{% url 'billing:pricing' %}" class="px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition shadow-sm">
                     Upgrade
                 </a>
             {% endif %}
@@ -138,50 +142,50 @@
     <!-- Overview Metrics Grid -->
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <!-- Progress Metric -->
-        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Program Progress</div>
-            <div class="text-2xl font-bold text-white mb-2">{{ progress_percentage }}%</div>
-            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                <div class="bg-cyan-500 h-1.5 rounded-full" style="width: {{ progress_percentage }}%"></div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Program Progress</div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{{ progress_percentage }}%</div>
+            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                <div class="bg-sky-500 dark:bg-cyan-500 h-1.5 rounded-full" style="width: {{ progress_percentage }}%"></div>
             </div>
         </div>
 
         <!-- Modules Metric -->
-        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Lessons Completed</div>
-            <div class="text-2xl font-bold text-cyan-400 mb-1">{{ completed_lessons }} <span class="text-xs text-slate-500 font-normal">/ {{ total_lessons }}</span></div>
-            <div class="text-[11px] text-slate-400">{{ enrollments|length }} enrolled course{{ enrollments|length|pluralize }}</div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Lessons Completed</div>
+            <div class="text-2xl font-bold text-sky-600 dark:text-cyan-400 mb-1">{{ completed_lessons }} <span class="text-xs text-slate-500 font-normal">/ {{ total_lessons }}</span></div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">{{ enrollments|length }} enrolled course{{ enrollments|length|pluralize }}</div>
         </div>
 
         <!-- Labs Metric -->
-        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Hands-on Labs</div>
-            <div class="text-2xl font-bold text-emerald-400 mb-1">{{ completed_labs_count }} <span class="text-xs text-slate-500 font-normal">/ {{ total_labs_count }}</span></div>
-            <div class="text-[11px] text-slate-400">Docker Isolated</div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Hands-on Labs</div>
+            <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">{{ completed_labs_count }} <span class="text-xs text-slate-500 font-normal">/ {{ total_labs_count }}</span></div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">Docker Isolated</div>
         </div>
 
         <!-- CTF Points Metric -->
-        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">CTF Score</div>
-            <div class="text-2xl font-bold text-amber-400 mb-1">{{ profile.points }} <span class="text-xs text-slate-500 font-normal">PTS</span></div>
-            <div class="text-[11px] text-slate-400">Flags & Challenges</div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">CTF Score</div>
+            <div class="text-2xl font-bold text-amber-600 dark:text-amber-400 mb-1">{{ profile.points }} <span class="text-xs text-slate-500 font-normal">PTS</span></div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">Flags & Challenges</div>
         </div>
 
         <!-- Rank Metric -->
-        <div class="p-5 rounded-xl bg-slate-900 border border-slate-800">
-            <div class="text-xs text-slate-400 uppercase tracking-wider mb-2">Global Rank</div>
-            <div class="text-2xl font-bold text-purple-400 mb-1">#{{ profile.rank }}</div>
-            <a href="{% url 'leaderboard' %}" class="text-[11px] text-cyan-400 hover:underline">View Leaderboard &rarr;</a>
+        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Global Rank</div>
+            <div class="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1">#{{ profile.rank }}</div>
+            <a href="{% url 'leaderboard' %}" class="text-[11px] text-sky-600 dark:text-cyan-400 hover:underline font-medium">View Leaderboard &rarr;</a>
         </div>
     </div>
 
     <!-- Enrolled courses / resume learning -->
     <div class="mb-10">
         <div class="flex items-center justify-between mb-3">
-            <h2 class="text-base font-bold text-white">Continue Learning</h2>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">Continue Learning</h2>
             {% if next_lesson %}
             <a href="{% url 'lesson-detail' lesson_id=next_lesson.id %}"
-               class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+               class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-sm transition">
                 Resume: {{ next_lesson.title|truncatechars:40 }}
             </a>
             {% endif %}
@@ -190,26 +194,26 @@
         {% if enrollments %}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for enrollment in enrollments %}
-            <div class="p-5 rounded-xl bg-slate-900 border border-slate-800 flex flex-col justify-between">
+            <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition">
                 <div>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[10px] px-1.5 py-0.5 rounded uppercase font-bold
-                            {% if enrollment.status == 'completed' %}bg-emerald-950 text-emerald-300 border border-emerald-800
-                            {% elif enrollment.status == 'dropped' %}bg-red-950 text-red-300 border border-red-800
-                            {% else %}bg-cyan-950 text-cyan-300 border border-cyan-800{% endif %}">
+                        <span class="text-[10px] px-2 py-0.5 rounded uppercase font-bold
+                            {% if enrollment.status == 'completed' %}bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800
+                            {% elif enrollment.status == 'dropped' %}bg-rose-50 text-rose-700 border border-rose-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800
+                            {% else %}bg-sky-50 text-sky-700 border border-sky-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800{% endif %}">
                             {{ enrollment.get_status_display }}
                         </span>
-                        <span class="text-[11px] font-mono text-slate-400">{{ enrollment.live_progress }}%</span>
+                        <span class="text-[11px] font-mono text-slate-500 dark:text-slate-400">{{ enrollment.live_progress }}%</span>
                     </div>
                     <a href="{% url 'course-detail' slug=enrollment.course.slug %}"
-                       class="block text-sm font-semibold text-slate-200 hover:text-cyan-300 transition mt-2">
+                       class="block text-sm font-semibold text-slate-900 dark:text-slate-200 hover:text-sky-600 dark:hover:text-cyan-300 transition mt-2">
                         {{ enrollment.course.title }}
                     </a>
-                    <p class="text-[11px] text-slate-500 mt-0.5">{{ enrollment.course.subject.title|default:"General" }}</p>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{{ enrollment.course.subject.title|default:"General" }}</p>
                 </div>
                 <div class="mt-4">
-                    <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                        <div class="bg-gradient-to-r from-cyan-500 to-blue-500 h-1.5 rounded-full"
+                    <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div class="bg-gradient-to-r from-sky-500 to-blue-600 h-1.5 rounded-full"
                              style="width: {{ enrollment.live_progress }}%"></div>
                     </div>
                 </div>
@@ -217,10 +221,10 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="p-8 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-            <p class="text-sm text-slate-300 font-semibold mb-1">You are not enrolled in a course yet</p>
-            <p class="text-xs text-slate-500 mb-4">Pick a course to start tracking lessons, quizzes and certificates.</p>
-            <a href="{% url 'course-list' %}" class="px-4 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+        <div class="p-8 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
+            <p class="text-sm text-slate-800 dark:text-slate-300 font-semibold mb-1">You are not enrolled in a course yet</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Pick a course to start tracking lessons, quizzes and certificates.</p>
+            <a href="{% url 'course-list' %}" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-sm transition">
                 Browse Courses
             </a>
         </div>
@@ -231,28 +235,28 @@
     {% if upcoming_live_sessions %}
     <div class="mb-10">
         <div class="flex items-center justify-between mb-3">
-            <h2 class="text-base font-bold text-white">Upcoming Live Sessions</h2>
-            <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 uppercase font-bold">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">Upcoming Live Sessions</h2>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-sky-50 dark:bg-cyan-950 text-sky-700 dark:text-cyan-300 border border-sky-200 dark:border-cyan-800 uppercase font-bold">
                 Zoom / Meet / Teams
             </span>
         </div>
         <div class="space-y-3">
             {% for session in upcoming_live_sessions %}
-            <div class="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-slate-900 border border-slate-800">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div class="shrink-0 w-20 text-center">
                     <div class="text-[10px] uppercase tracking-wider text-slate-500">{{ session.starts_at|date:"M" }}</div>
-                    <div class="text-xl font-bold text-cyan-300 font-mono">{{ session.starts_at|date:"d" }}</div>
+                    <div class="text-xl font-bold text-sky-600 dark:text-cyan-300 font-mono">{{ session.starts_at|date:"d" }}</div>
                     <div class="text-[10px] text-slate-500 font-mono">{{ session.starts_at|date:"H:i" }}</div>
                 </div>
                 <div class="flex-1 min-w-0">
                     <a href="{% url 'course-detail' slug=session.course.slug %}"
-                       class="text-sm font-semibold text-white hover:text-cyan-300 transition">{{ session.title }}</a>
-                    <div class="text-[11px] text-slate-500 mt-0.5">
+                       class="text-sm font-semibold text-slate-900 dark:text-white hover:text-sky-600 dark:hover:text-cyan-300 transition">{{ session.title }}</a>
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                         {{ session.course.title }} · {{ session.get_provider_display }} · {{ session.duration_minutes }} min
                     </div>
                 </div>
                 <a href="{{ session.join_url }}" target="_blank" rel="noopener noreferrer"
-                   class="shrink-0 text-xs px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition text-center">
+                   class="shrink-0 text-xs px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold transition shadow-sm text-center">
                     Join session
                 </a>
             </div>
@@ -263,48 +267,48 @@
 
     <!-- Active Sandbox Machine Container (TryHackMe / HTB Style) -->
     <div class="mb-10">
-        <h2 class="text-base font-bold text-white mb-3 flex items-center space-x-2">
+        <h2 class="text-base font-bold text-slate-900 dark:text-white mb-3 flex items-center space-x-2">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>Active Sandbox Lab Machine</span>
         </h2>
 
         {% if active_instances %}
             {% for inst in active_instances %}
-            <div class="p-6 rounded-xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-[#0f1d36] border border-cyan-800/60 shadow-xl">
+            <div class="p-6 rounded-2xl bg-gradient-to-r from-sky-50/50 via-white to-blue-50/50 dark:from-slate-900 dark:via-slate-900/90 dark:to-[#0f1d36] border border-sky-200 dark:border-cyan-800/60 shadow-lg">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                     <div>
                         <div class="flex items-center space-x-3 mb-2">
-                            <h3 class="text-lg font-bold text-white">{{ inst.lab.title }}</h3>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ inst.lab.title }}</h3>
                             <span class="px-2 py-0.5 text-[10px] rounded font-bold uppercase tracking-wider
-                                {% if inst.status == 'running' %} bg-emerald-950 border border-emerald-700 text-emerald-300
-                                {% else %} bg-amber-950 border border-amber-700 text-amber-300 {% endif %}">
+                                {% if inst.status == 'running' %} bg-emerald-100 text-emerald-700 border border-emerald-300 dark:bg-emerald-950 dark:border-emerald-700 dark:text-emerald-300
+                                {% else %} bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-950 dark:border-amber-700 dark:text-amber-300 {% endif %}">
                                 {{ inst.status }}
                             </span>
                         </div>
-                        <div class="flex flex-wrap gap-4 text-xs text-slate-400">
-                            <div>Target IP: <code class="text-cyan-300 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-800">{{ inst.target_ip|default:"172.30.1.100" }}</code></div>
-                            <div>Subnet Bridge: <span class="text-slate-300">{{ inst.network_name|default:"Internal Sandbox (No WAN)" }}</span></div>
-                            <div>Auto-Expires In: <span class="text-amber-400 font-mono font-bold">{{ inst.remaining_seconds }}s</span></div>
+                        <div class="flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-400">
+                            <div>Target IP: <code class="text-sky-700 dark:text-cyan-300 font-bold bg-white dark:bg-slate-950 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">{{ inst.target_ip|default:"172.30.1.100" }}</code></div>
+                            <div>Subnet Bridge: <span class="text-slate-700 dark:text-slate-300">{{ inst.network_name|default:"Internal Sandbox (No WAN)" }}</span></div>
+                            <div>Auto-Expires In: <span class="text-amber-600 dark:text-amber-400 font-mono font-bold">{{ inst.remaining_seconds }}s</span></div>
                         </div>
                     </div>
 
                     <!-- Action Controls -->
                     <div class="flex flex-wrap items-center gap-3">
-                        <a href="{% url 'terminal-view' instance_id=inst.id %}" target="_blank" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition flex items-center space-x-1.5">
+                        <a href="{% url 'terminal-view' instance_id=inst.id %}" target="_blank" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
                             <span>💻</span>
                             <span>Open Web Terminal</span>
                         </a>
 
                         <form method="POST" action="{% url 'lab-reset' instance_id=inst.id %}" class="inline">
                             {% csrf_token %}
-                            <button type="submit" class="px-3 py-2 rounded-lg bg-amber-950 hover:bg-amber-900 border border-amber-700 text-amber-300 text-xs font-semibold transition" onclick="return confirm('Reset this lab environment? A new clean container and flag will be created.')">
+                            <button type="submit" class="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 text-xs font-semibold transition" onclick="return confirm('Reset this lab environment? A new clean container and flag will be created.')">
                                 🔄 Reset Lab
                             </button>
                         </form>
 
                         <form method="POST" action="{% url 'lab-stop' instance_id=inst.id %}" class="inline">
                             {% csrf_token %}
-                            <button type="submit" class="px-3 py-2 rounded-lg bg-red-950 hover:bg-red-900 border border-red-700 text-red-300 text-xs font-semibold transition" onclick="return confirm('Stop this lab? Containers will be decommissioned.')">
+                            <button type="submit" class="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 text-xs font-semibold transition" onclick="return confirm('Stop this lab? Containers will be decommissioned.')">
                                 ⏹️ Stop Lab
                             </button>
                         </form>
@@ -313,11 +317,11 @@
             </div>
             {% endfor %}
         {% else %}
-            <div class="p-8 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+            <div class="p-8 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
                 <div class="text-2xl mb-2">⚡</div>
-                <p class="text-sm text-slate-300 font-semibold mb-1">No Active Lab Sandbox Running</p>
-                <p class="text-xs text-slate-500 mb-4">Start any hands-on laboratory from the cyber labs catalog or curriculum lessons.</p>
-                <a href="{% url 'lab-list' %}" class="px-4 py-2 rounded bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition">
+                <p class="text-sm text-slate-800 dark:text-slate-300 font-semibold mb-1">No Active Lab Sandbox Running</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Start any hands-on laboratory from the cyber labs catalog or curriculum lessons.</p>
+                <a href="{% url 'lab-list' %}" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-sm transition">
                     Browse Cyber Labs
                 </a>
             </div>
@@ -327,16 +331,16 @@
     <!-- Two-Column Layout: Unlocked Badges & Solved Challenges -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Badges Card -->
-        <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
-            <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center justify-between">
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center justify-between">
                 <span>🏆 Unlocked Badges & Achievements</span>
-                <span class="text-xs text-cyan-400 font-normal">{{ badges.count }} Earned</span>
+                <span class="text-xs text-sky-600 dark:text-cyan-400 font-normal">{{ badges.count }} Earned</span>
             </h3>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {% for ub in badges %}
-                    <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-center">
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center">
                         <div class="text-xl mb-1">🛡️</div>
-                        <div class="text-xs font-bold text-slate-200">{{ ub.badge.name }}</div>
+                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200">{{ ub.badge.name }}</div>
                         <div class="text-[10px] text-slate-500 mt-0.5">{{ ub.awarded_at|date:"M d, Y" }}</div>
                     </div>
                 {% empty %}
@@ -348,20 +352,20 @@
         </div>
 
         <!-- Solved CTF Challenges Card -->
-        <div class="p-6 rounded-xl bg-slate-900 border border-slate-800">
-            <h3 class="text-sm font-bold text-white mb-4 uppercase tracking-wider flex items-center justify-between">
+        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center justify-between">
                 <span>🚩 Solved CTF Challenges</span>
-                <a href="{% url 'ctf-board' %}" class="text-xs text-cyan-400 font-normal hover:underline">Challenge Board &rarr;</a>
+                <a href="{% url 'ctf-board' %}" class="text-xs text-sky-600 dark:text-cyan-400 font-normal hover:underline">Challenge Board &rarr;</a>
             </h3>
             <div class="space-y-2">
                 {% for solve in solved_challenges|slice:":5" %}
-                    <div class="p-3 rounded-lg bg-slate-950 border border-slate-800 flex justify-between items-center text-xs">
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
                         <div>
-                            <span class="font-bold text-white">{{ solve.challenge.title }}</span>
+                            <span class="font-bold text-slate-900 dark:text-white">{{ solve.challenge.title }}</span>
                             <span class="text-[10px] text-slate-500 block">{{ solve.challenge.get_category_display }}</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-emerald-400 font-bold">+{{ solve.points_awarded }} PTS</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold">+{{ solve.points_awarded }} PTS</span>
                             <span class="text-[10px] text-slate-500 block">{{ solve.solved_at|date:"M d, H:i" }}</span>
                         </div>
                     </div>

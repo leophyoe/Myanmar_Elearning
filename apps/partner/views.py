@@ -731,4 +731,303 @@ class PartnerInvitationDeclineView(LoginRequiredMixin, View):
         return self.post(request, pk, *args, **kwargs)
 
 
+# ----------------------------------------------------------------------
+# Partner Management Portal Extended Views
+# ----------------------------------------------------------------------
+from apps.certificates.models import Certificate
+
+
+class PartnerInstitutionSettingsView(LoginRequiredMixin, TemplateView):
+    template_name = 'partner/institution_settings.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not getattr(request.user, 'is_partner', False) and not request.user.is_admin:
+            raise PermissionDenied("Partner access required.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        institutions = get_user_partner_institutions(self.request.user)
+        if not institutions.exists() and not self.request.user.is_admin:
+            raise PermissionDenied("You do not manage any partner institution.")
+        selected_id = self.request.GET.get('institution_id')
+        if selected_id:
+            institution = get_object_or_404(institutions, id=selected_id)
+        else:
+            institution = institutions.first()
+        context['institutions'] = institutions
+        context['institution'] = institution
+        return context
+
+    def post(self, request, *args, **kwargs):
+        institutions = get_user_partner_institutions(request.user)
+        inst_id = request.POST.get('institution_id')
+        if not inst_id:
+            institution = institutions.first()
+        else:
+            institution = get_object_or_404(institutions, id=inst_id)
+        if not institution and not request.user.is_admin:
+            raise PermissionDenied("You do not manage this institution.")
+
+        if 'name' in request.POST:
+            institution.name = request.POST['name'].strip()
+        if 'website' in request.POST:
+            institution.website = request.POST['website'].strip()
+        if 'notes' in request.POST:
+            institution.notes = request.POST['notes'].strip()
+        if 'email' in request.POST:
+            institution.contact_email = request.POST['email'].strip()
+        institution.save()
+        messages.success(request, f"Institution {institution.name} profile updated successfully.")
+        return redirect('partner-institution-settings')
+
+
+class PartnerCohortListView(LoginRequiredMixin, ListView):
+    model = InstitutionCohort
+    template_name = 'partner/cohort_list.html'
+    context_object_name = 'cohorts'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not getattr(request.user, 'is_partner', False) and not request.user.is_admin:
+            raise PermissionDenied("Partner access required.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        institutions = get_user_partner_institutions(self.request.user)
+        if self.request.user.is_admin:
+            return InstitutionCohort.objects.all().select_related('institution', 'course')
+        return InstitutionCohort.objects.filter(institution__in=institutions).select_related('institution', 'course')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['institutions'] = get_user_partner_institutions(self.request.user)
+        return context
+
+
+class PartnerCohortCreateView(LoginRequiredMixin, View):
+    def dispatch(self, request, *args, **kwargs):
+        if not getattr(request.user, 'is_partner', False) and not request.user.is_admin:
+            raise PermissionDenied("Partner access required.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        institutions = get_user_partner_institutions(request.user)
+        courses = Course.objects.all()
+        return render(request, 'partner/cohort_form.html', {
+            'institutions': institutions,
+            'courses': courses,
+        })
+
+    def post(self, request, *args, **kwargs):
+        institutions = get_user_partner_institutions(request.user)
+        inst_id = request.POST.get('institution_id')
+        if inst_id:
+            institution = get_object_or_404(institutions, id=inst_id)
+        else:
+            institution = institutions.first()
+
+        if not institution:
+            raise PermissionDenied("No partner institution found.")
+
+        name = request.POST.get('name', '').strip()
+        code = request.POST.get('code', '').strip()
+        course_id = request.POST.get('course_id')
+        is_active = request.POST.get('is_active') in ['on', 'true', '1']
+
+        cohort = InstitutionCohort.objects.create(
+            institution=institution,
+            name=name,
+            code=code,
+            course_id=course_id if course_id else None,
+            is_active=is_active
+        )
+        messages.success(request, f"Cohort '{cohort.name}' created.")
+        return redirect('partner-cohort-detail', cohort_id=cohort.id)
+
+
+class PartnerCohortEditView(LoginRequiredMixin, View):
+    def dispatch(self, request, cohort_id, *args, **kwargs):
+        cohort = get_object_or_404(InstitutionCohort, id=cohort_id)
+        institutions = get_user_partner_institutions(request.user)
+        if cohort.institution not in institutions and not request.user.is_admin:
+            raise PermissionDenied("You do not have access to edit this cohort.")
+        return super().dispatch(request, cohort_id, *args, **kwargs)
+
+    def get(self, request, cohort_id, *args, **kwargs):
+        cohort = get_object_or_404(InstitutionCohort, id=cohort_id)
+        courses = Course.objects.all()
+        return render(request, 'partner/cohort_form.html', {
+            'cohort': cohort,
+            'courses': courses,
+            'institutions': [cohort.institution],
+        })
+
+    def post(self, request, cohort_id, *args, **kwargs):
+        cohort = get_object_or_404(InstitutionCohort, id=cohort_id)
+        if 'name' in request.POST:
+            cohort.name = request.POST['name'].strip()
+        if 'code' in request.POST:
+            cohort.code = request.POST['code'].strip()
+        if 'course_id' in request.POST:
+            c_id = request.POST['course_id']
+            cohort.course_id = c_id if c_id else None
+        if 'is_active' in request.POST:
+            cohort.is_active = request.POST['is_active'] in ['on', 'true', '1']
+        cohort.save()
+        messages.success(request, f"Cohort '{cohort.name}' updated.")
+        return redirect('partner-cohort-detail', cohort_id=cohort.id)
+
+
+class PartnerLearnerListView(LoginRequiredMixin, ListView):
+    model = PartnerStudent
+    template_name = 'partner/learner_list.html'
+    context_object_name = 'partner_students'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not getattr(request.user, 'is_partner', False) and not request.user.is_admin:
+            raise PermissionDenied("Partner access required.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        institutions = get_user_partner_institutions(self.request.user)
+        if self.request.user.is_admin:
+            return PartnerStudent.objects.all().select_related('student', 'institution')
+        return PartnerStudent.objects.filter(institution__in=institutions).select_related('student', 'institution')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        qs = self.get_queryset()
+        context['learners'] = qs
+        context['institutions'] = get_user_partner_institutions(self.request.user)
+        return context
+
+
+class PartnerLearnerRemoveView(LoginRequiredMixin, View):
+    def post(self, request, pk, *args, **kwargs):
+        institutions = get_user_partner_institutions(request.user)
+        ps = get_object_or_404(PartnerStudent, id=pk, institution__in=institutions)
+        student_name = ps.student.get_full_name() or ps.student.username
+        ps.delete()
+        messages.success(request, f"Student {student_name} removed from institution.")
+        return redirect('partner-learners')
+
+
+class PartnerInstructorRemoveView(LoginRequiredMixin, View):
+    def post(self, request, pk, *args, **kwargs):
+        institutions = get_user_partner_institutions(request.user)
+        pm = get_object_or_404(PartnerMembership, id=pk, institution__in=institutions)
+        user_name = pm.user.get_full_name() or pm.user.username
+        pm.delete()
+        messages.success(request, f"Faculty instructor {user_name} removed from institution.")
+        return redirect('partner-instructors')
+
+
+class PartnerCertificateListView(LoginRequiredMixin, ListView):
+    model = Certificate
+    template_name = 'partner/certificate_list.html'
+    context_object_name = 'certificates'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not getattr(request.user, 'is_partner', False) and not request.user.is_admin:
+            raise PermissionDenied("Partner access required.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        institutions = get_user_partner_institutions(self.request.user)
+        if self.request.user.is_admin:
+            return Certificate.objects.all().select_related('student', 'course')
+        return Certificate.objects.filter(
+            Q(course__partner_institution__in=institutions) |
+            Q(student__partner_memberships__institution__in=institutions)
+        ).select_related('student', 'course').distinct()
+
+
+class PartnerReportsView(LoginRequiredMixin, TemplateView):
+    template_name = 'partner/reports.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not getattr(request.user, 'is_partner', False) and not request.user.is_admin:
+            raise PermissionDenied("Partner access required.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        institutions = get_user_partner_institutions(self.request.user)
+        context['institutions'] = institutions
+        if self.request.user.is_admin:
+            cohorts = InstitutionCohort.objects.all().select_related('institution', 'course')
+            students_qs = PartnerStudent.objects.all().select_related('student', 'institution')
+            courses_qs = Course.objects.all()
+        else:
+            cohorts = InstitutionCohort.objects.filter(institution__in=institutions).select_related('institution', 'course')
+            students_qs = PartnerStudent.objects.filter(institution__in=institutions).select_related('student', 'institution')
+            courses_qs = Course.objects.filter(partner_institution__in=institutions)
+
+        cohort_reports = []
+        for cohort in cohorts:
+            students = cohort.students.all()
+            st_count = students.count()
+            avg_prog = 0
+            comp_count = 0
+            if st_count and cohort.course:
+                enrs = Enrollment.objects.filter(course=cohort.course, student__in=[s.student for s in students])
+                if enrs.exists():
+                    from django.db.models import Avg
+                    avg_prog = round(enrs.aggregate(Avg('progress_pct'))['progress_pct__avg'] or 0)
+                    comp_count = enrs.filter(status='completed').count()
+            cohort_reports.append({
+                'cohort': cohort,
+                'students_count': st_count,
+                'avg_progress': avg_prog,
+                'completed_count': comp_count,
+            })
+
+        course_reports = []
+        for c in courses_qs:
+            enrs = Enrollment.objects.filter(course=c)
+            e_count = enrs.count()
+            c_comp = enrs.filter(status='completed').count()
+            comp_rate = round((c_comp / e_count * 100) if e_count else 0)
+            course_reports.append({
+                'course': c,
+                'enrollments_count': e_count,
+                'completions_count': c_comp,
+                'completion_rate': comp_rate,
+            })
+
+        context['cohorts'] = cohorts
+        context['cohort_reports'] = cohort_reports
+        context['course_reports'] = course_reports
+        context['partner_students'] = students_qs
+        return context
+
+
+class PartnerReportsLearnersCSVView(LoginRequiredMixin, View):
+    def get(self, request):
+        institutions = get_user_partner_institutions(request.user)
+        if not institutions.exists() and not request.user.is_admin:
+            raise PermissionDenied("Partner access required.")
+
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="partner_learners_report.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['Student Username', 'Full Name', 'Email', 'Institution', 'Status'])
+
+        if request.user.is_admin:
+            qs = PartnerStudent.objects.all().select_related('student', 'institution')
+        else:
+            qs = PartnerStudent.objects.filter(institution__in=institutions).select_related('student', 'institution')
+
+        for ps in qs:
+            writer.writerow([
+                ps.student.username,
+                ps.student.get_full_name() or ps.student.username,
+                ps.student.email,
+                ps.institution.name,
+                ps.get_status_display(),
+            ])
+        return response
+
+
+
 

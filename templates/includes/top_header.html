@@ -1,31 +1,136 @@
 <!-- Top App Bar / Header (64px) -->
-<header class="mel-header border-b border-slate-800 bg-slate-900 sticky top-0 z-30">
+<header class="mel-header border-b border-slate-200 dark:border-[#26364B] bg-white dark:bg-[#111C2E] sticky top-0 z-30 transition-colors">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         <!-- Left: Mobile Toggle & Brand -->
         <div class="flex items-center gap-3">
-            <button type="button" id="melMobileMenuBtn" class="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 focus:outline-none" aria-label="Open Navigation Menu">
+            <button type="button" id="melMobileMenuBtn" class="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none" aria-label="Open Navigation Menu">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
 
             <a href="{% url 'landing-page' %}" class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-lg bg-sky-600 flex items-center justify-center font-bold text-white shadow-sm shrink-0">
-                    M
+                <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center font-black text-white text-lg shadow-sm shrink-0">
+                    T
                 </div>
                 <div class="hidden sm:block">
-                    <span class="font-bold text-base text-white tracking-wide leading-tight block">MYANMAR E-LEARNING</span>
-                    <span class="text-[10px] text-sky-400 font-semibold tracking-wider uppercase block">Education Platform</span>
+                    <span class="font-bold text-base text-slate-900 dark:text-white tracking-wide leading-tight block">THUTA</span>
+                    <span class="text-[10px] text-sky-600 dark:text-sky-400 font-semibold tracking-wider uppercase block">Education Platform</span>
                 </div>
             </a>
         </div>
 
-        <!-- Middle: Global Quick Links / Active Breadcrumb -->
-        <div class="hidden lg:flex items-center gap-6 text-xs font-medium text-slate-300">
-            <a href="{% url 'course-list' %}" class="hover:text-white transition">All Courses</a>
-            <a href="{% url 'pricing' %}" class="hover:text-white transition">Pricing Plans</a>
-            <a href="{% url 'blog:article-list' %}" class="hover:text-white transition">Knowledge Hub</a>
-            <a href="{% url 'portfolio-list' %}" class="hover:text-white transition">Talent Showcase</a>
-            <a href="{% url 'certificate-lookup' %}" class="hover:text-white transition">Credential Lookup</a>
+        <!-- Middle-Left: Disciplines Flyout Dropdown -->
+        <div class="relative group hidden md:block">
+            <button type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#0B1220] hover:bg-white dark:hover:bg-[#162235] text-xs font-semibold text-slate-700 dark:text-slate-200 transition shadow-2xs">
+                <span>📚 <span class="lang-en">Disciplines</span><span class="lang-my">ဘာသာရပ်များ</span></span>
+                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div class="absolute left-0 mt-1 w-64 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-xl p-2 hidden group-hover:block z-50">
+                <a href="{% url 'course-list' %}?q=python" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition">
+                    <span class="text-base">🐍</span>
+                    <div>
+                        <div class="font-bold">
+                            <span class="lang-en">Python &amp; Programming</span>
+                            <span class="lang-my">Python နှင့် ပရိုဂရမ်မင်း</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400">
+                            <span class="lang-en">Core OOP, scripting &amp; backends</span>
+                            <span class="lang-my">အခြေခံ OOP နှင့် Automation</span>
+                        </div>
+                    </div>
+                </a>
+                <a href="{% url 'course-list' %}?q=cyber" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition">
+                    <span class="text-base">🛡️</span>
+                    <div>
+                        <div class="font-bold">
+                            <span class="lang-en">Cyber Defense &amp; CTF</span>
+                            <span class="lang-my">ဆိုက်ဘာလုံခြုံရေးနှင့် CTF</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400">
+                            <span class="lang-en">Hands-on Linux &amp; web exploitation</span>
+                            <span class="lang-my">လက်တွေ့ Linux နှင့် Web လုံခြုံရေး</span>
+                        </div>
+                    </div>
+                </a>
+                <a href="{% url 'course-list' %}?q=ai" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition">
+                    <span class="text-base">🤖</span>
+                    <div>
+                        <div class="font-bold">
+                            <span class="lang-en">Artificial Intelligence</span>
+                            <span class="lang-my">ဉာဏ်ရည်တု AI နည်းပညာ</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400">
+                            <span class="lang-en">Machine learning &amp; neural models</span>
+                            <span class="lang-my">Machine Learning နှင့် Data Science</span>
+                        </div>
+                    </div>
+                </a>
+                <a href="{% url 'course-list' %}?q=ict" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition">
+                    <span class="text-base">📡</span>
+                    <div>
+                        <div class="font-bold">
+                            <span class="lang-en">Enterprise Cloud &amp; ICT</span>
+                            <span class="lang-my">Cloud နှင့် ကွန်ရက် အင်ဂျင်နီယာ</span>
+                        </div>
+                        <div class="text-[10px] text-slate-400">
+                            <span class="lang-en">Networking &amp; system architecture</span>
+                            <span class="lang-my">ကွန်ရက်နှင့် စနစ်တည်ဆောက်ပုံ</span>
+                        </div>
+                    </div>
+                </a>
+                <div class="border-t border-slate-100 dark:border-slate-800 my-1.5"></div>
+                <a href="{% url 'course-list' %}" class="flex items-center justify-between px-3 py-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline">
+                    <span>
+                        <span class="lang-en">Explore All Disciplines</span>
+                        <span class="lang-my">ဘာသာရပ်အားလုံး ကြည့်ရှုမည်</span>
+                    </span>
+                    <span>&rarr;</span>
+                </a>
+            </div>
         </div>
+
+        <!-- Middle: Global Header Search Bar -->
+        <form action="{% url 'course-list' %}" method="GET" class="hidden md:flex items-center relative max-w-[200px] lg:max-w-xs xl:max-w-sm w-full">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </div>
+            <input type="text" name="q"
+                   placeholder="Search courses, skills, labs..."
+                   data-placeholder-en="Search courses, skills, labs..."
+                   data-placeholder-my="သင်ရိုးများ၊ Labs များကို ရှာဖွေပါ..."
+                   class="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/60 focus:bg-white dark:bg-[#0B1220] dark:hover:bg-[#162235] dark:focus:bg-[#111C2E] border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition">
+        </form>
+
+        <!-- Middle-Right: Navigation Links -->
+        <nav class="hidden xl:flex items-center gap-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+            <a href="{% url 'course-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
+                <span class="lang-en">Courses</span>
+                <span class="lang-my">သင်ရိုးများ</span>
+            </a>
+            <a href="{% url 'pricing' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
+                <span class="lang-en">Pricing</span>
+                <span class="lang-my">ဈေးနှုန်းများ</span>
+            </a>
+            <a href="{% url 'lab-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
+                <span class="lang-en">Labs</span>
+                <span class="lang-my">ဆိုက်ဘာ Labs</span>
+            </a>
+            <a href="{% url 'blog:article-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
+                <span class="lang-en">Knowledge Hub</span>
+                <span class="lang-my">ဗဟုသုတစင်တာ</span>
+            </a>
+            <a href="{% url 'portfolio-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
+                <span class="lang-en">Talent</span>
+                <span class="lang-my">ပရိုဖိုင်များ</span>
+            </a>
+            <a href="{% url 'partner-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
+                <span class="lang-en">Partners</span>
+                <span class="lang-my">မိတ်ဖက်များ</span>
+            </a>
+            <a href="{% url 'certificate-lookup' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
+                <span class="lang-en">Verify</span>
+                <span class="lang-my">စစ်ဆေးရန်</span>
+            </a>
+        </nav>
 
         <!-- Right: Actions, Toggles & User Profile -->
         <div class="flex items-center gap-2 sm:gap-3">
@@ -45,75 +150,112 @@
 
                 <!-- User Profile & Overflow Menu -->
                 <div class="relative ml-1 mel-overflow-menu" id="userMenuContainer">
-                    <button type="button" class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-800 transition focus:outline-none" id="userMenuBtn">
-                        <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                    <button type="button" class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition focus:outline-none" id="userMenuBtn">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center justify-center text-xs font-bold text-slate-800 dark:text-white shrink-0">
                             {{ user.username|slice:":1"|upper }}
                         </div>
                         <div class="hidden sm:flex flex-col text-left">
-                            <span class="text-xs font-semibold text-white leading-tight truncate max-w-[120px]">{{ user.username }}</span>
-                            <span class="text-[10px] text-slate-400 leading-tight uppercase font-medium">{{ user_role_display|default:user.role }}</span>
+                            <span class="text-xs font-semibold text-slate-800 dark:text-white leading-tight truncate max-w-[120px]">{{ user.username }}</span>
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight uppercase font-medium">{{ user_role_display|default:user.role }}</span>
                         </div>
                         <svg class="w-3.5 h-3.5 text-slate-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
 
                     <!-- Dropdown Content -->
-                    <div class="mel-overflow-dropdown right-0 w-48 mt-1 py-1 rounded-lg bg-slate-900 border border-slate-800 shadow-xl text-xs">
-                        <div class="px-4 py-2 border-b border-slate-800">
-                            <p class="font-semibold text-white truncate">{{ user.get_full_name|default:user.username }}</p>
-                            <p class="text-[10px] text-slate-400 truncate">{{ user.email }}</p>
+                    <div class="mel-overflow-dropdown right-0 w-48 mt-1 py-1 rounded-lg bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-xl text-xs">
+                        <div class="px-4 py-2 border-b border-slate-200 dark:border-slate-800">
+                            <p class="font-semibold text-slate-900 dark:text-white truncate">{{ user.get_full_name|default:user.username }}</p>
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">{{ user.email }}</p>
                         </div>
 
-                        <a href="{{ DASHBOARD_URL }}" class="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                        <a href="{{ DASHBOARD_URL }}" class="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                             <span>📊</span>
-                            <span>My Dashboard</span>
+                            <span class="lang-en">My Dashboard</span>
+                            <span class="lang-my">ဒက်ရှ်ဘုတ်</span>
                         </a>
-                        <a href="{% url 'profile' %}" class="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                        <a href="{% url 'profile' %}" class="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                             <span>👤</span>
-                            <span>Account Profile</span>
+                            <span class="lang-en">Account Profile</span>
+                            <span class="lang-my">ကိုယ်ရေးအချက်အလက်</span>
                         </a>
-                        <a href="{% url 'portfolio-detail' username=user.username %}" class="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                        <a href="{% url 'portfolio-detail' username=user.username %}" class="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                             <span>📁</span>
-                            <span>Public Portfolio</span>
+                            <span class="lang-en">Public Portfolio</span>
+                            <span class="lang-my">အများပြည်သူ ပရိုဖိုင်</span>
                         </a>
 
-                        {% if is_admin %}
-                        <div class="border-t border-slate-800 my-1"></div>
-                        <a href="{% url 'console-home' %}" class="flex items-center gap-2 px-4 py-2 text-sky-400 hover:bg-slate-800 transition">
-                            <span>⚙️</span>
-                            <span>Admin Console</span>
+                        {% if not is_teacher and not is_admin %}
+                        <a href="{% url 'apply-instructor' %}" class="flex items-center gap-2 px-4 py-2 text-amber-600 dark:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <span>👨‍🏫</span>
+                            <span class="lang-en">Become an Instructor</span>
+                            <span class="lang-my">ဆရာအဖြစ် လျှောက်ထားရန်</span>
                         </a>
-                        <a href="{% url 'manage-home' %}" class="flex items-center gap-2 px-4 py-2 text-emerald-400 hover:bg-slate-800 transition">
+                        {% endif %}
+
+                        {% if not is_partner %}
+                        <a href="{% url 'partner-apply' %}" class="flex items-center gap-2 px-4 py-2 text-sky-600 dark:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <span>🏛️</span>
+                            <span class="lang-en">Partner With Us</span>
+                            <span class="lang-my">မိတ်ဖက်အဖြစ် ပူးပေါင်းရန်</span>
+                        </a>
+                        {% endif %}
+
+                        {% if is_admin %}
+                        <div class="border-t border-slate-200 dark:border-slate-800 my-1"></div>
+                        <a href="{% url 'console-home' %}" class="flex items-center gap-2 px-4 py-2 text-sky-600 dark:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <span>⚙️</span>
+                            <span class="lang-en">Admin Console</span>
+                            <span class="lang-my">စီမံခန့်ခွဲသူ နေရာ</span>
+                        </a>
+                        <a href="{% url 'console-instructor-application-list' %}" class="flex items-center gap-2 px-4 py-2 text-amber-600 dark:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <span>📝</span>
+                            <span class="lang-en">Faculty Applications</span>
+                            <span class="lang-my">ဆရာ လျှောက်လွှာများ</span>
+                        </a>
+                        <a href="{% url 'console-partner-application-list' %}" class="flex items-center gap-2 px-4 py-2 text-sky-600 dark:text-sky-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <span>🏛️</span>
+                            <span class="lang-en">Partner Applications</span>
+                            <span class="lang-my">မိတ်ဖက် လျှောက်လွှာများ</span>
+                        </a>
+                        <a href="{% url 'manage-home' %}" class="flex items-center gap-2 px-4 py-2 text-emerald-600 dark:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                             <span>🛠️</span>
-                            <span>Content Studio</span>
+                            <span class="lang-en">Content Studio</span>
+                            <span class="lang-my">သင်ရိုး ဖန်တီးမှု စတူဒီယို</span>
                         </a>
                         {% elif is_teacher %}
-                        <div class="border-t border-slate-800 my-1"></div>
-                        <a href="{% url 'my-courses' %}" class="flex items-center gap-2 px-4 py-2 text-emerald-400 hover:bg-slate-800 transition">
+                        <div class="border-t border-slate-200 dark:border-slate-800 my-1"></div>
+                        <a href="{% url 'my-courses' %}" class="flex items-center gap-2 px-4 py-2 text-emerald-600 dark:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                             <span>📚</span>
-                            <span>My Teaching</span>
+                            <span class="lang-en">My Teaching</span>
+                            <span class="lang-my">ကျွန်ုပ်၏ သင်ကြားမှုများ</span>
                         </a>
-                        <a href="{% url 'teacher-dashboard' %}" class="flex items-center gap-2 px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                        <a href="{% url 'teacher-dashboard' %}" class="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                             <span>📊</span>
-                            <span>Instructor Hub</span>
+                            <span class="lang-en">Instructor Hub</span>
+                            <span class="lang-my">သင်ကြားသူ နေရာ</span>
                         </a>
                         {% endif %}
 
                         {% if user.is_partner %}
-                        <a href="{% url 'partner-portal' %}" class="flex items-center gap-2 px-4 py-2 text-amber-400 hover:bg-slate-800 transition">
+                        <a href="{% url 'partner-portal' %}" class="flex items-center gap-2 px-4 py-2 text-amber-600 dark:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                             <span>🏛️</span>
-                            <span>Partner Portal</span>
+                            <span class="lang-en">Partner Portal</span>
+                            <span class="lang-my">မိတ်ဖက် ပေါ်တယ်လ်</span>
                         </a>
                         {% endif %}
 
                         {% if user.get_available_modes|length > 1 %}
-                        <div class="border-t border-slate-800 my-1"></div>
-                        <div class="px-4 py-1 text-[10px] uppercase font-bold text-slate-400 tracking-wider">Switch Mode</div>
+                        <div class="border-t border-slate-200 dark:border-slate-800 my-1"></div>
+                        <div class="px-4 py-1 text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
+                            <span class="lang-en">Switch Mode</span>
+                            <span class="lang-my">အခန်းကဏ္ဍ ပြောင်းရန်</span>
+                        </div>
                         {% for mode_opt in user.get_available_modes %}
                             {% if mode_opt != user.active_mode %}
                             <form method="POST" action="{% url 'switch-user-mode' %}">
                                 {% csrf_token %}
                                 <input type="hidden" name="mode" value="{{ mode_opt }}">
-                                <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-1.5 text-sky-300 hover:bg-slate-800 hover:text-white transition">
+                                <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-1.5 text-sky-600 dark:text-sky-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                                     <span class="text-xs">🔄</span>
                                     <span>{{ mode_opt|title }} Mode</span>
                                 </button>
@@ -122,23 +264,26 @@
                         {% endfor %}
                         {% endif %}
 
-                        <div class="border-t border-slate-800 my-1"></div>
+                        <div class="border-t border-slate-200 dark:border-slate-800 my-1"></div>
                         <form method="POST" action="{% url 'logout' %}">
                             {% csrf_token %}
-                            <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-2 text-rose-400 hover:bg-slate-800 transition">
+                            <button type="submit" class="w-full text-left flex items-center gap-2 px-4 py-2 text-rose-600 dark:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                                 <span>🚪</span>
-                                <span>Sign Out</span>
+                                <span class="lang-en">Sign Out</span>
+                                <span class="lang-my">အကောင့်ထွက်မည်</span>
                             </button>
                         </form>
                     </div>
                 </div>
             {% else %}
                 <div class="flex items-center gap-2">
-                    <a href="{% url 'login' %}" class="px-3 py-1.5 rounded-lg border border-slate-700 text-xs font-medium text-slate-200 hover:bg-slate-800 transition">
-                        Sign In
+                    <a href="{% url 'login' %}" class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition shadow-2xs">
+                        <span class="lang-en">Sign In</span>
+                        <span class="lang-my">အကောင့်ဝင်ရန်</span>
                     </a>
-                    <a href="{% url 'register' %}" class="px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-xs font-semibold text-white shadow-sm transition">
-                        Get Started
+                    <a href="{% url 'register' %}" class="px-4 py-2 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-xs font-bold text-white shadow-md shadow-sky-600/20 transition">
+                        <span class="lang-en">Get Started</span>
+                        <span class="lang-my">စတင်ရန်</span>
                     </a>
                 </div>
             {% endif %}

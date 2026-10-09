@@ -1,12 +1,14 @@
 from decimal import Decimal
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.models import Count, Q, Sum, F
 from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.generic import TemplateView, View
+from django.views.generic import TemplateView, View, ListView, CreateView, UpdateView, DetailView
 
 from rest_framework import permissions, status
 from rest_framework.response import Response
@@ -14,9 +16,12 @@ from rest_framework.views import APIView
 
 from apps.common.permissions import RoleRequiredMixin
 from apps.courses.models import Course, Enrollment
-from .forms import PaymentDecisionForm, PaymentSubmitForm, SubscriptionSubmitForm
+from .forms import (
+    PaymentDecisionForm, PaymentSubmitForm, SubscriptionSubmitForm,
+    PaymentMethodForm, PromotionForm,
+)
 from .models import (
-    Payment, SubscriptionPlan, UserSubscription, Invoice,
+    Payment, PaymentMethod, Promotion, PromotionUsage, SubscriptionPlan, UserSubscription, Invoice,
     active_payment_for, active_subscription_for
 )
 from .serializers import (
@@ -54,12 +59,14 @@ class PricingView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         SubscriptionPlan.ensure_default_plans()
+        PaymentMethod.ensure_default_methods()
         plans = SubscriptionPlan.objects.filter(is_active=True).order_by('order')
         context['plans'] = plans
         plans_by_type = {p.plan_type: p for p in plans}
         context['starter_plan'] = plans_by_type.get('starter')
         context['standard_plan'] = plans_by_type.get('standard')
         context['premium_plan'] = plans_by_type.get('premium')
+        context['payment_methods'] = PaymentMethod.objects.filter(is_active=True).order_by('display_order', 'name')
         if self.request.user.is_authenticated:
             context['current_subscription'] = active_subscription_for(self.request.user)
         return context
@@ -77,6 +84,7 @@ class SubscribeView(LoginRequiredMixin, View):
     def get_plan(self):
         plan_type = self.kwargs.get('plan_type')
         SubscriptionPlan.ensure_default_plans()
+        PaymentMethod.ensure_default_methods()
         return get_object_or_404(SubscriptionPlan, plan_type=plan_type, is_active=True)
 
     def get(self, request, plan_type, *args, **kwargs):
@@ -102,11 +110,13 @@ class SubscribeView(LoginRequiredMixin, View):
         ).first()
 
         form = SubscriptionSubmitForm()
+        payment_methods = PaymentMethod.objects.filter(is_active=True).order_by('display_order', 'name')
         return render(request, self.template_name, {
             'plan': plan,
             'form': form,
             'current_subscription': current_sub,
             'pending_payment': pending_payment,
+            'payment_methods': payment_methods,
         })
 
     def post(self, request, plan_type, *args, **kwargs):
@@ -128,6 +138,7 @@ class SubscribeView(LoginRequiredMixin, View):
                 'plan': plan,
                 'form': form,
                 'current_subscription': active_subscription_for(request.user),
+                'payment_methods': PaymentMethod.objects.filter(is_active=True).order_by('display_order', 'name'),
             })
 
         cycle = form.cleaned_data['billing_cycle']
@@ -142,6 +153,9 @@ class SubscribeView(LoginRequiredMixin, View):
         payment.billing_period = cycle
         payment.platform_fee = amount  # 100% platform revenue for generic platform subscription
         payment.teacher_amount = Decimal('0.00')
+        pm = PaymentMethod.objects.filter(code=payment.method, is_active=True).first()
+        if pm:
+            payment.payment_method = pm
         payment.status = Payment.Status.PENDING
         payment.save()
 
@@ -171,21 +185,55 @@ class MySubscriptionView(LoginRequiredMixin, TemplateView):
 
 
 class CheckoutView(LoginRequiredMixin, View):
-    """Collect proof of payment for a paid course. Never enrols the student."""
-
+    """
+    Collect proof of payment for a paid course, supporting dynamic coupons,
+    promotions, payment methods, and instant enrollment for 100% free discounts.
+    """
     template_name = 'billing/checkout.html'
 
     def get_course(self):
         return get_object_or_404(Course, slug=self.kwargs['slug'], is_published=True)
 
-    def _render(self, request, course, form=None, status=200):
+    def _get_coupon_info(self, request, course, base_price, code):
+        """Validates coupon code and returns (promo, error_msg, discount_amount, final_price)."""
+        if not code:
+            return None, None, Decimal('0.00'), base_price
+
+        code = code.strip().upper()
+        promo = Promotion.objects.filter(code__iexact=code).first()
+        if not promo:
+            return None, f"Coupon code '{code}' is not valid.", Decimal('0.00'), base_price
+
+        is_valid, err_msg = promo.validate_for_course_and_user(course, request.user)
+        if not is_valid:
+            return promo, err_msg, Decimal('0.00'), base_price
+
+        discount_amount, final_price = promo.calculate_discount(base_price)
+        return promo, None, discount_amount, final_price
+
+    def _render(self, request, course, form=None, coupon_code='', coupon_error=None,
+                promo=None, discount_amount=Decimal('0.00'), final_price=None, status=200):
         pricing = course.calculate_price_for_user(request.user)
+        base_price = pricing['final_price']
+        if final_price is None:
+            final_price = base_price
+
+        PaymentMethod.ensure_default_methods()
+        payment_methods = PaymentMethod.objects.filter(is_active=True).order_by('display_order', 'name')
+
         return render(request, self.template_name, {
             'course': course,
             'pricing': pricing,
-            'effective_price': pricing['final_price'],
+            'base_price': base_price,
+            'effective_price': final_price,
             'form': form or PaymentSubmitForm(),
             'currency': course.currency,
+            'coupon_code': coupon_code,
+            'coupon_error': coupon_error,
+            'promotion': promo,
+            'discount_amount': discount_amount,
+            'is_free_with_coupon': (final_price <= Decimal('0.00')),
+            'payment_methods': payment_methods,
             'pending': Payment.objects.filter(
                 student=request.user, course=course,
                 status=Payment.Status.PENDING,
@@ -206,7 +254,19 @@ class CheckoutView(LoginRequiredMixin, View):
         if current and current.is_current:
             messages.info(request, 'You already have access to this course.')
             return redirect('course-detail', slug=course.slug)
-        return self._render(request, course)
+
+        raw_coupon = request.GET.get('coupon', '').strip()
+        promo, coupon_err, discount, final_price = self._get_coupon_info(
+            request, course, pricing['final_price'], raw_coupon
+        )
+        return self._render(
+            request, course,
+            coupon_code=promo.code if promo else raw_coupon,
+            coupon_error=coupon_err,
+            promo=promo,
+            discount_amount=discount,
+            final_price=final_price,
+        )
 
     def post(self, request, *args, **kwargs):
         course = self.get_course()
@@ -225,29 +285,143 @@ class CheckoutView(LoginRequiredMixin, View):
             messages.info(request, 'Your payment for this course is already awaiting review.')
             return redirect('course-detail', slug=course.slug)
 
+        base_price = pricing['final_price']
+        raw_coupon = (request.POST.get('coupon_code') or request.GET.get('coupon') or '').strip()
+
+        promo, coupon_err, discount, final_price = self._get_coupon_info(
+            request, course, base_price, raw_coupon
+        )
+
+        # Action: Apply coupon code preview
+        if request.POST.get('action') == 'apply_coupon':
+            if coupon_err:
+                messages.error(request, coupon_err)
+            elif promo:
+                messages.success(request, f"Coupon '{promo.code}' applied! Saved {discount:,.0f} {course.currency}.")
+            return self._render(
+                request, course,
+                coupon_code=promo.code if promo else raw_coupon,
+                coupon_error=coupon_err,
+                promo=promo,
+                discount_amount=discount,
+                final_price=final_price,
+            )
+
+        # If user submitted with an invalid coupon
+        if raw_coupon and coupon_err:
+            messages.error(request, f"Cannot complete checkout: {coupon_err}")
+            return self._render(
+                request, course,
+                coupon_code=raw_coupon,
+                coupon_error=coupon_err,
+                discount_amount=Decimal('0.00'),
+                final_price=base_price,
+            )
+
+        # CASE 1: 100% Free / Free with Coupon (final_price <= 0)
+        if final_price <= Decimal('0.00'):
+            from apps.courses.services.access import enroll_student_in_course
+
+            with transaction.atomic():
+                # Fulfill zero-amount transaction for auditing
+                payment = Payment.objects.create(
+                    student=request.user,
+                    course=course,
+                    payment_type=Payment.PaymentType.COURSE_PURCHASE,
+                    provider='coupon',
+                    method=Payment.Method.OTHER,
+                    amount=Decimal('0.00'),
+                    original_amount=base_price,
+                    discount_amount=discount,
+                    coupon_code=promo.code if promo else '',
+                    promotion=promo,
+                    currency=course.currency,
+                    billing_period=course.billing_period,
+                    platform_fee=Decimal('0.00'),
+                    teacher_amount=Decimal('0.00'),
+                    status=Payment.Status.SUCCESS,
+                    reviewed_by=None,
+                    reviewed_at=timezone.now(),
+                    note=f"100% discount redeemed via coupon {promo.code if promo else 'PROMO'}."
+                )
+
+                if promo:
+                    PromotionUsage.objects.create(
+                        promotion=promo,
+                        user=request.user,
+                        course=course,
+                        payment=payment,
+                        original_price=base_price,
+                        discount_amount=discount,
+                        final_price=Decimal('0.00'),
+                    )
+                    promo.usage_count = promo.usages.count()
+                    promo.save(update_fields=['usage_count', 'updated_at'])
+
+                enroll_student_in_course(request.user, course, source=Enrollment.Source.COUPON)
+
+            coupon_str = f" using coupon '{promo.code}'" if promo else ""
+            messages.success(
+                request,
+                f"Successfully enrolled in '{course.title}' for free{coupon_str}! You now have immediate access."
+            )
+            return redirect('course-detail', slug=course.slug)
+
+        # CASE 2: Payable amount > 0 MMK
         form = PaymentSubmitForm(request.POST, request.FILES)
         if not form.is_valid():
             messages.error(request, 'Payment not submitted: ' + ' '.join(
                 error for errors in form.errors.values() for error in errors
             ))
-            return self._render(request, course, form, status=200)
+            return self._render(
+                request, course, form=form,
+                coupon_code=promo.code if promo else raw_coupon,
+                coupon_error=coupon_err,
+                promo=promo,
+                discount_amount=discount,
+                final_price=final_price,
+                status=200
+            )
 
-        effective_price = pricing['final_price']
-        payment = form.save(commit=False)
-        payment.student = request.user
-        payment.course = course
-        payment.plan = None
-        payment.payment_type = Payment.PaymentType.COURSE_PURCHASE
-        payment.amount = effective_price
-        payment.currency = course.currency
-        payment.billing_period = course.billing_period
-        payment.platform_fee, payment.teacher_amount = Payment.split(effective_price)
-        payment.status = Payment.Status.PENDING
-        payment.save()
+        with transaction.atomic():
+            payment = form.save(commit=False)
+            payment.student = request.user
+            payment.course = course
+            payment.plan = None
+            payment.payment_type = Payment.PaymentType.COURSE_PURCHASE
+            payment.amount = final_price  # Authoritative server-side price!
+            payment.original_amount = base_price
+            payment.discount_amount = discount
+            payment.coupon_code = promo.code if promo else ''
+            payment.promotion = promo
+            payment.currency = course.currency
+            payment.billing_period = course.billing_period
+            payment.platform_fee, payment.teacher_amount = Payment.split(final_price)
+            payment.status = Payment.Status.PENDING
 
+            pm = PaymentMethod.objects.filter(code=payment.method, is_active=True).first()
+            if pm:
+                payment.payment_method = pm
+
+            payment.save()
+
+            if promo:
+                PromotionUsage.objects.create(
+                    promotion=promo,
+                    user=request.user,
+                    course=course,
+                    payment=payment,
+                    original_price=base_price,
+                    discount_amount=discount,
+                    final_price=final_price,
+                )
+                promo.usage_count = promo.usages.count()
+                promo.save(update_fields=['usage_count', 'updated_at'])
+
+        coupon_msg = f" (Coupon '{promo.code}' applied: {discount:,.0f} {course.currency} off)" if promo else ""
         messages.success(
             request,
-            f'Payment of {effective_price:,.0f} {course.currency} submitted — an administrator '
+            f'Payment of {final_price:,.0f} {course.currency}{coupon_msg} submitted — an administrator '
             f'will review it shortly.'
         )
         return redirect('course-detail', slug=course.slug)
@@ -606,5 +780,286 @@ class PaymentWebhookAPIView(APIView):
             payment.mark_processing()
 
         return Response({'status': 'ok', 'payment_status': payment.status}, status=status.HTTP_200_OK)
+
+
+# ----------------------------------------------------------------------
+# Payment Method Management Views (Admin)
+# ----------------------------------------------------------------------
+
+class PaymentMethodListView(AdminRequiredMixin, ListView):
+    model = PaymentMethod
+    template_name = 'billing/methods/list.html'
+    context_object_name = 'payment_methods'
+    ordering = ['display_order', 'name']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        PaymentMethod.ensure_default_methods()
+        context['payment_methods'] = PaymentMethod.objects.all().order_by('display_order', 'name')
+        return context
+
+
+class PaymentMethodCreateView(AdminRequiredMixin, CreateView):
+    model = PaymentMethod
+    form_class = PaymentMethodForm
+    template_name = 'billing/methods/form.html'
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Payment channel '{form.instance.name}' added successfully.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('billing:method-list')
+
+
+class PaymentMethodUpdateView(AdminRequiredMixin, UpdateView):
+    model = PaymentMethod
+    form_class = PaymentMethodForm
+    template_name = 'billing/methods/form.html'
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Payment channel '{form.instance.name}' updated successfully.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('billing:method-list')
+
+
+class PaymentMethodToggleView(AdminRequiredMixin, View):
+    def post(self, request, pk):
+        method = get_object_or_404(PaymentMethod, pk=pk)
+        method.is_active = not method.is_active
+        method.save(update_fields=['is_active', 'updated_at'])
+        state = 'activated' if method.is_active else 'disabled'
+        messages.success(request, f"Payment method '{method.name}' is now {state}.")
+        return redirect('billing:method-list')
+
+    def get(self, request, pk):
+        return self.post(request, pk)
+
+
+class PaymentMethodDeleteView(AdminRequiredMixin, View):
+    def post(self, request, pk):
+        method = get_object_or_404(PaymentMethod, pk=pk)
+        if method.payments.exists():
+            method.is_active = False
+            method.save(update_fields=['is_active', 'updated_at'])
+            messages.warning(
+                request,
+                f"Payment method '{method.name}' has recorded transactions and cannot be deleted. It has been deactivated instead."
+            )
+        else:
+            name = method.name
+            method.delete()
+            messages.success(request, f"Payment method '{name}' deleted.")
+        return redirect('billing:method-list')
+
+    def get(self, request, pk):
+        return self.post(request, pk)
+
+
+# ----------------------------------------------------------------------
+# Promotion & Coupon Code Management Views (Admin, Teacher, Partner)
+# ----------------------------------------------------------------------
+
+class CanManagePromotionsMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """
+    Permits Platform Administrators, Teachers, and Institutional Partners.
+    Rejects students with HTTP 403 Forbidden.
+    """
+    def test_func(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return False
+        return bool(
+            getattr(user, 'is_admin', False)
+            or getattr(user, 'is_teacher', False)
+            or getattr(user, 'is_partner', False)
+        )
+
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated:
+            raise PermissionDenied("You do not have permission to manage promotions or coupons.")
+        return super().handle_no_permission()
+
+
+def get_user_authorized_promotions(user):
+    """
+    Returns QuerySet of Promotion instances user has authority over:
+    - Admin: All promotions
+    - Teacher: Promotions created by user or targeting courses owned by user
+    - Partner: Promotions created by user or targeting courses of their partner institution
+    """
+    if getattr(user, 'is_admin', False):
+        return Promotion.objects.all().distinct()
+
+    from apps.partner.views import get_user_partner_institutions
+    institutions = get_user_partner_institutions(user)
+
+    filters = Q(creator=user)
+    if institutions.exists():
+        filters |= Q(partner_institution__in=institutions) | Q(courses__partner_institution__in=institutions)
+    if getattr(user, 'is_teacher', False):
+        filters |= Q(courses__owner=user)
+
+    return Promotion.objects.filter(filters).distinct()
+
+
+class PromotionListView(CanManagePromotionsMixin, ListView):
+    template_name = 'billing/promotions/list.html'
+    context_object_name = 'promotions'
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = get_user_authorized_promotions(self.request.user).prefetch_related(
+            'courses', 'usages'
+        ).select_related('creator', 'partner_institution')
+
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(Q(code__icontains=q) | Q(name__icontains=q) | Q(description__icontains=q))
+
+        status_tab = self.request.GET.get('status', 'all')
+        now = timezone.now()
+        if status_tab == 'active':
+            qs = qs.filter(is_active=True).filter(
+                Q(start_at__isnull=True) | Q(start_at__lte=now)
+            ).filter(
+                Q(end_at__isnull=True) | Q(end_at__gte=now)
+            )
+        elif status_tab == 'expired':
+            qs = qs.filter(end_at__lt=now)
+        elif status_tab == 'scheduled':
+            qs = qs.filter(start_at__gt=now)
+        elif status_tab == 'disabled':
+            qs = qs.filter(is_active=False)
+
+        return qs.order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_qs = get_user_authorized_promotions(self.request.user)
+        now = timezone.now()
+
+        total_promotions = base_qs.count()
+        active_promos = base_qs.filter(is_active=True).filter(
+            Q(start_at__isnull=True) | Q(start_at__lte=now)
+        ).filter(
+            Q(end_at__isnull=True) | Q(end_at__gte=now)
+        ).count()
+        total_usages = PromotionUsage.objects.filter(promotion__in=base_qs).count()
+        total_discount = PromotionUsage.objects.filter(promotion__in=base_qs).aggregate(
+            total=Sum('discount_amount')
+        )['total'] or Decimal('0.00')
+
+        context['stats'] = {
+            'total_promotions': total_promotions,
+            'active_promotions': active_promos,
+            'total_usages': total_usages,
+            'total_discount': total_discount,
+        }
+        context['status_filter'] = self.request.GET.get('status', 'all')
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
+
+
+class PromotionCreateView(CanManagePromotionsMixin, CreateView):
+    model = Promotion
+    form_class = PromotionForm
+    template_name = 'billing/promotions/form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Promotion '{self.object.code}' created successfully!")
+        return response
+
+    def get_success_url(self):
+        return reverse('billing:promotion-list')
+
+
+class PromotionUpdateView(CanManagePromotionsMixin, UpdateView):
+    model = Promotion
+    form_class = PromotionForm
+    template_name = 'billing/promotions/form.html'
+
+    def get_queryset(self):
+        return get_user_authorized_promotions(self.request.user)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Promotion '{self.object.code}' updated successfully!")
+        return response
+
+    def get_success_url(self):
+        return reverse('billing:promotion-list')
+
+
+class PromotionToggleView(CanManagePromotionsMixin, View):
+    def post(self, request, pk):
+        promo = get_object_or_404(get_user_authorized_promotions(request.user), pk=pk)
+        promo.is_active = not promo.is_active
+        promo.save(update_fields=['is_active', 'updated_at'])
+        state = 'activated' if promo.is_active else 'disabled'
+        messages.success(request, f"Promotion '{promo.code}' has been {state}.")
+        return redirect('billing:promotion-list')
+
+    def get(self, request, pk):
+        return self.post(request, pk)
+
+
+class PromotionDeleteView(CanManagePromotionsMixin, View):
+    def post(self, request, pk):
+        promo = get_object_or_404(get_user_authorized_promotions(request.user), pk=pk)
+        if promo.usages.exists():
+            promo.is_active = False
+            promo.save(update_fields=['is_active', 'updated_at'])
+            messages.warning(
+                request,
+                f"Promotion '{promo.code}' has {promo.usages.count()} existing redemption(s) and cannot be permanently deleted. It has been deactivated."
+            )
+        else:
+            code = promo.code
+            promo.delete()
+            messages.success(request, f"Promotion '{code}' deleted.")
+        return redirect('billing:promotion-list')
+
+    def get(self, request, pk):
+        return self.post(request, pk)
+
+
+class PromotionAnalyticsView(CanManagePromotionsMixin, DetailView):
+    model = Promotion
+    template_name = 'billing/promotions/analytics.html'
+    context_object_name = 'promotion'
+
+    def get_queryset(self):
+        return get_user_authorized_promotions(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        promo = self.object
+        usages = promo.usages.select_related('user', 'course', 'payment').order_by('-created_at')
+        total_discount = usages.aggregate(total=Sum('discount_amount'))['total'] or Decimal('0.00')
+        total_gross = usages.aggregate(total=Sum('original_price'))['total'] or Decimal('0.00')
+        total_net = usages.aggregate(total=Sum('final_price'))['total'] or Decimal('0.00')
+
+        context['usages'] = usages
+        context['stats'] = {
+            'total_usages': usages.count(),
+            'total_discount': total_discount,
+            'total_gross': total_gross,
+            'total_net': total_net,
+        }
+        return context
 
 

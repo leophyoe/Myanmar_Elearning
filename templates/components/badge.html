@@ -1,17 +1,17 @@
-{# Reusable Subtle Status Badge Component #}
-<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border
-    {% if type == 'success' or type == 'published' or type == 'active' or type == 'completed' %}bg-emerald-50 text-[#16A34A] border-emerald-200
-    {% elif type == 'warning' or type == 'pending' or type == 'draft' %}bg-amber-50 text-[#D97706] border-amber-200
-    {% elif type == 'error' or type == 'danger' or type == 'rejected' or type == 'failed' or type == 'suspended' %}bg-rose-50 text-[#DC2626] border-rose-200
-    {% elif type == 'primary' or type == 'info' %}bg-[#EFF6FF] text-[#2563EB] border-blue-200
-    {% else %}bg-[#F1F5F9] text-[#64748B] border-[#E2E8F0]{% endif %} {% if extra_classes %}{{ extra_classes }}{% endif %}">
+{# Reusable Subtle Status Badge Component with Accessible Light/Dark Mode Contrast #}
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors
+    {% if type == 'success' or type == 'published' or type == 'active' or type == 'completed' %}bg-[#F0FDF4] text-[#166534] border-[#BBF7D0] dark:bg-[#142B25] dark:text-[#86EFAC] dark:border-[#1E3A30]
+    {% elif type == 'warning' or type == 'pending' or type == 'draft' %}bg-[#FFFBEB] text-[#92400E] border-[#FDE68A] dark:bg-[#302719] dark:text-[#FCD34D] dark:border-[#423522]
+    {% elif type == 'error' or type == 'danger' or type == 'rejected' or type == 'failed' or type == 'suspended' %}bg-[#FEF2F2] text-[#991B1B] border-[#FECDD3] dark:bg-[#321F26] dark:text-[#FCA5A5] dark:border-[#452934]
+    {% elif type == 'primary' or type == 'info' %}bg-[#E0F2FE] text-[#075985] border-[#BAE6FD] dark:bg-[#172B40] dark:text-[#7DD3FC] dark:border-[#26364B]
+    {% else %}bg-[#F1F5F9] text-[#475569] border-[#E2E8F0] dark:bg-[#162235] dark:text-[#94A3B8] dark:border-[#26364B]{% endif %} {% if extra_classes %}{{ extra_classes }}{% endif %}">
     {% if dot %}
-    <span class="w-1.5 h-1.5 rounded-full
-        {% if type == 'success' or type == 'published' or type == 'active' or type == 'completed' %}bg-[#16A34A]
-        {% elif type == 'warning' or type == 'pending' or type == 'draft' %}bg-[#F59E0B]
-        {% elif type == 'error' or type == 'danger' or type == 'rejected' or type == 'failed' or type == 'suspended' %}bg-[#DC2626]
-        {% elif type == 'primary' or type == 'info' %}bg-[#2563EB]
-        {% else %}bg-[#64748B]{% endif %}"></span>
+    <span class="w-1.5 h-1.5 rounded-full shrink-0
+        {% if type == 'success' or type == 'published' or type == 'active' or type == 'completed' %}bg-[#166534] dark:bg-[#86EFAC]
+        {% elif type == 'warning' or type == 'pending' or type == 'draft' %}bg-[#92400E] dark:bg-[#FCD34D]
+        {% elif type == 'error' or type == 'danger' or type == 'rejected' or type == 'failed' or type == 'suspended' %}bg-[#991B1B] dark:bg-[#FCA5A5]
+        {% elif type == 'primary' or type == 'info' %}bg-[#0284C7] dark:bg-[#38BDF8]
+        {% else %}bg-[#64748B] dark:bg-[#94A3B8]{% endif %}"></span>
     {% endif %}
     <span>{{ text }}</span>
 </span>

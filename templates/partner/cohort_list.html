@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Academic Cohorts & Batches — {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    {% include 'partner/_partner_nav.html' %}
+
+    <!-- Header & Actions -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/60 p-6 rounded-2xl border border-slate-800">
+        <div>
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Academic Batches & Cohorts
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Organize institutional learners into academic classes, track cohort progress, and export gradebooks.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'partner-cohort-create' %}" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-cyan-900/30 transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Create New Batch
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stat Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Batches</div>
+            <div class="text-2xl font-black text-white mt-1">{{ total_cohorts }}</div>
+            <div class="text-[11px] text-slate-500 mt-1">All registered cohorts</div>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+            <div class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Active Batches</div>
+            <div class="text-2xl font-black text-emerald-400 mt-1">{{ active_cohorts }}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Currently running sessions</div>
+        </div>
+        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Completed Batches</div>
+            <div class="text-2xl font-black text-slate-300 mt-1">{{ completed_cohorts }}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Archived cohorts</div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <form method="GET" class="flex-1 w-full flex items-center gap-2">
+            <div class="relative flex-1">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search batch name, cohort code, or course title..."
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 pl-9 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition">
+                Search
+            </button>
+            {% if query or status_filter != 'all' %}
+            <a href="{% url 'partner-cohorts' %}" class="px-3 py-2 bg-slate-800/50 hover:bg-slate-800 text-slate-400 rounded-xl text-xs transition">
+                Reset
+            </a>
+            {% endif %}
+        </form>
+
+        <div class="flex items-center gap-1.5 self-end sm:self-auto">
+            <span class="text-xs text-slate-400 mr-1">Status:</span>
+            <a href="?status=all{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {% if status_filter == 'all' %}bg-cyan-500/20 text-cyan-300 border border-cyan-500/30{% else %}bg-slate-800 text-slate-400 hover:text-white{% endif %}">
+                All
+            </a>
+            <a href="?status=active{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {% if status_filter == 'active' %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30{% else %}bg-slate-800 text-slate-400 hover:text-white{% endif %}">
+                Active
+            </a>
+            <a href="?status=completed{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition {% if status_filter == 'completed' %}bg-slate-700 text-slate-200 border border-slate-600{% else %}bg-slate-800 text-slate-400 hover:text-white{% endif %}">
+                Completed
+            </a>
+        </div>
+    </div>
+
+    <!-- Cohorts Table -->
+    <div class="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase tracking-wider bg-slate-950 text-slate-400 border-b border-slate-800">
+                    <tr>
+                        <th class="py-3 px-4">Batch Code</th>
+                        <th class="py-3 px-4">Cohort Name</th>
+                        <th class="py-3 px-4">Institution</th>
+                        <th class="py-3 px-4">Program / Course</th>
+                        <th class="py-3 px-4 text-center">Enrolled</th>
+                        <th class="py-3 px-4">Timeline</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for cohort in cohorts %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-3.5 px-4 font-mono font-bold text-cyan-400">
+                            {{ cohort.code }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-white text-sm">{{ cohort.name }}</div>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-300">
+                            {{ cohort.institution.name }}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            {% if cohort.course %}
+                                <span class="text-slate-200 font-medium">{{ cohort.course.title }}</span>
+                            {% else %}
+                                <span class="text-slate-500 italic">General Cohort</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-center font-mono font-bold text-white">
+                            <span class="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700">
+                                {{ cohort.students.count }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-400 text-[11px] font-mono">
+                            {% if cohort.start_date or cohort.end_date %}
+                                {{ cohort.start_date|default:"TBD"|date:"M d, Y" }} &rarr; {{ cohort.end_date|default:"Ongoing"|date:"M d, Y" }}
+                            {% else %}
+                                <span class="text-slate-500">Self-Paced</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            {% if cohort.is_active %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    Active
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                                    Completed
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <div class="inline-flex items-center gap-2">
+                                <a href="{% url 'partner-cohort-detail' cohort_id=cohort.id %}" class="px-2.5 py-1 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-300 hover:bg-cyan-900 transition text-[11px] font-semibold">
+                                    View Roster &rarr;
+                                </a>
+                                <a href="{% url 'partner-cohort-edit' cohort_id=cohort.id %}" class="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition text-[11px]">
+                                    Edit
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-slate-500">
+                            <div class="max-w-sm mx-auto space-y-3">
+                                <svg class="w-10 h-10 text-slate-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                                <p class="text-sm font-semibold text-slate-300">No cohorts found</p>
+                                <p class="text-xs text-slate-500">Create your first class cohort to start batch-enrolling students and managing academic timelines.</p>
+                                <a href="{% url 'partner-cohort-create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition">
+                                    + Create First Cohort
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -2,8 +2,9 @@
 Reusable query selectors and filters for Course discovery, authoring, and partner management.
 """
 from typing import Optional
-from django.db.models import QuerySet, Q
-from .models import Course
+from django.db.models import QuerySet, Q, Count
+from django.contrib.auth import get_user_model
+from .models import Course, Subject
 
 
 def get_published_courses(
@@ -14,15 +15,21 @@ def get_published_courses(
     is_premium: Optional[bool] = None,
     owner_type: Optional[str] = None,
     partner_id: Optional[str] = None,
+    price_type: Optional[str] = None,
+    sort: Optional[str] = None,
 ) -> QuerySet[Course]:
     """
     Returns public catalog courses that are active and published.
-    Supports granular multi-criteria filtering and text search.
+    Supports granular multi-criteria filtering, text search, price filtering, and sorting.
     """
     qs = Course.objects.filter(
         is_published=True,
         status=Course.Status.PUBLISHED,
-    ).select_related('subject', 'owner', 'partner_institution').prefetch_related('modules__lessons')
+    ).select_related(
+        'subject', 'owner', 'partner_institution'
+    ).prefetch_related('modules__lessons').annotate(
+        enrollments_count=Count('enrollments', filter=Q(enrollments__status='active'), distinct=True)
+    )
 
     if subject_slug:
         qs = qs.filter(subject__slug=subject_slug)
@@ -42,6 +49,11 @@ def get_published_courses(
     if partner_id:
         qs = qs.filter(partner_institution_id=partner_id)
 
+    if price_type == 'free':
+        qs = qs.filter(Q(price__isnull=True) | Q(price__lte=0) | Q(access_type=Course.AccessType.FREE))
+    elif price_type == 'paid':
+        qs = qs.filter(Q(price__gt=0) & ~Q(access_type=Course.AccessType.FREE))
+
     if search_query:
         query = search_query.strip()
         qs = qs.filter(
@@ -52,7 +64,81 @@ def get_published_courses(
             Q(partner_institution__name__icontains=query)
         )
 
+    # Sorting
+    if sort == 'popular':
+        qs = qs.order_by('-enrollments_count', '-created_at')
+    elif sort == 'newest':
+        qs = qs.order_by('-created_at')
+    elif sort == 'price_asc':
+        qs = qs.order_by('price', '-created_at')
+    elif sort == 'price_desc':
+        qs = qs.order_by('-price', '-created_at')
+    elif sort == 'title':
+        qs = qs.order_by('title')
+    else:
+        qs = qs.order_by('-is_official', '-created_at')
+
     return qs.distinct()
+
+
+def get_featured_courses(limit: int = 8) -> QuerySet[Course]:
+    """
+    Returns official or premium highlighted courses for featured discovery showcase.
+    """
+    return get_published_courses().filter(
+        Q(is_official=True) | Q(is_premium=True)
+    ).order_by('-is_official', '-created_at')[:limit]
+
+
+def get_popular_courses(limit: int = 8) -> QuerySet[Course]:
+    """
+    Returns trending courses ordered by active enrollment count.
+    """
+    return get_published_courses(sort='popular')[:limit]
+
+
+def get_new_courses(limit: int = 8) -> QuerySet[Course]:
+    """
+    Returns the newest additions to the catalog.
+    """
+    return get_published_courses(sort='newest')[:limit]
+
+
+def get_free_courses(limit: int = 8) -> QuerySet[Course]:
+    """
+    Returns free introductory and open-access courses.
+    """
+    return get_published_courses(price_type='free')[:limit]
+
+
+def get_popular_categories(limit: int = 8) -> QuerySet[Subject]:
+    """
+    Returns active subjects/disciplines annotated with published course count.
+    """
+    return Subject.objects.filter(is_active=True).annotate(
+        courses_count=Count(
+            'courses',
+            filter=Q(courses__is_published=True, courses__status=Course.Status.PUBLISHED),
+            distinct=True
+        )
+    ).order_by('-courses_count', 'order')[:limit]
+
+
+def get_top_instructors(limit: int = 8):
+    """
+    Returns active instructors who author published courses, with published course count.
+    """
+    user_model = get_user_model()
+    return user_model.objects.filter(
+        owned_courses__is_published=True,
+        owned_courses__status=Course.Status.PUBLISHED
+    ).distinct().annotate(
+        courses_count=Count(
+            'owned_courses',
+            filter=Q(owned_courses__is_published=True, owned_courses__status=Course.Status.PUBLISHED),
+            distinct=True
+        )
+    ).order_by('-courses_count', 'username')[:limit]
 
 
 def get_instructor_courses(user) -> QuerySet[Course]:

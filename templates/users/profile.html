@@ -36,6 +36,11 @@
                 <span>View Public Portfolio</span>
                 <span>&rarr;</span>
             </a>
+            {% if not user.is_teacher and not user.is_admin %}
+            <a href="{% url 'apply-instructor' %}" class="px-4 py-2 rounded-xl bg-amber-950/70 hover:bg-amber-900 border border-amber-800 text-xs text-amber-300 font-semibold transition flex items-center gap-1.5">
+                <span>👨‍🏫 Become an Instructor</span>
+            </a>
+            {% endif %}
             {% if user.is_teacher %}
             <form method="POST" action="{% url 'switch-user-mode' %}" class="inline">
                 {% csrf_token %}
@@ -81,6 +86,28 @@
         </div>
     </div>
 
+    {% if not user.is_teacher and not user.is_admin %}
+    <div class="mb-8 p-5 rounded-2xl bg-slate-900/90 border border-amber-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="text-base">👨‍🏫</span>
+                <h3 class="text-sm font-bold text-amber-300">
+                    <span class="lang-en">Teach on THUTA</span>
+                    <span class="lang-my">ဆရာအဖြစ် လျှောက်ထားပါ</span>
+                </h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+                <span class="lang-en">Share your cybersecurity, IT, and software expertise. Earn revenue with verified faculty rank.</span>
+                <span class="lang-my">သင်၏ နည်းပညာနှင့် ဆိုက်ဘာလုံခြုံရေး ဗဟုသုတများကို မျှဝေပြီး တရားဝင် ဆရာအဖြစ် ဝင်ငွေရှာဖွေပါ။</span>
+            </p>
+        </div>
+        <a href="{% url 'apply-instructor' %}" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition shrink-0 text-center">
+            <span class="lang-en">Apply as Instructor &rarr;</span>
+            <span class="lang-my">ဆရာအဖြစ် လျှောက်ထားရန် &rarr;</span>
+        </a>
+    </div>
+    {% endif %}
+
     <!-- Unified Profile Form -->
     <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
         <form method="POST" class="space-y-8">
@@ -89,27 +116,42 @@
             <!-- Section 1: Personal & Contact Information -->
             <div>
                 <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider mb-4 pb-2 border-b border-slate-800 flex items-center justify-between">
-                    <span>1. Personal &amp; Contact Details / ကိုယ်ရေးအချက်အလက်</span>
+                    <span>
+                        <span class="lang-en">1. Personal &amp; Contact Details</span>
+                        <span class="lang-my">၁။ ကိုယ်ရေးအချက်အလက်</span>
+                    </span>
                     <span class="text-[10px] text-slate-500 font-normal">Universal Account Info</span>
                 </h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                     <div>
-                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">First Name / နာမည်</label>
+                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">
+                            <span class="lang-en">First Name</span>
+                            <span class="lang-my">အမည်</span>
+                        </label>
                         {{ form.first_name }}
                         {% if form.first_name.errors %}<p class="text-red-400 text-[10px] mt-1">{{ form.first_name.errors.0 }}</p>{% endif %}
                     </div>
                     <div>
-                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">Last Name / မျိုးရိုးအမည်</label>
+                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">
+                            <span class="lang-en">Last Name</span>
+                            <span class="lang-my">မျိုးရိုးအမည်</span>
+                        </label>
                         {{ form.last_name }}
                         {% if form.last_name.errors %}<p class="text-red-400 text-[10px] mt-1">{{ form.last_name.errors.0 }}</p>{% endif %}
                     </div>
                     <div>
-                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">Email Address (Primary)</label>
+                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">
+                            <span class="lang-en">Email Address (Primary)</span>
+                            <span class="lang-my">အီးမေးလ်လိပ်စာ</span>
+                        </label>
                         <input type="email" value="{{ user.email }}" disabled class="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-slate-400 text-sm cursor-not-allowed">
                         <span class="text-[10px] text-slate-600 mt-1 block">Account login identifier</span>
                     </div>
                     <div>
-                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">Phone Number / ဖုန်းနံပါတ်</label>
+                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">
+                            <span class="lang-en">Phone Number</span>
+                            <span class="lang-my">ဖုန်းနံပါတ်</span>
+                        </label>
                         {{ form.phone_number }}
                         {% if form.phone_number.errors %}<p class="text-red-400 text-[10px] mt-1">{{ form.phone_number.errors.0 }}</p>{% endif %}
                     </div>
@@ -119,23 +161,35 @@
             <!-- Section 2: Student Learning & Portfolio Links -->
             <div>
                 <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider mb-4 pb-2 border-b border-slate-800 flex items-center justify-between">
-                    <span>2. Student Learning &amp; Portfolio / လေ့လာမှု ပရိုဖိုင်</span>
+                    <span>
+                        <span class="lang-en">2. Student Learning &amp; Portfolio</span>
+                        <span class="lang-my">၂။ လေ့လာမှုနှင့် ပရိုဖိုင်</span>
+                    </span>
                     <span class="text-[10px] text-slate-500 font-normal">Public Portfolio Presence</span>
                 </h3>
                 <div class="space-y-4 text-xs">
                     <div>
-                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">Biography / ကိုယ်ရေးအကျဉ်း</label>
+                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">
+                            <span class="lang-en">Biography</span>
+                            <span class="lang-my">ကိုယ်ရေးအကျဉ်း</span>
+                        </label>
                         {{ form.bio }}
                         {% if form.bio.errors %}<p class="text-red-400 text-[10px] mt-1">{{ form.bio.errors.0 }}</p>{% endif %}
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-slate-400 uppercase tracking-wider mb-1.5">GitHub Portfolio URL</label>
+                            <label class="block text-slate-400 uppercase tracking-wider mb-1.5">
+                                <span class="lang-en">GitHub Portfolio URL</span>
+                                <span class="lang-my">GitHub လိပ်စာ</span>
+                            </label>
                             {{ form.github_url }}
                             {% if form.github_url.errors %}<p class="text-red-400 text-[10px] mt-1">{{ form.github_url.errors.0 }}</p>{% endif %}
                         </div>
                         <div>
-                            <label class="block text-slate-400 uppercase tracking-wider mb-1.5">LinkedIn Profile URL</label>
+                            <label class="block text-slate-400 uppercase tracking-wider mb-1.5">
+                                <span class="lang-en">LinkedIn Profile URL</span>
+                                <span class="lang-my">LinkedIn လိပ်စာ</span>
+                            </label>
                             {{ form.linkedin_url }}
                             {% if form.linkedin_url.errors %}<p class="text-red-400 text-[10px] mt-1">{{ form.linkedin_url.errors.0 }}</p>{% endif %}
                         </div>
@@ -147,39 +201,57 @@
             {% if user.is_teacher or user.is_admin %}
             <div>
                 <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-4 pb-2 border-b border-slate-800 flex items-center justify-between">
-                    <span>3. Teaching &amp; Academic Credentials / ဆရာဖြစ်မှု အထောက်အထား</span>
+                    <span>
+                        <span class="lang-en">3. Teaching &amp; Academic Credentials</span>
+                        <span class="lang-my">၃။ သင်ကြားရေးဆိုင်ရာ အထောက်အထားများ</span>
+                    </span>
                     <span class="text-[10px] text-emerald-400/80 font-normal">Instructor Mode Active</span>
                 </h3>
                 <div class="space-y-4 text-xs">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-slate-400 uppercase tracking-wider mb-1.5">Academic Department / ဌာန</label>
+                            <label class="block text-slate-400 uppercase tracking-wider mb-1.5">
+                                <span class="lang-en">Academic Department</span>
+                                <span class="lang-my">ဌာန</span>
+                            </label>
                             {{ form.department }}
                             {% if form.department.errors %}<p class="text-red-400 text-[10px] mt-1">{{ form.department.errors.0 }}</p>{% endif %}
                         </div>
                         <div>
-                            <label class="block text-slate-400 uppercase tracking-wider mb-1.5">Academic Title / ရာထူး</label>
+                            <label class="block text-slate-400 uppercase tracking-wider mb-1.5">
+                                <span class="lang-en">Academic Title</span>
+                                <span class="lang-my">ရာထူး</span>
+                            </label>
                             {{ form.title }}
                             {% if form.title.errors %}<p class="text-red-400 text-[10px] mt-1">{{ form.title.errors.0 }}</p>{% endif %}
                         </div>
                     </div>
                     <div>
-                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">Qualifications &amp; Degrees / ပညာအရည်အချင်း</label>
+                        <label class="block text-slate-400 uppercase tracking-wider mb-1.5">
+                            <span class="lang-en">Qualifications &amp; Degrees</span>
+                            <span class="lang-my">ပညာအရည်အချင်းနှင့် ဘွဲ့များ</span>
+                        </label>
                         {{ form.qualifications }}
                         {% if form.qualifications.errors %}<p class="text-red-400 text-[10px] mt-1">{{ form.qualifications.errors.0 }}</p>{% endif %}
                     </div>
                     <!-- Revenue Share Badges -->
                     <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
                         <div>
-                            <div class="text-[11px] font-bold text-white">Revenue Share Schedule / ဝင်ငွေခွဲဝေမှုနှုန်းထား</div>
-                            <div class="text-[10px] text-slate-400">Based on your Pedagogical Rank ({{ user.teacher_profile.get_level_display }})</div>
+                            <div class="text-[11px] font-bold text-white">
+                                <span class="lang-en">Revenue Share Schedule</span>
+                                <span class="lang-my">ဝင်ငွေခွဲဝေမှု နှုန်းထား</span>
+                            </div>
+                            <div class="text-[10px] text-slate-400">
+                                <span class="lang-en">Based on your Pedagogical Rank ({{ user.teacher_profile.get_level_display }})</span>
+                                <span class="lang-my">သင်၏ ဆရာအဆင့်အတန်းအပေါ် အခြေခံသည် ({{ user.teacher_profile.get_level_display }})</span>
+                            </div>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="px-2.5 py-1 rounded bg-slate-900 border border-cyan-800 text-cyan-300 text-xs font-bold">
-                                Recorded: {{ user.teacher_profile.recorded_revenue_share_pct }}%
+                                <span class="lang-en">Recorded:</span> <span class="lang-my">ဗီဒီယိုသင်ရိုး -</span> {{ user.teacher_profile.recorded_revenue_share_pct }}%
                             </span>
                             <span class="px-2.5 py-1 rounded bg-slate-900 border border-emerald-800 text-emerald-300 text-xs font-bold">
-                                Live Classes: {{ user.teacher_profile.live_revenue_share_pct }}%
+                                <span class="lang-en">Live Classes:</span> <span class="lang-my">တိုက်ရိုက်အတန်း -</span> {{ user.teacher_profile.live_revenue_share_pct }}%
                             </span>
                         </div>
                     </div>
@@ -190,10 +262,12 @@
             <!-- Save Action Button -->
             <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
                 <p class="text-[11px] text-slate-500">
-                    Changes take effect across your universal account immediately.
+                    <span class="lang-en">Changes take effect across your universal account immediately.</span>
+                    <span class="lang-my">ပြောင်းလဲမှုများသည် သင့်အကောင့်တစ်ခုလုံးတွင် ချက်ချင်း အကျိုးသက်ရောက်မည်။</span>
                 </p>
                 <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold transition shadow-lg shadow-cyan-600/20 text-xs">
-                    Save Unified Profile / ပရိုဖိုင် သိမ်းဆည်းမည်
+                    <span class="lang-en">Save Unified Profile</span>
+                    <span class="lang-my">ပရိုဖိုင် သိမ်းဆည်းမည်</span>
                 </button>
             </div>
         </form>

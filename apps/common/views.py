@@ -19,11 +19,33 @@ class LandingPageView(TemplateView):
         from apps.courses.models import Course, Module
         from apps.labs.models import Lab
         from apps.ctf.models import Challenge
+        from apps.courses.selectors import (
+            get_featured_courses,
+            get_popular_courses,
+            get_new_courses,
+            get_free_courses,
+            get_popular_categories,
+            get_top_instructors,
+        )
 
         context['courses_count'] = Course.objects.filter(is_published=True).count()
         context['modules_count'] = Module.objects.count()
         context['labs_count'] = Lab.objects.filter(is_active=True).count()
         context['ctf_count'] = Challenge.objects.filter(is_active=True).count()
+
+        # Discovery Showcase Collections
+        context['featured_courses'] = get_featured_courses(limit=8)
+        context['popular_courses'] = get_popular_courses(limit=8)
+        context['new_courses'] = get_new_courses(limit=8)
+        context['free_courses'] = get_free_courses(limit=8)
+        context['popular_categories'] = get_popular_categories(limit=8)
+        context['top_instructors'] = get_top_instructors(limit=8)
+
+        try:
+            from apps.partner.models import Institution
+            context['partners'] = Institution.objects.filter(is_verified=True).order_by('name')[:8]
+        except Exception:
+            context['partners'] = []
         return context
 
 

@@ -321,3 +321,18 @@ class PartnerRevenueShareRule(BaseModel):
         default_partner = Decimal(str(getattr(settings, 'PARTNER_DEFAULT_REVENUE_SHARE_PCT', 75.0)))
         return default_partner, Decimal('100.00') - default_partner
 
+
+def get_user_partner_institutions(user):
+    """
+    Returns QuerySet of Institution instances managed by the given user.
+    """
+    if not user or not getattr(user, 'is_authenticated', False):
+        return Institution.objects.none()
+    if getattr(user, 'is_admin', False):
+        return Institution.objects.all()
+    from django.db.models import Q
+    return Institution.objects.filter(
+        Q(contact_person=user) |
+        Q(memberships__user=user, memberships__status=PartnerMembership.Status.ACTIVE)
+    ).distinct()
+

@@ -17,6 +17,7 @@
 
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3">
                 Verify Digital Certificate
+                <span class="block text-xs font-normal text-slate-500 dark:text-slate-400 mt-1">Look up a certificate with cryptographic validation</span>
             </h1>
             <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-8">
                 Enter the certificate serial printed on the physical or PDF document (e.g.,
@@ -53,6 +54,161 @@
                 <span>
                     <strong>Instant QR Verification:</strong> Every authentic THUTA digital certificate contains a cryptographic QR code that links directly to the immutable record on this ledger.
                 </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Official Certificate Record Table & Public Academic Registry -->
+    <div class="mt-12 space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
+                        Public Academic Registry
+                    </span>
+                    <span class="text-xs text-slate-500 font-mono">{{ total_certificates }} credential(s) recorded</span>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>📜</span>
+                    <span class="lang-en">Official Certificate Records Table</span>
+                    <span class="lang-my">တရားဝင် အောင်လက်မှတ် မှတ်တမ်းများ ဇယား</span>
+                </h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Search and inspect cryptographically verified credentials, graduation diplomas, and examination records.
+                </p>
+            </div>
+
+            <!-- Metric Summary Stats Pills -->
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <div class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-center shadow-xs">
+                    <span class="block text-[9px] uppercase tracking-wider text-slate-400">Total Issued</span>
+                    <span class="text-sm font-extrabold font-mono text-slate-900 dark:text-white">{{ total_certificates }}</span>
+                </div>
+                <div class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-center shadow-xs">
+                    <span class="block text-[9px] uppercase tracking-wider text-slate-400">Active &amp; Valid</span>
+                    <span class="text-sm font-extrabold font-mono text-emerald-500">{{ valid_certificates }}</span>
+                </div>
+                <div class="px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-center shadow-xs">
+                    <span class="block text-[9px] uppercase tracking-wider text-slate-400">Distinction</span>
+                    <span class="text-sm font-extrabold font-mono text-amber-500">{{ distinction_certificates }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Filter Bar -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <!-- Filter Pills -->
+            <div class="flex items-center gap-1.5 overflow-x-auto py-1">
+                <a href="?status=all{% if q %}&q={{ q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition {% if status_filter == 'all' or not status_filter %}bg-[#0284C7] text-white shadow-xs{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+                    All Records ({{ total_certificates }})
+                </a>
+                <a href="?status=valid{% if q %}&q={{ q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition {% if status_filter == 'valid' %}bg-emerald-600 text-white shadow-xs{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+                    ✓ Valid &amp; Verified ({{ valid_certificates }})
+                </a>
+                <a href="?status=exam{% if q %}&q={{ q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition {% if status_filter == 'exam' %}bg-indigo-600 text-white shadow-xs{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+                    🎓 Exam Certified
+                </a>
+                <a href="?status=distinction{% if q %}&q={{ q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition {% if status_filter == 'distinction' %}bg-amber-600 text-white shadow-xs{% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700{% endif %}">
+                    ★ Distinction ({{ distinction_certificates }})
+                </a>
+            </div>
+
+            <!-- Table Search Input -->
+            <form method="get" action="{% url 'certificate-lookup' %}" class="flex items-center gap-2">
+                <input type="hidden" name="status" value="{{ status_filter }}">
+                <div class="relative">
+                    <input type="text" name="q" value="{{ q }}" placeholder="Search by name, code, program..." class="w-48 sm:w-64 bg-slate-50 dark:bg-[#0B1220] border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500">
+                </div>
+                <button type="submit" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition">
+                    Search
+                </button>
+                {% if q or status_filter != 'all' %}
+                <a href="{% url 'certificate-lookup' %}" class="text-xs text-slate-400 hover:text-white px-1">Reset</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <!-- The Certificate Record Table -->
+        <div class="rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-[#26364B] bg-slate-50/75 dark:bg-slate-950/50 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            <th class="py-3.5 px-4">Serial &amp; Credential ID</th>
+                            <th class="py-3.5 px-4">Recipient Name</th>
+                            <th class="py-3.5 px-4">Program &amp; Classification</th>
+                            <th class="py-3.5 px-4 text-center">Standing / Score</th>
+                            <th class="py-3.5 px-4">Issuing Authority</th>
+                            <th class="py-3.5 px-4">Concurrence Date</th>
+                            <th class="py-3.5 px-4 text-center">Status</th>
+                            <th class="py-3.5 px-4 text-right">Audit Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
+                        {% for cert in records %}
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
+                            <td class="py-3.5 px-4 font-mono font-bold">
+                                <a href="{% url 'certificate-verify' cert_id=cert.pk %}" class="text-[#0284C7] hover:underline flex items-center gap-1.5">
+                                    <span>🛡️</span>
+                                    <span>{{ cert.certificate_code }}</span>
+                                </a>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-bold text-slate-900 dark:text-white">{{ cert.student_name }}</div>
+                                <div class="text-[10px] text-slate-400 font-mono">@{{ cert.student.username|default:"alumni" }}</div>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-semibold text-slate-800 dark:text-slate-200">{{ cert.program_title }}</div>
+                                <div class="text-[10px] text-slate-400">
+                                    {% if cert.exam %}Exam-Verified Certification{% else %}Course Completion Diploma{% endif %}
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-4 text-center">
+                                <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold {% if 'Distinction' in cert.grade %}bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800{% else %}bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300{% endif %}">
+                                    {{ cert.grade }}
+                                </span>
+                                {% if cert.exam_score %}
+                                <div class="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 mt-0.5">{{ cert.exam_score }}% score</div>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <div class="text-slate-700 dark:text-slate-300 font-medium">THUTA Board</div>
+                                {% if cert.partner_institution %}
+                                <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold truncate max-w-[140px]">{{ cert.partner_institution.name }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300 font-mono text-[11px]">
+                                {{ cert.completion_date|default:cert.issued_at|date:"M d, Y" }}
+                            </td>
+                            <td class="py-3.5 px-4 text-center">
+                                {% if cert.is_revoked %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                    REVOKED
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    VALID &amp; VERIFIED ✓
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4 text-right">
+                                <a href="{% url 'certificate-verify' cert_id=cert.pk %}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-[#0284C7] dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-[11px] font-semibold transition">
+                                    <span>Inspect Dossier</span>
+                                    <span>&rarr;</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="p-8 text-center text-slate-400">
+                                <div class="text-2xl mb-2">📜</div>
+                                <div class="font-semibold text-slate-300">No matching certificate records found on ledger</div>
+                                <div class="text-[11px] text-slate-500 mt-1">Try broadening your search keyword or clearing the status filter.</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

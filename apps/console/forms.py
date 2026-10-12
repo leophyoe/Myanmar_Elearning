@@ -51,13 +51,23 @@ class AdminUserUpdateForm(forms.ModelForm):
         help_text="Grant teaching and course authoring privileges.",
         widget=forms.CheckboxInput(attrs={'class': 'accent-cyan-500'}),
     )
+    free_tutorial_approved = forms.BooleanField(
+        required=False,
+        label="Free Tutorial Approved",
+        help_text="Teacher has satisfied the mandatory qualifying free tutorial requirement.",
+        widget=forms.CheckboxInput(attrs={'class': 'accent-cyan-500'}),
+    )
     instructor_level = forms.ChoiceField(
         required=False,
         label="Instructor Rank / Level",
         choices=[
-            ('associate', 'Associate Instructor'),
-            ('professional', 'Professional Instructor'),
-            ('master', 'Master Instructor'),
+            ('teacher', 'Teacher (Entry Rank - Free Tutorials Only)'),
+            ('associate_instructor', 'Associate Instructor (Revenue Split: THUTA 60% / Instructor 40%)'),
+            ('instructor', 'Instructor (Revenue Split: THUTA 50% / Instructor 50%)'),
+            ('professional_instructor', 'Professional Instructor (Revenue Split: THUTA 40% / Instructor 60%)'),
+            ('associate', 'Associate Instructor (Legacy)'),
+            ('professional', 'Professional Instructor (Legacy)'),
+            ('master', 'Master Instructor (Legacy)'),
         ],
         widget=forms.Select(attrs={'class': INPUT}),
         help_text="Pedagogical rank of the instructor."
@@ -100,6 +110,7 @@ class AdminUserUpdateForm(forms.ModelForm):
         if self.instance and hasattr(self.instance, 'teacher_profile'):
             tp = self.instance.teacher_profile
             self.fields['is_verified_instructor'].initial = tp.is_verified
+            self.fields['free_tutorial_approved'].initial = tp.free_tutorial_approved
             self.fields['instructor_level'].initial = tp.level
             self.fields['department'].initial = tp.department
             self.fields['title'].initial = tp.title
@@ -127,14 +138,26 @@ class AdminUserUpdateForm(forms.ModelForm):
     def save(self, commit=True):
         user = super().save(commit=commit)
         if commit:
-            from apps.users.models import TeacherProfile, ActiveMode
+            from apps.users.models import TeacherProfile, ActiveMode, InstructorLevelHistory
             from django.contrib.auth.models import Group
-            if user.role in (UserRole.TEACHER, UserRole.ADMIN) or hasattr(user, 'teacher_profile'):
+            if user.role in (UserRole.TEACHER, UserRole.INSTRUCTOR, UserRole.ADMIN) or hasattr(user, 'teacher_profile'):
                 tp, _ = TeacherProfile.objects.get_or_create(user=user)
                 if 'is_verified_instructor' in self.cleaned_data:
                     tp.is_verified = self.cleaned_data['is_verified_instructor']
-                if self.cleaned_data.get('instructor_level'):
-                    tp.level = self.cleaned_data['instructor_level']
+                if 'free_tutorial_approved' in self.cleaned_data:
+                    tp.free_tutorial_approved = self.cleaned_data['free_tutorial_approved']
+
+                new_level = self.cleaned_data.get('instructor_level')
+                if new_level and new_level != tp.level:
+                    InstructorLevelHistory.objects.create(
+                        user=user,
+                        previous_level=tp.level,
+                        new_level=new_level,
+                        changed_by=self.request_user,
+                        reason="Administrative level adjustment via Console User Update Form."
+                    )
+                    tp.level = new_level
+
                 if 'department' in self.cleaned_data:
                     tp.department = self.cleaned_data.get('department') or ''
                 if 'title' in self.cleaned_data:

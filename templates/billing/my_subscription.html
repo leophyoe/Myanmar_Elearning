@@ -1,132 +1,217 @@
 {% extends "base.html" %}
 {% load humanize %}
 
-{% block title %}My Subscription — Myanmar E-Learning{% endblock %}
+{% block title %}My Subscription — THUTA E-Learning{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <h2 class="fw-bold mb-4">My Membership & Subscription</h2>
-
-            {% if subscription %}
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-                    <div class="card-body p-4 p-md-5">
-                        <div class="d-flex justify-content-between align-items-start mb-4">
-                            <div>
-                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-1 mb-2 fw-semibold">Active Plan</span>
-                                <h3 class="fw-bold text-dark">{{ subscription.plan.name }}</h3>
-                                <p class="text-muted mb-0">Billing cycle: <strong>{{ subscription.get_billing_cycle_display }}</strong></p>
-                            </div>
-                            <div class="text-end">
-                                <span class="badge bg-primary fs-6 px-3 py-2 rounded-3">
-                                    {% if subscription.end_date %}
-                                        Valid until {{ subscription.end_date|date:"M d, Y" }}
-                                    {% else %}
-                                        Lifetime Access
-                                    {% endif %}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-4">
-                                <div class="p-3 bg-light rounded-3 border">
-                                    <div class="text-muted small">Standard Courses</div>
-                                    <div class="fw-bold text-success">
-                                        {% if subscription.plan.has_all_standard_courses %}<i class="bi bi-check-circle-fill"></i> Unlocked{% else %}Preview Only{% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="p-3 bg-light rounded-3 border">
-                                    <div class="text-muted small">Cyber Range Labs</div>
-                                    <div class="fw-bold {% if subscription.plan.has_cyber_range %}text-success{% else %}text-muted{% endif %}">
-                                        {% if subscription.plan.has_cyber_range %}<i class="bi bi-check-circle-fill"></i> Enabled{% else %}Premium only{% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="p-3 bg-light rounded-3 border">
-                                    <div class="text-muted small">Live Class Discount</div>
-                                    <div class="fw-bold {% if subscription.plan.live_class_discount_percent %}text-success{% else %}text-muted{% endif %}">
-                                        {% if subscription.plan.live_class_discount_percent %}{{ subscription.plan.live_class_discount_percent }}% OFF{% else %}None{% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between pt-3 border-top">
-                            <div class="d-flex gap-2">
-                                <a href="{% url 'pricing' %}" class="btn btn-outline-primary rounded-3">Change / Upgrade Plan</a>
-                                <a href="{% url 'course-list' %}" class="btn btn-primary rounded-3">Browse Courses</a>
-                            </div>
-                            {% if subscription.plan.plan_type != 'starter' %}
-                            <form method="POST" action="{% url 'cancel-subscription' %}" onsubmit="return confirm('Are you sure you want to cancel your active membership? You will lose access to member courses and features.');" class="m-0">
-                                {% csrf_token %}
-                                <input type="hidden" name="reason" value="User self-cancellation via portal">
-                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-3">
-                                    <i class="bi bi-x-circle me-1"></i> Cancel Membership
-                                </button>
-                            </form>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            {% else %}
-                <div class="card border-0 shadow-sm rounded-4 p-5 text-center mb-4">
-                    <div class="display-6 text-muted mb-3"><i class="bi bi-stars"></i></div>
-                    <h4 class="fw-bold">No Active Paid Subscription</h4>
-                    <p class="text-muted mx-auto" style="max-width: 500px;">
-                        You are currently on the free Starter tier. Upgrade to Standard or Premium to unlock all course materials, examinations, verified certificates, and interactive labs.
-                    </p>
-                    <div>
-                        <a href="{% url 'pricing' %}" class="btn btn-primary px-4 py-2 rounded-3 fw-semibold">View Membership Plans</a>
-                    </div>
-                </div>
-            {% endif %}
-
-            <!-- Subscription Payment History -->
-            {% if payments %}
-                <div class="card border-0 shadow-sm rounded-4 p-4">
-                    <h5 class="fw-bold mb-3">Subscription Payment History</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Plan</th>
-                                    <th>Amount</th>
-                                    <th>Method</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for p in payments %}
-                                    <tr>
-                                        <td>{{ p.created_at|date:"Y-m-d H:i" }}</td>
-                                        <td>{{ p.plan.name|default:"Membership" }} ({{ p.billing_period|title }})</td>
-                                        <td>{{ p.amount|intcomma }} {{ p.currency }}</td>
-                                        <td>{{ p.get_method_display }}</td>
-                                        <td>
-                                            {% if p.status == 'approved' %}
-                                                <span class="badge bg-success">Approved</span>
-                                            {% elif p.status == 'pending' %}
-                                                <span class="badge bg-warning text-dark">Under Review</span>
-                                            {% elif p.status == 'rejected' %}
-                                                <span class="badge bg-danger">Rejected</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">{{ p.status }}</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            {% endif %}
-        </div>
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <nav class="flex items-center text-xs text-slate-500 dark:text-slate-400 mb-2 space-x-2">
+            <a href="{% url 'dashboard' %}" class="hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
+                <span class="lang-en">Dashboard</span>
+                <span class="lang-my">ပင်မစာမျက်နှာ</span>
+            </a>
+            <span>/</span>
+            <span class="text-slate-700 dark:text-slate-300 font-semibold">
+                <span class="lang-en">My Subscription</span>
+                <span class="lang-my">ကျွန်ုပ်၏ အသင်းဝင်ကြေး</span>
+            </span>
+        </nav>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+            <span class="lang-en">My Membership &amp; Subscription</span>
+            <span class="lang-my">ကျွန်ုပ်၏ အသင်းဝင်မှုနှင့် စာရင်းသွင်းမှု</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+            <span class="lang-en">Manage your learning tier, active subscription access, and billing lifecycle.</span>
+            <span class="lang-my">သင့်အသင်းဝင်အဆင့်အတန်း၊ ရယူနိုင်သော အခွင့်အရေးများနှင့် သက်တမ်းကို စီမံခန့်ခွဲပါ။</span>
+        </p>
     </div>
+
+    {% if subscription %}
+        <!-- Active Subscription Card -->
+        <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-6 border-b border-slate-100 dark:border-[#26364B]">
+                <div>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-50 dark:bg-[#142B25] text-emerald-700 dark:text-[#86EFAC] border border-emerald-200 dark:border-[#1e4839] mb-3">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                        <span class="lang-en">Active Plan</span>
+                        <span class="lang-my">အသုံးပြုနေသော အဆင့်</span>
+                    </span>
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white">{{ subscription.plan.name }}</h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        <span class="lang-en">Billing cycle:</span>
+                        <span class="lang-my">ပေးချေမှုပုံစံ:</span>
+                        <strong class="text-slate-700 dark:text-slate-300 ml-1">{{ subscription.get_billing_cycle_display }}</strong>
+                    </p>
+                </div>
+                <div class="text-left sm:text-right">
+                    <span class="inline-block px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-[#E0F2FE] dark:bg-[#172B40] text-[#0284C7] dark:text-[#38BDF8] border border-sky-200 dark:border-[#26364B] shadow-sm font-mono">
+                        {% if subscription.end_date %}
+                            <span class="lang-en">Valid until {{ subscription.end_date|date:"M d, Y" }}</span>
+                            <span class="lang-my">{{ subscription.end_date|date:"Y-m-d" }} အထိ သက်တမ်းရှိ</span>
+                        {% else %}
+                            <span class="lang-en">Lifetime Access</span>
+                            <span class="lang-my">သက်တမ်းအကန့်အသတ်မရှိ</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Perks Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B]">
+                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
+                        <span class="lang-en">Standard Courses</span>
+                        <span class="lang-my">အခြေခံသင်ခန်းစာများ</span>
+                    </div>
+                    <div class="text-sm font-bold {% if subscription.plan.has_all_standard_courses %}text-emerald-600 dark:text-[#86EFAC]{% else %}text-slate-500{% endif %} flex items-center gap-1.5">
+                        {% if subscription.plan.has_all_standard_courses %}
+                            <span>✓</span>
+                            <span class="lang-en">Unlocked</span>
+                            <span class="lang-my">အားလုံးဖွင့်ထားသည်</span>
+                        {% else %}
+                            <span class="lang-en">Preview Only</span>
+                            <span class="lang-my">အစမ်းသာ ကြည့်ရှုနိုင်</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B]">
+                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
+                        <span class="lang-en">Cyber Range Labs</span>
+                        <span class="lang-my">Cyber Range လက်တွေ့ခန်းများ</span>
+                    </div>
+                    <div class="text-sm font-bold {% if subscription.plan.has_cyber_range %}text-emerald-600 dark:text-[#86EFAC]{% else %}text-slate-500{% endif %} flex items-center gap-1.5">
+                        {% if subscription.plan.has_cyber_range %}
+                            <span>✓</span>
+                            <span class="lang-en">Full Access</span>
+                            <span class="lang-my">အပြည့်အဝရရှိ</span>
+                        {% else %}
+                            <span class="lang-en">Premium Only</span>
+                            <span class="lang-my">Premium သာ ရရှိ</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B]">
+                    <div class="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">
+                        <span class="lang-en">Live Class Discount</span>
+                        <span class="lang-my">တိုက်ရိုက်အတန်း လျှော့စျေး</span>
+                    </div>
+                    <div class="text-sm font-bold {% if subscription.plan.live_class_discount_percent %}text-emerald-600 dark:text-[#86EFAC]{% else %}text-slate-500{% endif %}">
+                        {% if subscription.plan.live_class_discount_percent %}
+                            {{ subscription.plan.live_class_discount_percent }}% OFF
+                        {% else %}
+                            <span class="lang-en">Standard Pricing</span>
+                            <span class="lang-my">ပုံမှန်စျေးနှုန်း</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-[#26364B]">
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="{% url 'pricing' %}" class="px-5 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs sm:text-sm font-bold shadow-sm transition">
+                        <span class="lang-en">Change / Upgrade Plan</span>
+                        <span class="lang-my">အစီအစဉ် ပြောင်းလဲ/မြှင့်တင်ရန်</span>
+                    </a>
+                    <a href="{% url 'course-list' %}" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-[#26364B] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#172B40] text-xs sm:text-sm font-semibold transition">
+                        <span class="lang-en">Browse Courses</span>
+                        <span class="lang-my">သင်ခန်းစာများ ကြည့်ရန်</span>
+                    </a>
+                </div>
+                {% if subscription.plan.plan_type != 'starter' %}
+                <form method="POST" action="{% url 'cancel-subscription' %}" onsubmit="return confirm('Are you sure you want to cancel your active membership? You will lose access to member courses and features.');" class="m-0">
+                    {% csrf_token %}
+                    <input type="hidden" name="reason" value="User self-cancellation via portal">
+                    <button type="submit" class="px-4 py-2.5 rounded-xl border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-semibold transition">
+                        <span class="lang-en">Cancel Membership</span>
+                        <span class="lang-my">အသင်းဝင်မှု ပယ်ဖျက်ရန်</span>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <!-- Free Tier Card -->
+        <div class="p-8 sm:p-12 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm text-center mb-8">
+            <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#E0F2FE] dark:bg-[#172B40] text-[#0284C7] dark:text-[#38BDF8] flex items-center justify-center text-2xl">
+                ✨
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                <span class="lang-en">No Active Paid Subscription</span>
+                <span class="lang-my">သက်တမ်းရှိ အသင်းဝင်မှု မရှိသေးပါ</span>
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto mb-6">
+                <span class="lang-en">You are currently on the free Starter tier. Upgrade to Standard or Premium to unlock all course materials, examinations, verified certificates, and interactive labs.</span>
+                <span class="lang-my">သင်သည် လက်ရှိတွင် အခမဲ့ Starter အဆင့်တွင် ရှိနေပါသည်။ သင်ခန်းစာများအားလုံး၊ စာမေးပွဲများနှင့် Cyber Range လက်တွေ့ခန်းများကို ရယူရန် အဆင့်မြှင့်တင်ပါ။</span>
+            </p>
+            <a href="{% url 'pricing' %}" class="inline-block px-6 py-3 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs sm:text-sm font-bold shadow-md transition">
+                <span class="lang-en">View Membership Plans</span>
+                <span class="lang-my">အသင်းဝင် အစီအစဉ်များ ကြည့်ရှုရန်</span>
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Subscription Payment History -->
+    {% if payments %}
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4">
+                <span class="lang-en">Subscription Payment History</span>
+                <span class="lang-my">အသင်းဝင်ကြေး ပေးချေမှု မှတ်တမ်း</span>
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-[#26364B] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
+                            <th class="py-3 px-4">
+                                <span class="lang-en">Date</span>
+                                <span class="lang-my">ရက်စွဲ</span>
+                            </th>
+                            <th class="py-3 px-4">
+                                <span class="lang-en">Plan</span>
+                                <span class="lang-my">အစီအစဉ်</span>
+                            </th>
+                            <th class="py-3 px-4">
+                                <span class="lang-en">Amount</span>
+                                <span class="lang-my">ပမာဏ</span>
+                            </th>
+                            <th class="py-3 px-4">
+                                <span class="lang-en">Method</span>
+                                <span class="lang-my">နည်းလမ်း</span>
+                            </th>
+                            <th class="py-3 px-4 text-right">
+                                <span class="lang-en">Status</span>
+                                <span class="lang-my">အခြေအနေ</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-[#26364B]/60">
+                        {% for p in payments %}
+                            <tr class="hover:bg-slate-50/60 dark:hover:bg-[#172B40]/40 transition">
+                                <td class="py-3 px-4 text-slate-600 dark:text-slate-400 font-mono">{{ p.created_at|date:"Y-m-d H:i" }}</td>
+                                <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">{{ p.plan.name|default:"Membership" }} ({{ p.billing_period|title }})</td>
+                                <td class="py-3 px-4 font-mono font-bold text-[#0284C7] dark:text-[#38BDF8]">{{ p.amount|intcomma }} {{ p.currency }}</td>
+                                <td class="py-3 px-4 text-slate-600 dark:text-slate-400">{{ p.get_method_display }}</td>
+                                <td class="py-3 px-4 text-right">
+                                    {% if p.status == 'approved' %}
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-[#142B25] text-emerald-700 dark:text-[#86EFAC] border border-emerald-200 dark:border-[#1e4839]">Approved</span>
+                                    {% elif p.status == 'pending' %}
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 dark:bg-[#302719] text-amber-700 dark:text-[#FCD34D] border border-amber-200 dark:border-[#4d3a20]">Under Review</span>
+                                    {% elif p.status == 'rejected' %}
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-50 dark:bg-[#321F26] text-red-700 dark:text-[#FCA5A5] border border-red-200 dark:border-[#522933]">Rejected</span>
+                                    {% else %}
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-[#172B40] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#26364B]">{{ p.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

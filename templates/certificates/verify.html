@@ -3,91 +3,396 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Certificate Verification - {{ PLATFORM_NAME }}</title>
+    <title>{{ certificate.program_title }} - Certificate Verification - {{ PLATFORM_NAME }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Great+Vibes&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     {% include 'includes/theme_head.html' %}
+    <style>
+        @page { size: A4 landscape; margin: 0; }
+        @media print {
+            body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
+            .no-print { display: none !important; }
+            #certificate-canvas {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                page-break-after: avoid !important;
+            }
+        }
+        .cert-heading-font { font-family: {{ cert_font_family|default:"'Cinzel', serif" }}; }
+    </style>
 </head>
-<body class="bg-[#080d19] text-slate-200 min-h-screen flex items-center justify-center p-4 font-mono">
+<body class="bg-[#080d19] text-slate-200 min-h-screen py-8 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-start">
 
-    <div class="max-w-xl w-full p-8 rounded-2xl bg-slate-900 border border-cyan-800/80 shadow-2xl relative overflow-hidden text-center">
-        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-cyan-500 via-emerald-400 to-blue-600"></div>
-
-        <!-- Verification Status Badge -->
-        {% if revoked %}
-        <div class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-red-950 border border-red-700 text-red-300 text-xs font-bold uppercase tracking-wider mb-6">
-            <span>✕</span>
-            <span>Credential revoked</span>
+    <!-- Top Action Bar (hidden when printing) -->
+    <div class="no-print max-w-5xl w-full flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 bg-slate-900/90 border border-slate-800 p-4 sm:p-5 rounded-2xl shadow-2xl backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            {% if revoked %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950 border border-red-700 text-red-300 text-xs font-bold uppercase tracking-wider">
+                <span>✕</span>
+                <span>Credential revoked</span>
+            </div>
+            {% else %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300 text-xs font-bold uppercase tracking-wider">
+                <span>✓</span>
+                <span>OFFICIALLY VERIFIED CREDENTIAL</span>
+            </div>
+            {% endif %}
+            <span class="text-xs font-mono text-cyan-400 hidden sm:inline">{{ certificate.certificate_code }}</span>
         </div>
+
+        <div class="flex flex-wrap items-center gap-2.5">
+            <button onclick="window.print()" class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5">
+                <span>🖨️</span>
+                <span>Print / Save PDF</span>
+            </button>
+            <button id="btn-download-png" onclick="downloadCertificatePNG()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+                <span>📥</span>
+                <span>Download PNG</span>
+            </button>
+            <button onclick="copyVerificationLink()" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition flex items-center gap-1.5">
+                <span>🔗</span>
+                <span id="copy-text">Share Link</span>
+            </button>
+            <a href="{% url 'certificate-lookup' %}" class="px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition">
+                🔍 Lookup
+            </a>
+        </div>
+    </div>
+
+    <!-- The Diploma / Certificate Canvas (A4 Landscape aspect ratio 1.414) -->
+    <div id="certificate-canvas"
+         class="w-full max-w-[1050px] aspect-[1.414] relative rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-between p-8 sm:p-14 select-none mb-8 transition"
+         style="{% if cert_template and cert_template.design_mode == 'custom_upload' and cert_template.background_image %}background-image: url('{{ cert_template.background_image.url }}'); background-size: 100% 100%; background-repeat: no-repeat;{% else %}{% if cert_template and cert_template.theme_style == 'academic_emerald' %}background: radial-gradient(circle at center, #063d2e 0%, #022018 100%); border: 8px double #10b981; box-shadow: 0 0 60px rgba(16, 185, 129, 0.15);{% elif cert_template and cert_template.theme_style == 'cyber_tech' %}background: radial-gradient(circle at center, #091326 0%, #030712 100%); border: 8px double #06b6d4; box-shadow: 0 0 60px rgba(6, 182, 212, 0.2);{% elif cert_template and cert_template.theme_style == 'minimal_elegant' %}background: #fafaf9; border: 8px double #b45309; color: #1c1917; box-shadow: 0 0 60px rgba(180, 83, 9, 0.15);{% else %}background: radial-gradient(circle at center, #111c33 0%, #080d19 100%); border: 8px double #d97706; box-shadow: 0 0 60px rgba(217, 119, 6, 0.18);{% endif %}{% endif %}">
+
+        {% if cert_template and cert_template.design_mode == 'custom_upload' and cert_template.background_image %}
+            <!-- Mode A: Custom Uploaded PNG Image with Dynamic Coordinate Overlays -->
+            <div style="position: absolute; top: {{ cert_template.name_pos_top }}%; left: 50%; transform: translateX(-50%); font-size: {{ cert_template.name_font_size }}px; color: {{ cert_template.name_color }}; font-weight: bold; text-align: center; width: 85%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <span class="cert-heading-font">{{ certificate.student_name }}</span>
+            </div>
+
+            <div style="position: absolute; top: {{ cert_template.title_pos_top }}%; left: 50%; transform: translateX(-50%); font-size: {{ cert_template.title_font_size }}px; color: {{ cert_template.title_color }}; font-weight: 600; text-align: center; width: 85%;">
+                {{ certificate.program_title }}
+            </div>
+
+            <div style="position: absolute; top: {{ cert_template.date_pos_top }}%; left: {{ cert_template.date_pos_left }}%; transform: translateX(-50%); font-size: 13px; color: {{ cert_template.accent_color }}; font-weight: 600;">
+                {{ certificate.completion_date|default:certificate.issued_at|date:"F d, Y" }}
+            </div>
+
+            {% if cert_template.show_qr_code %}
+            <div style="position: absolute; top: {{ cert_template.qr_pos_top }}%; left: {{ cert_template.qr_pos_left }}%; transform: translate(-50%, -50%);">
+                <img src="{% url 'certificate-qr' cert_id=certificate.pk %}"
+                     alt="Verification QR"
+                     class="w-16 h-16 sm:w-20 sm:h-20 bg-white p-1 rounded shadow-md object-contain">
+            </div>
+            {% endif %}
+
+            <div style="position: absolute; top: {{ cert_template.serial_pos_top }}%; left: {{ cert_template.serial_pos_left }}%; transform: translateX(-50%); font-family: monospace; font-size: 11px; color: {{ cert_template.accent_color }}; opacity: 0.9;">
+                {{ certificate.certificate_code }}
+            </div>
+
         {% else %}
-        <div class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-6">
-            <span>✓</span>
-            <span>OFFICIALLY VERIFIED CREDENTIAL</span>
-        </div>
+            <!-- Mode B: Vector Regal Diploma Theme -->
+            <!-- Vector Corner Flourishes -->
+            <div class="pointer-events-none absolute inset-3 border border-amber-500/30 rounded-lg">
+                <div class="absolute -top-1 -left-1 w-8 h-8 border-t-2 border-l-2 border-amber-400"></div>
+                <div class="absolute -top-1 -right-1 w-8 h-8 border-t-2 border-r-2 border-amber-400"></div>
+                <div class="absolute -bottom-1 -left-1 w-8 h-8 border-b-2 border-l-2 border-amber-400"></div>
+                <div class="absolute -bottom-1 -right-1 w-8 h-8 border-b-2 border-r-2 border-amber-400"></div>
+            </div>
+
+            <!-- Header Section -->
+            <div class="text-center relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    {% if cert_template and cert_template.logo_image %}
+                    <img src="{{ cert_template.logo_image.url }}" alt="Logo" class="h-12 w-auto object-contain">
+                    {% else %}
+                    <div class="text-xs tracking-widest font-bold uppercase" style="color: {{ cert_template.primary_color|default:'#d97706' }};">
+                        ✦ {{ PLATFORM_NAME }} ✦
+                    </div>
+                    {% endif %}
+
+                    {% if cert_template and cert_template.partner_logo %}
+                    <img src="{{ cert_template.partner_logo.url }}" alt="Partner Logo" class="h-12 w-auto object-contain">
+                    {% elif certificate.course and certificate.course.partner_institution %}
+                    <div class="text-xs font-semibold text-cyan-400">
+                        {{ certificate.course.partner_institution.name }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="text-xs sm:text-sm uppercase tracking-widest font-semibold mb-1" style="color: {{ cert_template.primary_color|default:'#d97706' }};">
+                    {{ cert_template.institution_name|default:PLATFORM_NAME }}
+                </div>
+                <h1 class="cert-heading-font text-2xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-2 {% if cert_template and cert_template.theme_style == 'minimal_elegant' %}text-stone-900{% else %}text-white{% endif %}">
+                    {{ cert_template.header_title|default:"CERTIFICATE OF COMPLETION" }}
+                </h1>
+                <p class="text-xs sm:text-sm italic text-slate-400 font-serif">
+                    {{ cert_template.subtitle|default:"This is proudly presented to" }}
+                </p>
+            </div>
+
+            <!-- Recipient Section -->
+            <div class="text-center py-4 relative z-10">
+                <div class="cert-heading-font text-2xl sm:text-4xl lg:text-5xl font-bold tracking-wide mb-3 inline-block border-b-2 pb-1 px-8 {% if cert_template and cert_template.theme_style == 'minimal_elegant' %}text-stone-900 border-amber-600{% else %}text-white border-amber-500/60{% endif %}" style="{% if cert_template and cert_template.name_color %}color: {{ cert_template.name_color }};{% endif %}">
+                    {{ certificate.student_name }}
+                </div>
+                <p class="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed mb-2 font-serif">
+                    {{ cert_template.body_text|default:"for successfully mastering the accredited professional curriculum of" }}
+                </p>
+                <h2 class="text-base sm:text-xl lg:text-2xl font-bold tracking-wide" style="color: {{ cert_template.primary_color|default:'#d97706' }};">
+                    {{ certificate.program_title }}
+                </h2>
+                <div class="text-xs mt-1 font-semibold text-amber-400">
+                    Academic Standing: {{ certificate.grade }}
+                    {% if certificate.exam_score %}• Score: {{ certificate.exam_score }}%{% endif %}
+                </div>
+            </div>
+
+            <!-- Footer Section -->
+            <div class="grid grid-cols-3 items-end pt-4 border-t border-slate-700/50 relative z-10 text-xs">
+                <!-- Left: Serial, Date & QR -->
+                <div class="flex items-center gap-3 text-left">
+                    <img src="{% url 'certificate-qr' cert_id=certificate.pk %}"
+                         alt="QR Code"
+                         class="w-14 h-14 sm:w-16 sm:h-16 rounded bg-white p-1 shadow shrink-0">
+                    <div class="space-y-0.5">
+                        <div class="font-mono text-[10px] text-cyan-400">{{ certificate.certificate_code }}</div>
+                        <div class="text-[11px] text-slate-400">Awarded: <strong class="text-slate-200">{{ certificate.completion_date|default:certificate.issued_at|date:"F d, Y" }}</strong></div>
+                        <div class="text-[10px] text-emerald-400 font-bold">✓ VERIFIED CREDENTIAL</div>
+                    </div>
+                </div>
+
+                <!-- Center: Embossed Gold Foil Seal -->
+                <div class="flex flex-col items-center justify-center">
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400 bg-gradient-to-tr from-amber-600 via-yellow-500 to-amber-700 text-slate-950 font-bold text-[9px] uppercase tracking-wider flex flex-col items-center justify-center text-center shadow-lg shadow-amber-500/25 p-1">
+                        <span>★ OFFICIAL ★</span>
+                        <span class="font-extrabold text-[10px]">SEAL</span>
+                        <span class="text-[7px]">ACCREDITED</span>
+                    </div>
+                </div>
+
+                <!-- Right: Signatures -->
+                <div class="space-y-2 text-right">
+                    {% if cert_template and cert_template.signature_2_image %}
+                    <img src="{{ cert_template.signature_2_image.url }}" alt="Signature" class="h-10 w-auto ml-auto object-contain">
+                    {% else %}
+                    <div class="font-serif italic text-base text-slate-200">
+                        {{ cert_template.signature_2_name|default:"Academic Director" }}
+                    </div>
+                    {% endif %}
+                    <div class="border-t border-slate-600/60 pt-1 text-[11px]">
+                        <strong class="text-white">{{ cert_template.signature_2_name|default:"Board of Academic Affairs" }}</strong>
+                        <div class="text-slate-400 text-[10px]">{{ cert_template.signature_2_title|default:PLATFORM_NAME }}</div>
+                    </div>
+                </div>
+            </div>
         {% endif %}
+    </div>
 
-        <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">{{ certificate.program_title }}</h1>
-        <p class="text-xs text-cyan-400 font-mono mb-6">Serial: {{ certificate.certificate_code }}</p>
+    <!-- Official Verification Audit Card & Cryptographic Dossier (hidden on print) -->
+    <div class="no-print max-w-4xl w-full p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl relative overflow-hidden mb-12">
+        <!-- Top Status Banner -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 mb-5 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-cyan-950 border border-cyan-800/80 text-cyan-400 flex items-center justify-center font-bold text-lg shadow-sm">
+                    🛡️
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800">
+                            Cryptographic Audit Ledger
+                        </span>
+                        <span class="text-xs text-slate-500 font-mono">{{ certificate.certificate_code }}</span>
+                    </div>
+                    <h3 class="text-base sm:text-lg font-bold text-white mt-0.5">
+                        Official Audit &amp; Verification Record
+                    </h3>
+                </div>
+            </div>
 
-        <!-- Certificate Details Box -->
-        <div class="p-6 rounded-xl bg-slate-950 border border-slate-800 text-left text-xs space-y-3 mb-6">
-            <div class="flex justify-between border-b border-slate-900 pb-2">
-                <span class="text-slate-500">Recipient Name:</span>
-                <span class="text-white font-bold">{{ certificate.student_name }}</span>
-            </div>
-            <div class="flex justify-between border-b border-slate-900 pb-2">
-                <span class="text-slate-500">Issuing Institution:</span>
-                <span class="text-white font-semibold">{{ PLATFORM_NAME }}</span>
-            </div>
-            <div class="flex justify-between border-b border-slate-900 pb-2">
-                <span class="text-slate-500">Program:</span>
-                <span class="text-slate-300">{{ certificate.program_title }}</span>
-            </div>
-            <div class="flex justify-between border-b border-slate-900 pb-2">
-                <span class="text-slate-500">Date of Award:</span>
-                <span class="text-slate-300">{{ certificate.completion_date|default:certificate.issued_at|date:"F d, Y" }}</span>
-            </div>
-            <div class="flex justify-between">
-                <span class="text-slate-500">Academic Standing:</span>
-                <span class="text-amber-400 font-bold">{{ certificate.grade }}</span>
-            </div>
-            <div class="flex justify-between border-t border-slate-900 pt-2">
-                <span class="text-slate-500">Record Status:</span>
+            <!-- Ledger Status Badge -->
+            <div class="flex items-center gap-2">
                 {% if revoked %}
-                <span class="text-red-400 font-bold">REVOKED</span>
+                <span class="px-3.5 py-1.5 rounded-xl font-bold font-mono text-xs bg-rose-950 text-rose-300 border border-rose-800 flex items-center gap-1.5 shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    <span>REVOKED &bull; VOIDED</span>
+                </span>
                 {% else %}
-                <span class="text-emerald-400 font-bold">VALID</span>
+                <span class="px-3.5 py-1.5 rounded-xl font-bold font-mono text-xs bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1.5 shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>VALID &amp; VERIFIED ✓</span>
+                </span>
                 {% endif %}
             </div>
         </div>
 
-        {% if revoked and certificate.revocation_reason %}
-        <p class="text-xs text-red-300 bg-red-950 border border-red-800 rounded-lg px-3 py-2 mb-6 text-left">
-            Reason: {{ certificate.revocation_reason }}
-        </p>
-        {% endif %}
-
-        <!-- QR + lookup -->
-        <div class="flex flex-col sm:flex-row items-center gap-5 mb-6 p-4 rounded-xl bg-slate-950 border border-slate-800 text-left">
-            <img src="{% url 'certificate-qr' cert_id=certificate.pk %}"
-                 alt="QR code for this certificate"
-                 width="120" height="120"
-                 class="shrink-0 rounded bg-white p-1.5" loading="lazy">
-            <div class="min-w-0 text-xs space-y-2">
-                <p class="text-slate-400 leading-relaxed">
-                    Scan this code to re-open this record, or share the link below.
-                </p>
-                <p class="text-[10px] text-slate-600 font-mono break-all">{{ verify_url }}</p>
-                <a href="{% url 'certificate-qr' cert_id=certificate.pk %}" download="{{ certificate.certificate_code }}.png"
-                   class="inline-block text-[11px] text-cyan-400 hover:underline">Download QR (PNG)</a>
+        <!-- Cryptographic Proof Digest Box -->
+        <div class="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/90 mb-6 font-mono text-xs space-y-2">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-slate-400">
+                <span class="text-[10px] uppercase tracking-wider text-slate-500 font-bold">SHA-256 Ledger Fingerprint</span>
+                <span class="text-[10px] text-cyan-400">SHA256withRSA &bull; Cryptographic Proof</span>
+            </div>
+            <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300 break-all">
+                <span class="truncate font-mono">{{ sha256_hash }}</span>
+                <button type="button" onclick="copyTextToClipboard('{{ sha256_hash }}', 'SHA-256 Hash copied to clipboard!')" class="shrink-0 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-400 text-[10px] font-sans font-bold transition">
+                    Copy Hash
+                </button>
             </div>
         </div>
 
-        <p class="text-[10px] text-slate-500 mb-6">
-            This verification record confirms that the candidate has completed all required theoretical assessments,
-            offensive and defensive hands-on laboratory exercises, and passed the final viva examination.
-        </p>
+        <!-- Structured Official Verification Record Table -->
+        <div class="rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden mb-6">
+            <table class="w-full text-left text-xs font-mono border-collapse">
+                <tbody class="divide-y divide-slate-900">
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3 px-4 text-slate-500 w-1/3">Recipient Legal Name</td>
+                        <td class="py-3 px-4 font-bold text-white flex items-center justify-between">
+                            <span>{{ certificate.student_name }}</span>
+                            {% if certificate.student %}
+                            <span class="text-[10px] font-normal text-slate-500">@{{ certificate.student.username }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3 px-4 text-slate-500">Academic Program Title</td>
+                        <td class="py-3 px-4 text-slate-200 font-semibold">{{ certificate.program_title }}</td>
+                    </tr>
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3 px-4 text-slate-500">Credential Serial ID</td>
+                        <td class="py-3 px-4 font-bold text-cyan-400 flex items-center justify-between">
+                            <span>{{ certificate.certificate_code }}</span>
+                            <span class="text-[10px] text-slate-500 font-sans">Token: {{ certificate.pk|stringformat:"s"|slice:":8" }}...</span>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3 px-4 text-slate-500">Credential Classification</td>
+                        <td class="py-3 px-4 text-slate-300">
+                            {% if certificate.exam %}
+                                Official Examination Certification (Exam ID: #{{ certificate.exam.pk }})
+                            {% else %}
+                                Professional Course Completion Diploma
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3 px-4 text-slate-500">Academic Standing &amp; Score</td>
+                        <td class="py-3 px-4">
+                            <span class="font-bold text-amber-400">{{ certificate.grade }}</span>
+                            {% if certificate.exam_score %}
+                            <span class="text-slate-400 font-normal ml-2">({{ certificate.exam_score }}% Examination Score)</span>
+                            {% else %}
+                            <span class="text-slate-500 font-normal ml-2">(100% Curriculum &amp; Labs Satisfied)</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3 px-4 text-slate-500">Date of Award / Concurrence</td>
+                        <td class="py-3 px-4 text-slate-300">
+                            {{ certificate.completion_date|default:certificate.issued_at|date:"F d, Y" }}
+                            <span class="text-slate-500 text-[10px] ml-2">({{ certificate.issued_at|date:"H:i:s T" }})</span>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3 px-4 text-slate-500">Issuing Institution</td>
+                        <td class="py-3 px-4 text-slate-200">
+                            <span>{{ PLATFORM_NAME }} (Board of Academic Examinations)</span>
+                            {% if certificate.partner_institution %}
+                            <div class="text-[11px] text-emerald-400 font-semibold mt-0.5">
+                                Endorsed Partner: {{ certificate.partner_institution.name }}
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3 px-4 text-slate-500">Authorized Signatories</td>
+                        <td class="py-3 px-4 text-slate-300 text-[11px]">
+                            {{ cert_template.signature_1_name|default:"Academic Director" }} &bull;
+                            {{ cert_template.signature_2_name|default:"Board of Academic Affairs" }}
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="py-3 px-4 text-slate-500">Immutable Ledger Status</td>
+                        <td class="py-3 px-4">
+                            {% if revoked %}
+                            <div class="text-red-400 font-bold">REVOKED / VOIDED</div>
+                            {% if certificate.revocation_reason %}
+                            <div class="text-red-300 text-[11px] mt-0.5">Reason: {{ certificate.revocation_reason }}</div>
+                            {% endif %}
+                            {% else %}
+                            <div class="text-emerald-400 font-bold flex items-center gap-1.5">
+                                <span>VALID &amp; VERIFIED ON LEDGER</span>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-        <div class="flex items-center justify-center gap-4 text-xs">
+        <!-- Audit Action Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-slate-950/60 border border-slate-800 mb-6">
+            <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" onclick="copyTextToClipboard('{{ verify_url }}', 'Public verification link copied!')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition">
+                    <span>📋</span> Copy Verify Link
+                </button>
+                <button type="button" onclick="window.print()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition">
+                    <span>🖨️</span> Print Audit Record
+                </button>
+            </div>
+            <a href="{% url 'certificate-lookup' %}" class="px-4 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center gap-1">
+                <span>📜</span> Certificate Records Registry &rarr;
+            </a>
+        </div>
+
+        <!-- Student's Additional Verified Credential Records Table (if available) -->
+        {% if other_certificates %}
+        <div class="mt-8 pt-6 border-t border-slate-800">
+            <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <span>🎓</span>
+                    <span>Student's Verified Academic Record Portfolio</span>
+                </h4>
+                <span class="text-[10px] font-mono text-cyan-400">{{ total_student_credentials }} credential(s) on file</span>
+            </div>
+            <div class="rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead>
+                        <tr class="border-b border-slate-900 bg-slate-900/60 text-[10px] uppercase text-slate-400">
+                            <th class="py-2.5 px-3">Serial Code</th>
+                            <th class="py-2.5 px-3">Program / Credential</th>
+                            <th class="py-2.5 px-3">Standing</th>
+                            <th class="py-2.5 px-3">Date</th>
+                            <th class="py-2.5 px-3 text-right">Verification</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-900">
+                        {% for other in other_certificates %}
+                        <tr class="hover:bg-slate-900/40 transition">
+                            <td class="py-2.5 px-3 font-bold text-cyan-400">{{ other.certificate_code }}</td>
+                            <td class="py-2.5 px-3 text-slate-200">{{ other.program_title }}</td>
+                            <td class="py-2.5 px-3 text-amber-400">{{ other.grade }}</td>
+                            <td class="py-2.5 px-3 text-slate-400">{{ other.completion_date|default:other.issued_at|date:"M d, Y" }}</td>
+                            <td class="py-2.5 px-3 text-right">
+                                <a href="{% url 'certificate-verify' cert_id=other.pk %}" class="text-xs text-cyan-400 hover:underline">
+                                    Verify &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="flex items-center justify-center gap-4 text-xs mt-6 pt-4 border-t border-slate-800/80">
             {% include 'includes/theme_toggle.html' %}
             <a href="{% url 'certificate-lookup' %}" class="text-cyan-400 hover:underline">
                 Verify another certificate
@@ -99,7 +404,82 @@
         </div>
     </div>
 
+    <!-- Client-side Scripts -->
+    <script>
+    function copyTextToClipboard(text, msg) {
+        if (!text) return;
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(msg || 'Copied to clipboard! ✓');
+            }).catch(() => fallbackCopy(text, msg));
+        } else {
+            fallbackCopy(text, msg);
+        }
+    }
+
+    function fallbackCopy(text, msg) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try {
+            document.execCommand('copy');
+            showToast(msg || 'Copied to clipboard! ✓');
+        } catch (err) {
+            console.error('Failed to copy', err);
+        }
+        document.body.removeChild(ta);
+    }
+
+    function showToast(message) {
+        let toast = document.getElementById('cert-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'cert-toast';
+            toast.className = 'fixed bottom-5 right-5 z-50 px-4 py-2.5 rounded-xl bg-cyan-950 border border-cyan-500/50 text-cyan-200 text-xs font-semibold shadow-2xl transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-none flex items-center gap-2';
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = '<span>📋</span> <span>' + message + '</span>';
+        toast.classList.remove('translate-y-2', 'opacity-0');
+        setTimeout(() => {
+            toast.classList.add('translate-y-2', 'opacity-0');
+        }, 2500);
+    }
+
+    function downloadCertificatePNG() {
+        const el = document.getElementById('certificate-canvas');
+        const btn = document.getElementById('btn-download-png');
+        if (!el || !window.html2canvas) {
+            alert('Image generator is initializing. Please try again.');
+            return;
+        }
+        if (btn) btn.innerHTML = '⏳ Generating Image...';
+        html2canvas(el, { scale: 2, useCORS: true, allowTaint: true }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = '{{ certificate.certificate_code }}.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            if (btn) btn.innerHTML = '<span>📥</span><span>Download PNG</span>';
+        }).catch(err => {
+            console.error(err);
+            if (btn) btn.innerHTML = '<span>📥</span><span>Download PNG</span>';
+            alert('Failed to generate PNG. Please use the Print / Save PDF option.');
+        });
+    }
+
+    function copyVerificationLink() {
+        copyTextToClipboard('{{ verify_url }}', 'Verification link copied! ✓');
+        const copyText = document.getElementById('copy-text');
+        if (copyText) {
+            const old = copyText.textContent;
+            copyText.textContent = 'Copied! ✓';
+            setTimeout(() => copyText.textContent = old, 2000);
+        }
+    }
+    </script>
     {% include 'includes/theme_script.html' %}
 </body>
 </html>
-

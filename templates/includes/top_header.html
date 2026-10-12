@@ -1,3 +1,4 @@
+{% load static %}
 <!-- Top App Bar / Header (64px) -->
 <header class="mel-header border-b border-slate-200 dark:border-[#26364B] bg-white dark:bg-[#111C2E] sticky top-0 z-30 transition-colors">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -7,13 +8,15 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
 
-            <a href="{% url 'landing-page' %}" class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center font-black text-white text-lg shadow-sm shrink-0">
-                    T
+            <a href="{% url 'landing-page' %}" class="flex items-center gap-2.5 group">
+                <div class="w-9 h-9 rounded-xl bg-slate-900/5 dark:bg-slate-800/80 p-1 flex items-center justify-center shadow-xs shrink-0 border border-slate-200/80 dark:border-slate-700/80 group-hover:border-cyan-500/50 transition">
+                    <img src="{% static 'images/thuta_icon.png' %}" alt="THUTA Logo" class="w-full h-full object-contain">
                 </div>
                 <div class="hidden sm:block">
-                    <span class="font-bold text-base text-slate-900 dark:text-white tracking-wide leading-tight block">THUTA</span>
-                    <span class="text-[10px] text-sky-600 dark:text-sky-400 font-semibold tracking-wider uppercase block">Education Platform</span>
+                    <span class="font-black text-base text-slate-900 dark:text-white tracking-wider leading-tight block">
+                        THUT<span class="text-cyan-500">Λ</span>
+                    </span>
+                    <span class="text-[9px] text-sky-600 dark:text-sky-400 font-bold tracking-widest uppercase block">Education Platform</span>
                 </div>
             </a>
         </div>
@@ -101,35 +104,65 @@
         </form>
 
         <!-- Middle-Right: Navigation Links -->
-        <nav class="hidden xl:flex items-center gap-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
-            <a href="{% url 'course-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
+        <nav class="hidden lg:flex items-center gap-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+            <a href="{% url 'course-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
                 <span class="lang-en">Courses</span>
                 <span class="lang-my">သင်ရိုးများ</span>
             </a>
-            <a href="{% url 'pricing' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
+            <a href="{% url 'standalone-exam-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-cyan-400 dark:hover:text-cyan-300 transition">
+                <span class="lang-en">Exams</span>
+                <span class="lang-my">စာမေးပွဲဗဟို</span>
+            </a>
+            <a href="{% url 'pricing' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
                 <span class="lang-en">Pricing</span>
                 <span class="lang-my">ဈေးနှုန်းများ</span>
             </a>
-            <a href="{% url 'lab-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
+            <a href="{% url 'lab-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
                 <span class="lang-en">Labs</span>
                 <span class="lang-my">ဆိုက်ဘာ Labs</span>
             </a>
-            <a href="{% url 'blog:article-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
+            <a href="{% url 'blog:article-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
                 <span class="lang-en">Knowledge Hub</span>
                 <span class="lang-my">ဗဟုသုတစင်တာ</span>
             </a>
-            <a href="{% url 'portfolio-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
-                <span class="lang-en">Talent</span>
-                <span class="lang-my">ပရိုဖိုင်များ</span>
-            </a>
-            <a href="{% url 'partner-list' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
-                <span class="lang-en">Partners</span>
-                <span class="lang-my">မိတ်ဖက်များ</span>
-            </a>
-            <a href="{% url 'certificate-lookup' %}" class="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-white transition">
-                <span class="lang-en">Verify</span>
-                <span class="lang-my">စစ်ဆေးရန်</span>
-            </a>
+
+            <!-- Explore More Dropdown -->
+            <div class="relative group">
+                <button type="button" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
+                    <span><span class="lang-en">More</span><span class="lang-my">အခြား</span></span>
+                    <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div class="absolute right-0 mt-1 w-56 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-xl p-1.5 hidden group-hover:block z-50">
+                    <a href="{% url 'portfolio-list' %}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition">
+                        <span class="text-base">💼</span>
+                        <div>
+                            <div class="font-bold"><span class="lang-en">Talent Showcase</span><span class="lang-my">ပရိုဖိုင်များ</span></div>
+                            <div class="text-[10px] text-slate-400"><span class="lang-en">Student projects &amp; verified CVs</span><span class="lang-my">ကျောင်းသား ပရောဂျက်များ</span></div>
+                        </div>
+                    </a>
+                    <a href="{% url 'partner-list' %}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition">
+                        <span class="text-base">🏛️</span>
+                        <div>
+                            <div class="font-bold"><span class="lang-en">Institutional Partners</span><span class="lang-my">မိတ်ဖက်များ</span></div>
+                            <div class="text-[10px] text-slate-400"><span class="lang-en">Universities &amp; corporate labs</span><span class="lang-my">တက္ကသိုလ်နှင့် အဖွဲ့အစည်းများ</span></div>
+                        </div>
+                    </a>
+                    <a href="{% url 'certificate-lookup' %}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition">
+                        <span class="text-base">🔍</span>
+                        <div>
+                            <div class="font-bold"><span class="lang-en">Verify Credential</span><span class="lang-my">အောင်လက်မှတ် စစ်ဆေးရန်</span></div>
+                            <div class="text-[10px] text-slate-400"><span class="lang-en">Digital certificate check</span><span class="lang-my">ဒီဂျစ်တယ် လက်မှတ်စစ်ဆေးခြင်း</span></div>
+                        </div>
+                    </a>
+                    <a href="{% url 'leaderboard' %}" class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition">
+                        <span class="text-base">🏆</span>
+                        <div>
+                            <div class="font-bold"><span class="lang-en">CTF Leaderboard</span><span class="lang-my">ဦးဆောင်သူများ ဇယား</span></div>
+                            <div class="text-[10px] text-slate-400"><span class="lang-en">Real-time student rankings</span><span class="lang-my">လက်ရှိ အမှတ်အဆင့်များ</span></div>
+                        </div>
+                    </a>
+                </div>
+            </div>
         </nav>
 
         <!-- Right: Actions, Toggles & User Profile -->
@@ -142,11 +175,19 @@
 
             {% if user.is_authenticated %}
                 {% if is_teacher and not is_admin %}
-                    <a href="{% url 'teacher-dashboard' %}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition shadow-sm">
+                    <a href="{% url 'teacher-dashboard' %}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] font-semibold text-xs transition shadow-sm">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                         <span>Instructor Hub</span>
                     </a>
                 {% endif %}
+
+                <!-- Messenger Direct Action Icon -->
+                <a href="{% url 'chat:inbox' %}" class="relative p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="THUTA Messenger">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    <span id="headerChatBadge" class="{% if not unread_chat_count or unread_chat_count == 0 %}hidden{% endif %} absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] font-black text-[10px] flex items-center justify-center shadow-xs">
+                        {{ unread_chat_count }}
+                    </span>
+                </a>
 
                 <!-- User Profile & Overflow Menu -->
                 <div class="relative ml-1 mel-overflow-menu" id="userMenuContainer">
@@ -173,6 +214,18 @@
                             <span class="lang-en">My Dashboard</span>
                             <span class="lang-my">ဒက်ရှ်ဘုတ်</span>
                         </a>
+                        <a href="{% url 'chat:inbox' %}" class="flex items-center justify-between px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <div class="flex items-center gap-2">
+                                <span>💬</span>
+                                <span class="lang-en">Messages</span>
+                                <span class="lang-my">မက်ဆေ့ခ်ျများ</span>
+                            </div>
+                            {% if unread_chat_count and unread_chat_count > 0 %}
+                                <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-[#0284C7] text-white">
+                                    {{ unread_chat_count }}
+                                </span>
+                            {% endif %}
+                        </a>
                         <a href="{% url 'profile' %}" class="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                             <span>👤</span>
                             <span class="lang-en">Account Profile</span>
@@ -185,6 +238,21 @@
                         </a>
 
                         {% if not is_teacher and not is_admin %}
+                        <a href="{% url 'my-courses' %}" class="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <span>🎓</span>
+                            <span class="lang-en">My Courses</span>
+                            <span class="lang-my">ကျွန်ုပ်၏ သင်ရိုးများ</span>
+                        </a>
+                        <a href="{% url 'billing:payment-history' %}" class="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <span>💳</span>
+                            <span class="lang-en">My Payments</span>
+                            <span class="lang-my">ငွေပေးချေမှုများ</span>
+                        </a>
+                        <a href="{% url 'certificate-list' %}" class="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <span>📜</span>
+                            <span class="lang-en">My Certificates</span>
+                            <span class="lang-my">ကျွန်ုပ်၏ အောင်လက်မှတ်များ</span>
+                        </a>
                         <a href="{% url 'apply-instructor' %}" class="flex items-center gap-2 px-4 py-2 text-amber-600 dark:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                             <span>👨‍🏫</span>
                             <span class="lang-en">Become an Instructor</span>
@@ -207,6 +275,11 @@
                             <span class="lang-en">Admin Console</span>
                             <span class="lang-my">စီမံခန့်ခွဲသူ နေရာ</span>
                         </a>
+                        <a href="{% url 'billing:payment-settings' %}" class="flex items-center gap-2 px-4 py-2 text-sky-600 dark:text-sky-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition font-medium">
+                            <span>📱</span>
+                            <span class="lang-en">Payment Settings</span>
+                            <span class="lang-my">ငွေပေးချေမှု ဆက်တင်</span>
+                        </a>
                         <a href="{% url 'console-instructor-application-list' %}" class="flex items-center gap-2 px-4 py-2 text-amber-600 dark:text-amber-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                             <span>📝</span>
                             <span class="lang-en">Faculty Applications</span>
@@ -217,14 +290,9 @@
                             <span class="lang-en">Partner Applications</span>
                             <span class="lang-my">မိတ်ဖက် လျှောက်လွှာများ</span>
                         </a>
-                        <a href="{% url 'manage-home' %}" class="flex items-center gap-2 px-4 py-2 text-emerald-600 dark:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                            <span>🛠️</span>
-                            <span class="lang-en">Content Studio</span>
-                            <span class="lang-my">သင်ရိုး ဖန်တီးမှု စတူဒီယို</span>
-                        </a>
                         {% elif is_teacher %}
                         <div class="border-t border-slate-200 dark:border-slate-800 my-1"></div>
-                        <a href="{% url 'my-courses' %}" class="flex items-center gap-2 px-4 py-2 text-emerald-600 dark:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                        <a href="{% url 'my-courses' %}" class="flex items-center gap-2 px-4 py-2 text-[#0284C7] dark:text-[#38BDF8] hover:bg-slate-100 dark:hover:bg-slate-800 transition font-medium">
                             <span>📚</span>
                             <span class="lang-en">My Teaching</span>
                             <span class="lang-my">ကျွန်ုပ်၏ သင်ကြားမှုများ</span>
@@ -233,6 +301,16 @@
                             <span>📊</span>
                             <span class="lang-en">Instructor Hub</span>
                             <span class="lang-my">သင်ကြားသူ နေရာ</span>
+                        </a>
+                        <a href="{% url 'submission-list' %}" class="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <span>📝</span>
+                            <span class="lang-en">Grading Queue</span>
+                            <span class="lang-my">အမှတ်ပေးရန် စာရင်း</span>
+                        </a>
+                        <a href="{% url 'live-session-list' %}" class="flex items-center gap-2 px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <span>🎥</span>
+                            <span class="lang-en">Live Classes</span>
+                            <span class="lang-my">တိုက်ရိုက် သင်တန်းများ</span>
                         </a>
                         {% endif %}
 

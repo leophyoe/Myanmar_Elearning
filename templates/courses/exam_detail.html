@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ exam.title }} - Exam Details - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <!-- Breadcrumb -->
+    <nav class="flex items-center gap-2 text-xs text-slate-500 mb-6 font-mono">
+        <a href="/" class="hover:text-cyan-400">Home</a>
+        <span>/</span>
+        <a href="{% url 'standalone-exam-list' %}" class="hover:text-cyan-400">Exam Center</a>
+        <span>/</span>
+        <span class="text-slate-300 truncate max-w-sm">{{ exam.title }}</span>
+    </nav>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- Left Column: Details & Syllabus (8 cols) -->
+        <div class="lg:col-span-8 space-y-6">
+
+            <!-- Title & Badges Box -->
+            <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+                <div class="flex flex-wrap items-center gap-2 mb-4">
+                    {% if exam.is_free %}
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                        Free Practice Exam
+                    </span>
+                    {% else %}
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                        {{ exam.price|floatformat:0 }} {{ exam.currency }}
+                    </span>
+                    {% endif %}
+
+                    {% if exam.certificate_type == 'exam_verified' %}
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                        ★ Verified Credential Award
+                    </span>
+                    {% endif %}
+
+                    {% if exam.institution %}
+                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 border border-slate-700 text-slate-300">
+                        🏛 {{ exam.institution.name }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">
+                    {{ exam.title }}
+                </h1>
+
+                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+                    {{ exam.description|default:"Standardized competence assessment measuring conceptual understanding and practical problem solving skills." }}
+                </p>
+
+                {% if is_staff_or_owner %}
+                <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center gap-3">
+                    <a href="{% url 'standalone-exam-edit' exam_id=exam.id %}" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 transition">
+                        ✏️ Edit Exam Settings
+                    </a>
+                    <a href="{% url 'quiz-edit' lesson_id=exam.id %}" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 transition">
+                        ⚙️ Manage Questions ({{ total_questions }})
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Examination Guidelines & Protocol Card -->
+            <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>📜</span>
+                    <span class="lang-en">Examination Protocol &amp; Rules</span>
+                    <span class="lang-my">စာမေးပွဲစည်းမျဉ်းများနှင့် လမ်းညွှန်ချက်များ</span>
+                </h3>
+                <ul class="space-y-3 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    <li class="flex items-start gap-2.5">
+                        <span class="text-cyan-400 font-bold">1.</span>
+                        <span><b>Timed Session:</b> {% if exam.time_limit_minutes %}You will have <b>{{ exam.time_limit_minutes }} minutes</b> to complete all questions. An active countdown timer will be displayed at the top of your screen.{% else %}This examination is self-paced with untimed submission.{% endif %}</span>
+                    </li>
+                    <li class="flex items-start gap-2.5">
+                        <span class="text-cyan-400 font-bold">2.</span>
+                        <span><b>Passing Threshold:</b> A minimum overall score of <b>{{ exam.passing_percentage }}%</b> is required to pass and qualify for academic credentials.</span>
+                    </li>
+                    <li class="flex items-start gap-2.5">
+                        <span class="text-cyan-400 font-bold">3.</span>
+                        <span><b>Attempt Restrictions:</b> {% if exam.max_attempts %}Candidates are limited to <b>{{ exam.max_attempts }} total attempt(s)</b>.{% else %}Unlimited practice attempts are allowed.{% endif %}</span>
+                    </li>
+                    <li class="flex items-start gap-2.5">
+                        <span class="text-cyan-400 font-bold">4.</span>
+                        <span><b>Integrity &amp; State Protection:</b> Your question choices are continuously cached locally. Do not close your browser tab during timed submissions.</span>
+                    </li>
+                    {% if exam.requires_manual_grading %}
+                    <li class="flex items-start gap-2.5">
+                        <span class="text-amber-400 font-bold">5.</span>
+                        <span><b>Instructor Rubric Grading:</b> This exam contains essay, coding, or practical evaluations. Upon submission, an authorized instructor will review your work against a standardized rubric before finalizing your score.</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <!-- Previous Attempts History (if authenticated) -->
+            {% if user.is_authenticated and user_attempts %}
+            <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                        <span>📊</span>
+                        <span class="lang-en">Your Attempt History</span>
+                        <span class="lang-my">ယခင်ဖြေဆိုထားသော မှတ်တမ်းများ</span>
+                    </span>
+                    <span class="text-xs font-mono text-cyan-400 font-normal">
+                        Used: {{ attempts_count }} / {% if exam.max_attempts %}{{ exam.max_attempts }}{% else %}∞{% endif %}
+                    </span>
+                </h3>
+
+                <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for attempt in user_attempts %}
+                    <div class="py-3.5 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono text-slate-400">#{{ attempt.attempt_number }}</span>
+                            <div>
+                                <span class="font-bold text-slate-900 dark:text-white">{{ attempt.created_at|date:"M d, Y • H:i" }}</span>
+                                <span class="text-slate-500 dark:text-slate-400 block text-[11px]">
+                                    Time spent: {{ attempt.time_taken_seconds }}s
+                                    {% if attempt.status == 'pending_review' %}
+                                    <span class="text-amber-400 font-medium">• (Pending Instructor Review)</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4">
+                            <div class="text-right">
+                                <span class="font-bold font-mono text-sm {% if attempt.passed %}text-emerald-400{% else %}text-red-400{% endif %}">
+                                    {{ attempt.score_percentage }}%
+                                </span>
+                                <span class="block text-[10px] uppercase font-bold tracking-wider {% if attempt.passed %}text-emerald-400{% else %}text-red-400{% endif %}">
+                                    {% if attempt.status == 'pending_review' %}Pending{% elif attempt.passed %}Passed{% else %}Failed{% endif %}
+                                </span>
+                            </div>
+
+                            <a href="{% url 'exam-result' exam_id=exam.id attempt_id=attempt.id %}"
+                               class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 font-semibold text-xs transition">
+                                Review &rarr;
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Right Column: Exam Voucher & Action Card (4 cols) -->
+        <div class="lg:col-span-4 space-y-6">
+
+            <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-lg sticky top-24 space-y-6">
+
+                <!-- Pricing & Access Status -->
+                <div class="text-center pb-6 border-b border-slate-100 dark:border-slate-800">
+                    <div class="text-xs uppercase tracking-wider font-bold text-slate-400 mb-1">
+                        Exam Admission
+                    </div>
+                    <div class="text-3xl font-extrabold text-slate-900 dark:text-white font-mono">
+                        {% if exam.is_free %}
+                        <span class="text-emerald-400">FREE</span>
+                        {% else %}
+                        <span>{{ exam.price|floatformat:0 }}</span>
+                        <span class="text-sm font-sans font-medium text-slate-400">{{ exam.currency }}</span>
+                        {% endif %}
+                    </div>
+                    {% if exam.certificate_type == 'exam_verified' %}
+                    <p class="text-[11px] text-amber-400 font-medium mt-1">
+                        Includes Verified Credential with QR Verification
+                    </p>
+                    {% endif %}
+                </div>
+
+                <!-- Specs List -->
+                <div class="space-y-3 text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Time Allowed:</span>
+                        <span class="font-bold text-slate-900 dark:text-white font-mono">
+                            {% if exam.time_limit_minutes %}{{ exam.time_limit_minutes }} Minutes{% else %}Untimed{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Passing Mark:</span>
+                        <span class="font-bold text-cyan-400 font-mono">{{ exam.passing_percentage }}%</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Questions:</span>
+                        <span class="font-bold text-slate-900 dark:text-white font-mono">{{ total_questions }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Total Points:</span>
+                        <span class="font-bold text-slate-900 dark:text-white font-mono">{{ total_points }} pts</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Max Attempts:</span>
+                        <span class="font-bold text-slate-900 dark:text-white font-mono">
+                            {% if exam.max_attempts %}{{ exam.max_attempts }}{% else %}Unlimited{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Credential:</span>
+                        <span class="font-bold text-slate-900 dark:text-white">
+                            {% if exam.certificate_type == 'exam_verified' %}Verified Certificate{% elif exam.certificate_type == 'course_completion' %}Completion Cert{% else %}None{% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Call to Action Buttons -->
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                    {% if not user.is_authenticated %}
+                    <a href="{% url 'login' %}?next={{ request.path }}"
+                       class="w-full py-3.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg transition flex items-center justify-center gap-2">
+                        <span>Sign In to Take Exam</span>
+                        <span>&rarr;</span>
+                    </a>
+                    {% elif has_passed and earned_certificate %}
+                    <!-- Already Passed & Certified -->
+                    <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-center space-y-2">
+                        <div class="text-xs font-bold text-emerald-400 flex items-center justify-center gap-1.5">
+                            <span>✓</span> Passed &amp; Verified
+                        </div>
+                        <p class="text-[11px] text-slate-300">
+                            Serial: <span class="font-mono text-cyan-400 font-bold">{{ earned_certificate.certificate_code }}</span>
+                        </p>
+                        <a href="{% url 'certificate-verify' cert_id=earned_certificate.id %}"
+                           class="inline-block w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition">
+                            View Verified Certificate &rarr;
+                        </a>
+                    </div>
+                    {% if is_eligible %}
+                    <a href="{% url 'exam-session' exam_id=exam.id %}"
+                       class="w-full py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center justify-center">
+                        Retake for Higher Score
+                    </a>
+                    {% endif %}
+                    {% elif pending_payment %}
+                    <!-- Payment Pending -->
+                    <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-center space-y-1">
+                        <div class="text-xs font-bold text-amber-400">⏳ Payment Awaiting Verification</div>
+                        <p class="text-[11px] text-slate-400">
+                            Your payment submission is currently under administrative review. Once approved, the examination will unlock immediately.
+                        </p>
+                    </div>
+                    {% elif not has_access and not exam.is_free %}
+                    <!-- Must Buy Voucher -->
+                    <a href="{% url 'exam-checkout' exam_id=exam.id %}"
+                       class="w-full py-3.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/20 transition flex items-center justify-center gap-2">
+                        <span>💳 Purchase Exam Access ({{ exam.price|floatformat:0 }} {{ exam.currency }})</span>
+                    </a>
+                    {% elif is_eligible %}
+                    <!-- Eligible to start -->
+                    <a href="{% url 'exam-session' exam_id=exam.id %}"
+                       class="w-full py-3.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/20 transition flex items-center justify-center gap-2 animate-pulse">
+                        <span>🚀 Start Examination Now</span>
+                        <span>&rarr;</span>
+                    </a>
+                    {% else %}
+                    <!-- Not eligible -->
+                    <div class="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-center">
+                        <p class="text-xs font-bold text-red-400">{{ eligibility_reason }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Trust Badge -->
+                <div class="text-[11px] text-slate-500 text-center flex items-center justify-center gap-1.5 pt-2">
+                    <span>🛡️</span>
+                    <span>THUTA Cryptographically Signed Assessment</span>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+

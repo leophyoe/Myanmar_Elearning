@@ -42,7 +42,8 @@ class UserAccountModelTests(TestCase):
         self.assertTrue(user.is_student)
         self.assertFalse(user.is_teacher)
         self.assertTrue(hasattr(user, 'student_profile'))
-        self.assertTrue(user.student_profile.student_id.startswith("MEL-2026-"))
+        self.assertTrue(user.student_profile.student_id.startswith("MEL-"))
+        self.assertEqual(user.student_profile.student_id, user.account_id)
         self.assertTrue(user.groups.filter(name='Student').exists())
 
     def test_teacher_creation_assigns_instructor_group_and_mode(self):
@@ -415,6 +416,7 @@ class TeacherImmediateSignInAndApprovalTests(TestCase):
             'target_subjects': 'Python Programming, AI & ML',
             'qualifications': 'M.Sc Artificial Intelligence',
             'teaching_experience': '3 years university lecturing',
+            'terms_accepted': True,
         })
         self.assertEqual(resp.status_code, 302)
 
@@ -623,6 +625,7 @@ class MELAccountRedesignAcceptanceTests(TestCase):
             'target_subjects': 'Python, Networking',
             'qualifications': 'B.C.Sc',
             'teaching_experience': '2 years tutoring',
+            'terms_accepted': True,
         })
         self.assertEqual(resp.status_code, 302)
         from apps.users.models import InstructorApplication

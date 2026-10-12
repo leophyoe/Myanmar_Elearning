@@ -1071,6 +1071,7 @@ class Phase3AssessmentAndCredentialTests(TestCase):
             order=6,
             prompt='Write a function to return square of x.',
             question_type=Question.QuestionType.CODING,
+            correct_text_answer='def square|return',
             points=10,
         )
 
@@ -1543,6 +1544,38 @@ class Phase3LiveClassroomTests(TestCase):
         self.client.force_login(self.unauthorized_student)
         res_unauth = self.client.post(att_url, {'action': 'join'})
         self.assertEqual(res_unauth.status_code, 403)
+
+    def test_live_session_host_quick_controls(self):
+        url = reverse('live-session-detail', kwargs={'session_id': self.upcoming_session.id})
+
+        # Non-host student cannot trigger host controls
+        self.client.force_login(self.student)
+        res_fail = self.client.post(url, {'action': 'start_now'})
+        self.assertEqual(res_fail.status_code, 302)
+        self.upcoming_session.refresh_from_db()
+        self.assertTrue(self.upcoming_session.is_upcoming)
+
+        # Host can trigger 'start_now' to go live immediately
+        self.client.force_login(self.teacher)
+        res_start = self.client.post(url, {'action': 'start_now'})
+        self.assertEqual(res_start.status_code, 302)
+        self.upcoming_session.refresh_from_db()
+        self.assertTrue(self.upcoming_session.is_live)
+        self.assertFalse(self.upcoming_session.is_upcoming)
+
+        # Host can trigger 'extend_30'
+        orig_dur = self.upcoming_session.duration_minutes
+        res_ext = self.client.post(url, {'action': 'extend_30'})
+        self.assertEqual(res_ext.status_code, 302)
+        self.upcoming_session.refresh_from_db()
+        self.assertEqual(self.upcoming_session.duration_minutes, orig_dur + 30)
+
+        # Host can trigger 'end_now' to conclude session immediately
+        res_end = self.client.post(url, {'action': 'end_now'})
+        self.assertEqual(res_end.status_code, 302)
+        self.upcoming_session.refresh_from_db()
+        self.assertTrue(self.upcoming_session.is_ended)
+
 
 
 

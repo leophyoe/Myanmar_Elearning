@@ -171,6 +171,8 @@ class UnifiedProfileForm(forms.Form):
 
 
 class InstructorApplicationForm(forms.ModelForm):
+    terms_version = forms.CharField(required=False, widget=forms.HiddenInput(), initial='2026.1')
+
     class Meta:
         model = InstructorApplication
         fields = (
@@ -181,9 +183,13 @@ class InstructorApplicationForm(forms.ModelForm):
             'teaching_experience',
             'bio',
             'sample_lecture_url',
+            'free_tutorial_title',
+            'free_tutorial_url',
             'website',
             'linkedin_url',
             'github_url',
+            'terms_accepted',
+            'terms_version',
         )
         widgets = {
             'department': forms.TextInput(attrs={
@@ -217,6 +223,14 @@ class InstructorApplicationForm(forms.ModelForm):
                 'class': 'w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 text-sm',
                 'placeholder': 'https://youtube.com/... or https://vimeo.com/... sample lecture link',
             }),
+            'free_tutorial_title': forms.TextInput(attrs={
+                'class': 'w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 text-sm',
+                'placeholder': 'e.g. Introduction to Python Functions (Free Tutorial)',
+            }),
+            'free_tutorial_url': forms.URLInput(attrs={
+                'class': 'w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 text-sm',
+                'placeholder': 'https://thuta.edu.mm/courses/... or YouTube / Drive link to free tutorial',
+            }),
             'website': forms.URLInput(attrs={
                 'class': 'w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 text-sm',
                 'placeholder': 'https://yourportfolio.com or blog',
@@ -229,7 +243,20 @@ class InstructorApplicationForm(forms.ModelForm):
                 'class': 'w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-500 text-sm',
                 'placeholder': 'https://github.com/username',
             }),
+            'terms_accepted': forms.CheckboxInput(attrs={
+                'class': 'w-4 h-4 rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500',
+            }),
+            'terms_version': forms.HiddenInput(),
         }
+
+    def clean_terms_accepted(self):
+        accepted = self.cleaned_data.get('terms_accepted')
+        if not accepted:
+            raise forms.ValidationError("You must agree to the THUTA Faculty Terms & Code of Conduct to submit your application.")
+        return accepted
+
+    def clean_terms_version(self):
+        return self.cleaned_data.get('terms_version') or '2026.1'
 
 
 

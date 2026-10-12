@@ -1,193 +1,291 @@
 {% extends "base.html" %}
 {% load humanize %}
 
-{% block title %}Platform Revenue & Financial Ledger — Myanmar E-Learning{% endblock %}
+{% block title %}Platform Revenue & Financial Ledger — THUTA E-Learning{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4 px-md-5">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-3 border-bottom">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 pb-6 border-b border-slate-200 dark:border-[#26364B]">
         <div>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-1">
-                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}" class="text-decoration-none">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'billing:payment-list' %}" class="text-decoration-none">Billing</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Revenue Report</li>
-                </ol>
+            <nav class="flex items-center text-xs text-slate-500 dark:text-slate-400 mb-2 space-x-2">
+                <a href="{% url 'dashboard' %}" class="hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
+                    <span class="lang-en">Dashboard</span>
+                    <span class="lang-my">ပင်မစာမျက်နှာ</span>
+                </a>
+                <span>/</span>
+                <a href="{% url 'billing:payment-list' %}" class="hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
+                    <span class="lang-en">Billing</span>
+                    <span class="lang-my">ငွေစာရင်း</span>
+                </a>
+                <span>/</span>
+                <span class="text-slate-700 dark:text-slate-300 font-semibold">
+                    <span class="lang-en">Revenue Report</span>
+                    <span class="lang-my">ဝင်ငွေအစီရင်ခံစာ</span>
+                </span>
             </nav>
-            <h1 class="h3 fw-bold text-dark mb-0">Platform Revenue &amp; Financial Ledger</h1>
-            <p class="text-muted small mb-0">Platform-wide aggregate revenue analytics, instructor payouts, and partner settlements.</p>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                <span class="lang-en">Platform Revenue &amp; Financial Ledger</span>
+                <span class="lang-my">ပလက်ဖောင်း ဝင်ငွေနှင့် ဘဏ္ဍာရေးစာရင်း</span>
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                <span class="lang-en">Platform-wide aggregate revenue analytics, instructor payouts, and partner settlements.</span>
+                <span class="lang-my">တစ်ပလက်ဖောင်းလုံးဆိုင်ရာ စုစုပေါင်းဝင်ငွေ၊ ဆရာများနှင့် ပါတနာများအတွက် ခွဲဝေမှုမှတ်တမ်း။</span>
+            </p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'billing:payment-list' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-receipt me-1"></i> Transaction Ledger
+        <div class="flex gap-2">
+            <a href="{% url 'billing:payment-list' %}" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-[#26364B] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#172B40] text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                <span>📑</span>
+                <span class="lang-en">Transaction Ledger</span>
+                <span class="lang-my">ငွေလွှဲစာရင်း</span>
             </a>
         </div>
     </div>
 
-    <!-- KPI Metric Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border border-slate-200 shadow-sm rounded-3 h-100 bg-white">
-                <div class="card-body p-3">
-                    <div class="text-muted small fw-semibold text-uppercase">Total Gross Revenue</div>
-                    <div class="h3 fw-bold text-dark mt-2 mb-1">{{ summary.total_gross|intcomma }} <span class="fs-6 text-muted fw-normal">MMK</span></div>
-                    <div class="text-muted small">{{ summary.total_transactions }} successful transactions</div>
-                </div>
+    <!-- KPI Metric Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <!-- Total Gross Revenue -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                <span class="lang-en">Total Gross Revenue</span>
+                <span class="lang-my">စုစုပေါင်း ဝင်ငွေ</span>
+            </div>
+            <div class="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white font-mono mb-1">
+                {{ summary.total_gross|intcomma }} <span class="text-xs font-normal text-slate-500">MMK</span>
+            </div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+                <span class="font-semibold text-[#0284C7] dark:text-[#38BDF8] font-mono">{{ summary.total_transactions }}</span>
+                <span class="lang-en"> successful transactions</span>
+                <span class="lang-my"> အောင်မြင်သော ငွေလွှဲမှုများ</span>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border border-slate-200 shadow-sm rounded-3 h-100 bg-white">
-                <div class="card-body p-3">
-                    <div class="text-muted small fw-semibold text-uppercase">MEL Platform Share</div>
-                    <div class="h3 fw-bold text-primary mt-2 mb-1">{{ summary.total_platform_fees|intcomma }} <span class="fs-6 text-muted fw-normal">MMK</span></div>
-                    <div class="text-muted small">Retained platform margin</div>
-                </div>
+
+        <!-- THUTA Platform Share -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                <span class="lang-en">Platform Share</span>
+                <span class="lang-my">ပလက်ဖောင်း ဝေစု</span>
+            </div>
+            <div class="text-2xl lg:text-3xl font-extrabold text-[#0284C7] dark:text-[#38BDF8] font-mono mb-1">
+                {{ summary.total_platform_fees|intcomma }} <span class="text-xs font-normal text-slate-500">MMK</span>
+            </div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+                <span class="lang-en">Retained platform margin</span>
+                <span class="lang-my">ပလက်ဖောင်း ရရှိငွေ</span>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border border-slate-200 shadow-sm rounded-3 h-100 bg-white">
-                <div class="card-body p-3">
-                    <div class="text-muted small fw-semibold text-uppercase">Instructor / Partner Pool</div>
-                    <div class="h3 fw-bold text-success mt-2 mb-1">{{ summary.total_teacher_shares|intcomma }} <span class="fs-6 text-muted fw-normal">MMK</span></div>
-                    <div class="text-muted small">Partner: {{ summary.total_partner_shares|intcomma }} MMK</div>
-                </div>
+
+        <!-- Instructor / Partner Pool -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                <span class="lang-en">Instructor &amp; Partner Pool</span>
+                <span class="lang-my">ဆရာနှင့် ပါတနာ ဝေစု</span>
+            </div>
+            <div class="text-2xl lg:text-3xl font-extrabold text-emerald-600 dark:text-[#86EFAC] font-mono mb-1">
+                {{ summary.total_teacher_shares|intcomma }} <span class="text-xs font-normal text-slate-500">MMK</span>
+            </div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+                <span class="lang-en">Partner: </span>
+                <span class="lang-my">ပါတနာ: </span>
+                <span class="font-mono font-bold">{{ summary.total_partner_shares|intcomma }} MMK</span>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card border border-slate-200 shadow-sm rounded-3 h-100 bg-white">
-                <div class="card-body p-3">
-                    <div class="text-muted small fw-semibold text-uppercase">Total Refunds</div>
-                    <div class="h3 fw-bold text-danger mt-2 mb-1">{{ summary.total_refunds|intcomma }} <span class="fs-6 text-muted fw-normal">MMK</span></div>
-                    <div class="text-muted small">{{ summary.refunded_transactions }} refunded orders</div>
-                </div>
+
+        <!-- Total Refunds -->
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                <span class="lang-en">Total Refunds</span>
+                <span class="lang-my">ပြန်အမ်းငွေ စုစုပေါင်း</span>
+            </div>
+            <div class="text-2xl lg:text-3xl font-extrabold text-red-600 dark:text-[#FCA5A5] font-mono mb-1">
+                {{ summary.total_refunds|intcomma }} <span class="text-xs font-normal text-slate-500">MMK</span>
+            </div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+                <span class="font-semibold text-red-500 font-mono">{{ summary.refunded_transactions }}</span>
+                <span class="lang-en"> refunded orders</span>
+                <span class="lang-my"> ပြန်အမ်းထားသော အော်ဒါများ</span>
             </div>
         </div>
     </div>
 
     <!-- Revenue Breakdown by Stream -->
-    <div class="card border border-slate-200 shadow-sm rounded-3 mb-4 bg-white">
-        <div class="card-header bg-white py-3 border-bottom">
-            <h5 class="fw-bold mb-0 text-dark">Revenue Breakdown by Stream</h5>
-        </div>
-        <div class="card-body p-4">
-            <div class="row g-4 text-center">
-                <div class="col-6 col-md-3 border-end-md">
-                    <div class="text-muted small">Course Purchases</div>
-                    <div class="h4 fw-bold text-dark mt-2 mb-0">{{ summary.course_sales|intcomma }} MMK</div>
+    <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm mb-8">
+        <h2 class="text-base font-bold text-slate-900 dark:text-white mb-6">
+            <span class="lang-en">Revenue Breakdown by Stream</span>
+            <span class="lang-my">စီးဆင်းမှုအလိုက် ဝင်ငွေခွဲခြမ်းစိတ်ဖြာချက်</span>
+        </h2>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center divide-y lg:divide-y-0 lg:divide-x divide-slate-100 dark:divide-[#26364B]">
+            <div class="pt-4 lg:pt-0">
+                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    <span class="lang-en">Course Purchases</span>
+                    <span class="lang-my">သင်တန်း ရောင်းချရငွေ</span>
                 </div>
-                <div class="col-6 col-md-3 border-end-md">
-                    <div class="text-muted small">Student Subscriptions</div>
-                    <div class="h4 fw-bold text-dark mt-2 mb-0">{{ summary.subscription_sales|intcomma }} MMK</div>
+                <div class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-mono mt-2">
+                    {{ summary.course_sales|intcomma }} <span class="text-xs text-slate-500 font-normal">MMK</span>
                 </div>
-                <div class="col-6 col-md-3 border-end-md">
-                    <div class="text-muted small">Exam Vouchers</div>
-                    <div class="h4 fw-bold text-dark mt-2 mb-0">{{ summary.exam_voucher_sales|intcomma }} MMK</div>
+            </div>
+            <div class="pt-4 lg:pt-0 lg:pl-6">
+                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    <span class="lang-en">Subscriptions</span>
+                    <span class="lang-my">အသင်းဝင်ကြေး ရငွေ</span>
                 </div>
-                <div class="col-6 col-md-3">
-                    <div class="text-muted small">Certificate Fees</div>
-                    <div class="h4 fw-bold text-dark mt-2 mb-0">{{ summary.certificate_fee_sales|intcomma }} MMK</div>
+                <div class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-mono mt-2">
+                    {{ summary.subscription_sales|intcomma }} <span class="text-xs text-slate-500 font-normal">MMK</span>
+                </div>
+            </div>
+            <div class="pt-4 lg:pt-0 lg:pl-6">
+                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    <span class="lang-en">Exam Vouchers</span>
+                    <span class="lang-my">စာမေးပွဲဘောင်ချာများ</span>
+                </div>
+                <div class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-mono mt-2">
+                    {{ summary.exam_voucher_sales|intcomma }} <span class="text-xs text-slate-500 font-normal">MMK</span>
+                </div>
+            </div>
+            <div class="pt-4 lg:pt-0 lg:pl-6">
+                <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    <span class="lang-en">Certificate Fees</span>
+                    <span class="lang-my">အောင်လက်မှတ်ကြေးများ</span>
+                </div>
+                <div class="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white font-mono mt-2">
+                    {{ summary.certificate_fee_sales|intcomma }} <span class="text-xs text-slate-500 font-normal">MMK</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Recent Transactions & Partner Ledger -->
-    <div class="row g-4">
-        <div class="col-lg-7">
-            <div class="card border border-slate-200 shadow-sm rounded-3 bg-white h-100">
-                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0 text-dark">Recent Platform Payments</h5>
-                    <span class="badge bg-light text-dark border">Last 50</span>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 text-nowrap">
-                        <thead class="table-light">
-                            <tr class="small text-muted text-uppercase">
-                                <th>Reference</th>
-                                <th>Student</th>
-                                <th>Type</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody class="small">
-                            {% for payment in recent_payments %}
-                            <tr>
-                                <td>
-                                    <a href="{% url 'billing:payment-detail' payment.id %}" class="fw-semibold text-decoration-none">
-                                        {{ payment.reference|default:payment.id }}
+    <!-- Recent Transactions & Partner Splits -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Recent Platform Payments -->
+        <div class="lg:col-span-7 p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                    <span class="lang-en">Recent Platform Payments</span>
+                    <span class="lang-my">လတ်တလော ပလက်ဖောင်း ငွေပေးချေမှုများ</span>
+                </h3>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#172B40] text-slate-600 dark:text-slate-300 font-mono font-semibold">
+                    Last 50
+                </span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-[#26364B] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
+                            <th class="py-3 px-3">
+                                <span class="lang-en">Reference</span>
+                                <span class="lang-my">ကုဒ်</span>
+                            </th>
+                            <th class="py-3 px-3">
+                                <span class="lang-en">Student</span>
+                                <span class="lang-my">ကျောင်းသား</span>
+                            </th>
+                            <th class="py-3 px-3">
+                                <span class="lang-en">Amount</span>
+                                <span class="lang-my">ပမာဏ</span>
+                            </th>
+                            <th class="py-3 px-3 text-right">
+                                <span class="lang-en">Status</span>
+                                <span class="lang-my">အခြေအနေ</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-[#26364B]/60">
+                        {% for payment in recent_payments %}
+                            <tr class="hover:bg-slate-50/60 dark:hover:bg-[#172B40]/40 transition">
+                                <td class="py-3 px-3 font-mono font-medium text-[#0284C7] dark:text-[#38BDF8]">
+                                    <a href="{% url 'billing:payment-detail' payment.id %}" class="hover:underline">
+                                        {{ payment.reference|default:payment.id|truncatechars:14 }}
                                     </a>
                                 </td>
-                                <td>{{ payment.student.username }}</td>
-                                <td>
-                                    <span class="badge bg-light text-dark border">{{ payment.get_payment_type_display|default:payment.payment_type }}</span>
+                                <td class="py-3 px-3 text-slate-700 dark:text-slate-300">
+                                    <div class="font-medium">{{ payment.student.username }}</div>
+                                    <div class="text-[10px] text-slate-400">{{ payment.get_payment_type_display|default:payment.payment_type }}</div>
                                 </td>
-                                <td class="fw-bold">{{ payment.amount|intcomma }} MMK</td>
-                                <td>
+                                <td class="py-3 px-3 font-mono font-bold text-slate-900 dark:text-white">
+                                    {{ payment.amount|intcomma }} MMK
+                                </td>
+                                <td class="py-3 px-3 text-right">
                                     {% if payment.status == 'approved' or payment.status == 'success' %}
-                                        <span class="badge bg-success">Success</span>
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-[#142B25] text-emerald-700 dark:text-[#86EFAC] border border-emerald-200 dark:border-[#1e4839]">Success</span>
                                     {% elif payment.status == 'pending' %}
-                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 dark:bg-[#302719] text-amber-700 dark:text-[#FCD34D] border border-amber-200 dark:border-[#4d3a20]">Pending</span>
                                     {% elif payment.status == 'refunded' %}
-                                        <span class="badge bg-danger">Refunded</span>
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-50 dark:bg-[#321F26] text-red-700 dark:text-[#FCA5A5] border border-red-200 dark:border-[#522933]">Refunded</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">{{ payment.status }}</span>
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-[#172B40] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#26364B]">{{ payment.status }}</span>
                                     {% endif %}
                                 </td>
-                                <td class="text-muted">{{ payment.created_at|date:"M d, Y" }}</td>
                             </tr>
-                            {% empty %}
+                        {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">No recent payment records found.</td>
+                                <td colspan="4" class="text-center py-6 text-slate-500">
+                                    <span class="lang-en">No recent payment records found.</span>
+                                    <span class="lang-my">လတ်တလော ငွေပေးချေမှု မှတ်တမ်း မရှိသေးပါ။</span>
+                                </td>
                             </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="col-lg-5">
-            <div class="card border border-slate-200 shadow-sm rounded-3 bg-white h-100">
-                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0 text-dark">Partner Institutional Splits</h5>
-                    <span class="badge bg-light text-dark border">Recent</span>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 text-nowrap">
-                        <thead class="table-light">
-                            <tr class="small text-muted text-uppercase">
-                                <th>Institution</th>
-                                <th>Gross</th>
-                                <th>Partner</th>
-                                <th>MEL</th>
-                                <th>Settlement</th>
-                            </tr>
-                        </thead>
-                        <tbody class="small">
-                            {% for record in partner_records %}
-                            <tr>
-                                <td class="fw-semibold">{{ record.partner_institution.name|truncatechars:20 }}</td>
-                                <td>{{ record.gross_amount|intcomma }}</td>
-                                <td class="text-success fw-bold">{{ record.partner_amount|intcomma }}</td>
-                                <td class="text-primary">{{ record.platform_amount|intcomma }}</td>
-                                <td>
+        <!-- Partner Institutional Splits -->
+        <div class="lg:col-span-5 p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                    <span class="lang-en">Partner Institutional Splits</span>
+                    <span class="lang-my">ပါတနာ အဖွဲ့အစည်း ဝေစုများ</span>
+                </h3>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#172B40] text-slate-600 dark:text-slate-300 font-mono font-semibold">
+                    Recent
+                </span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-[#26364B] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">
+                            <th class="py-3 px-3">
+                                <span class="lang-en">Partner</span>
+                                <span class="lang-my">ပါတနာ</span>
+                            </th>
+                            <th class="py-3 px-3">
+                                <span class="lang-en">Gross</span>
+                                <span class="lang-my">စုစုပေါင်း</span>
+                            </th>
+                            <th class="py-3 px-3">
+                                <span class="lang-en">Share</span>
+                                <span class="lang-my">ဝေစု</span>
+                            </th>
+                            <th class="py-3 px-3 text-right">
+                                <span class="lang-en">Settlement</span>
+                                <span class="lang-my">အခြေအနေ</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-[#26364B]/60">
+                        {% for record in partner_records %}
+                            <tr class="hover:bg-slate-50/60 dark:hover:bg-[#172B40]/40 transition">
+                                <td class="py-3 px-3 font-semibold text-slate-900 dark:text-white">{{ record.partner_institution.name|truncatechars:18 }}</td>
+                                <td class="py-3 px-3 font-mono text-slate-600 dark:text-slate-400">{{ record.gross_amount|intcomma }}</td>
+                                <td class="py-3 px-3 font-mono font-bold text-emerald-600 dark:text-[#86EFAC]">{{ record.partner_amount|intcomma }}</td>
+                                <td class="py-3 px-3 text-right">
                                     {% if record.is_settled %}
-                                        <span class="badge bg-success">Settled</span>
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-[#142B25] text-emerald-700 dark:text-[#86EFAC] border border-emerald-200 dark:border-[#1e4839]">Settled</span>
                                     {% else %}
-                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 dark:bg-[#302719] text-amber-700 dark:text-[#FCD34D] border border-amber-200 dark:border-[#4d3a20]">Pending</span>
                                     {% endif %}
                                 </td>
                             </tr>
-                            {% empty %}
+                        {% empty %}
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">No partner revenue splits recorded.</td>
+                                <td colspan="4" class="text-center py-6 text-slate-500">
+                                    <span class="lang-en">No partner revenue splits recorded.</span>
+                                    <span class="lang-my">ပါတနာ ဝင်ငွေခွဲဝေမှု မှတ်တမ်း မရှိသေးပါ။</span>
+                                </td>
                             </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

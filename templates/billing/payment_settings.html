@@ -1,0 +1,611 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Settings &amp; Channels - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <!-- Console Navigation Tabs -->
+    {% include 'console/_tabs.html' with active='payment_settings' %}
+
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 dark:border-[#26364B]">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs uppercase font-semibold tracking-wider text-[#0284C7] dark:text-[#38BDF8]">
+                    <span class="lang-en">Finance &amp; Gateways</span>
+                    <span class="lang-my">ဘဏ္ဍာရေး နှင့် ငွေပေးချေမှု</span>
+                </span>
+                <span class="text-slate-300 dark:text-slate-700">&bull;</span>
+                <span class="text-xs text-slate-500 dark:text-slate-400">
+                    <span class="lang-en">Payment Management</span>
+                    <span class="lang-my">ငွေပေးချေမှု စီမံခန့်ခွဲရေး</span>
+                </span>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white mt-1">
+                <span class="lang-en">Payment Settings &amp; Channel Management</span>
+                <span class="lang-my">ငွေပေးချေမှုစနစ်နှင့် လမ်းကြောင်းများ စီမံခန့်ခွဲမှု</span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-3xl leading-relaxed">
+                <span class="lang-en">Configure national MMQR, card gateways (Visa, Mastercard, MPU), mobile wallets (KBZPay, WavePay), and bank transfers accepted across THUTA.</span>
+                <span class="lang-my">တရားဝင် MMQR၊ ကတ်ငွေပေးချေမှု (Visa, Mastercard, MPU)၊ မိုဘိုင်းဝေါလက် (KBZPay, WavePay) နှင့် ဘဏ်လွှဲစနစ်များကို ဤနေရာတွင် တိုက်ရိုက် စီမံခန့်ခွဲနိုင်ပါသည်။</span>
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'billing:method-create' %}"
+               class="px-4 py-2 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span class="lang-en">+ Add Payment Method</span>
+                <span class="lang-my">+ နည်းလမ်းအသစ် ထည့်မည်</span>
+            </a>
+            <form method="POST" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="seed_defaults">
+                <button type="submit"
+                        class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#26364B] bg-white dark:bg-[#111C2E] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold transition"
+                        title="Ensure default channels (MMQR, Visa, MPU, KPay, WavePay, Bank) are created">
+                    <span class="lang-en">Restore Defaults</span>
+                    <span class="lang-my">မူလနည်းလမ်းများ ပြန်လည်ရယူ</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- MMQR Status -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">MMQR Gateway</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-base font-bold {% if is_ready %}text-emerald-600 dark:text-emerald-400{% else %}text-amber-600 dark:text-amber-400{% endif %} flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full {% if is_ready %}bg-emerald-500 animate-pulse{% else %}bg-amber-500{% endif %}"></span>
+                    {% if is_ready %}Ready &amp; Active{% else %}Setup Required{% endif %}
+                </div>
+                <span class="text-xs font-mono text-slate-400">MMQR</span>
+            </div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                {% if is_ready %}Students can scan official QR image{% else %}Upload QR image to activate checkout{% endif %}
+            </p>
+        </div>
+
+        <!-- Active Channels -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Accepted Channels</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                    {{ active_channels_count }} <span class="text-xs font-normal text-slate-500 dark:text-slate-400">/ {{ all_methods|length }} active</span>
+                </div>
+                <span class="text-xs text-slate-400">Channels</span>
+            </div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                {{ cards_count }} card(s) · {{ wallets_count }} wallet(s) · {{ banks_count }} bank(s)
+            </p>
+        </div>
+
+        <!-- Total Orders -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Transactions</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-2xl font-bold font-mono text-slate-900 dark:text-white">{{ stats.total_orders }}</div>
+                <span class="text-xs text-slate-400">orders</span>
+            </div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Cumulative student checkout requests</p>
+        </div>
+
+        <!-- Settled Volume -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Settled Volume</div>
+            <div class="mt-2 flex items-baseline justify-between">
+                <div class="text-2xl font-bold font-mono text-[#0284C7] dark:text-[#38BDF8]">{{ stats.settled_volume|floatformat:0 }}</div>
+                <span class="text-xs text-slate-400">MMK</span>
+            </div>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Verified and approved revenues</p>
+        </div>
+    </div>
+
+    <!-- Section Switcher Tabs -->
+    <div class="flex items-center gap-2 border-b border-slate-200 dark:border-[#26364B] pb-1">
+        <button type="button" id="tabBtnChannels" onclick="switchSettingsTab('channels')"
+                class="px-4 py-2 text-xs font-bold rounded-t-xl transition border-b-2 text-[#0284C7] dark:text-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] bg-sky-50 dark:bg-sky-950/40">
+            <span class="flex items-center gap-2">
+                <span>💳</span>
+                <span class="lang-en">All Payment Channels (Visa, Master, MPU, Wallets, Bank)</span>
+                <span class="lang-my">ငွေပေးချေမှု နည်းလမ်းများ အားလုံး (Visa, Master, MPU, ဝေါလက်များ)</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-[#162235] text-slate-800 dark:text-slate-200 font-mono">{{ all_methods|length }}</span>
+            </span>
+        </button>
+        <button type="button" id="tabBtnMMQR" onclick="switchSettingsTab('mmqr')"
+                class="px-4 py-2 text-xs font-bold rounded-t-xl transition border-b-2 text-slate-600 dark:text-slate-400 border-transparent hover:text-slate-900 dark:hover:text-white">
+            <span class="flex items-center gap-2">
+                <span>📱</span>
+                <span class="lang-en">National MMQR Gateway Configuration</span>
+                <span class="lang-my">တရားဝင် MMQR ဆက်တင်များ</span>
+                {% if is_ready %}
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                {% else %}
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                {% endif %}
+            </span>
+        </button>
+    </div>
+
+    <!-- TAB 1: ALL PAYMENT CHANNELS (CARDS, WALLETS, BANKS, QR) -->
+    <div id="sectionChannels" class="space-y-6">
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-[#26364B]">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 dark:text-white">
+                        <span class="lang-en">Active &amp; Supported Payment Methods</span>
+                        <span class="lang-my">လက်ခံထားသော ငွေပေးချေမှု နည်းလမ်းများ</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        <span class="lang-en">Enable or disable payment options available to students during checkout. Add card, wallet, and bank accounts.</span>
+                        <span class="lang-my">ကျောင်းသားများ အပ်နှံရာတွင် ရွေးချယ်နိုင်မည့် နည်းလမ်းများကို ဖွင့်/ပိတ် ပြုလုပ်ပြီး အသစ်ထပ်ထည့်နိုင်ပါသည်။</span>
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'billing:method-create' %}"
+                       class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition flex items-center gap-1 shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        New Channel
+                    </a>
+                </div>
+            </div>
+
+            <!-- Channels Table -->
+            <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-[#26364B]">
+                <table class="w-full text-left text-xs text-slate-600 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-800">
+                    <thead class="bg-slate-50 dark:bg-[#162235] uppercase tracking-wider text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                        <tr>
+                            <th class="px-4 py-3">Order</th>
+                            <th class="px-4 py-3">Channel Name</th>
+                            <th class="px-4 py-3">Type</th>
+                            <th class="px-4 py-3">Account / Merchant ID</th>
+                            <th class="px-4 py-3">QR / Asset</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                        {% for method in all_methods %}
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
+                            <td class="px-4 py-3 font-mono text-slate-400">{{ method.display_order }}</td>
+                            <td class="px-4 py-3">
+                                <div class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    {% if method.is_card %}
+                                    <span class="text-blue-500">💳</span>
+                                    {% elif method.is_wallet %}
+                                    <span class="text-amber-500">📱</span>
+                                    {% elif method.is_bank %}
+                                    <span class="text-emerald-500">🏦</span>
+                                    {% else %}
+                                    <span class="text-sky-500">🔳</span>
+                                    {% endif %}
+                                    <span>{{ method.name }}</span>
+                                </div>
+                                <span class="font-mono text-[10px] text-slate-400 dark:text-slate-500">code: {{ method.code }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="text-[10px] px-2 py-0.5 rounded font-semibold uppercase border
+                                    {% if method.is_card %}bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800
+                                    {% elif method.is_wallet %}bg-amber-50 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800
+                                    {% elif method.is_bank %}bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800
+                                    {% else %}bg-sky-50 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800{% endif %}">
+                                    {{ method.get_method_type_display }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-slate-800 dark:text-slate-200">{{ method.account_name|default:"—" }}</div>
+                                <div class="font-mono text-[11px] text-[#0284C7] dark:text-[#38BDF8]">{{ method.account_number|default:"—" }}</div>
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if method.qr_image %}
+                                <a href="{{ method.qr_image.url }}" target="_blank" class="inline-flex items-center gap-1 text-[11px] text-[#0284C7] dark:text-[#38BDF8] hover:underline font-medium">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    View Asset
+                                </a>
+                                {% else %}
+                                <span class="text-slate-400 dark:text-slate-600 text-[11px]">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if method.is_active %}
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                    Disabled
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-right whitespace-nowrap space-x-1.5">
+                                <!-- 1-Click Toggle -->
+                                <form method="POST" class="inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="toggle_method">
+                                    <input type="hidden" name="method_id" value="{{ method.id }}">
+                                    <button type="submit"
+                                            class="px-2.5 py-1 rounded-lg text-xs font-semibold transition border
+                                            {% if method.is_active %}bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 hover:bg-amber-100
+                                            {% else %}bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100{% endif %}">
+                                        {% if method.is_active %}Disable{% else %}Enable{% endif %}
+                                    </button>
+                                </form>
+
+                                <!-- Edit -->
+                                <a href="{% url 'billing:method-edit' pk=method.pk %}"
+                                   class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                                    Edit
+                                </a>
+
+                                <!-- Delete -->
+                                {% if method.code != 'mmqr' %}
+                                <a href="{% url 'billing:method-delete' pk=method.pk %}" onclick="return confirm('Delete payment channel {{ method.name }}?');"
+                                   class="px-2 py-1 rounded-lg text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950 transition">
+                                    Delete
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-8 text-center text-slate-500">
+                                No payment channels found. Click "Restore Defaults" above to load standard Myanmar payment options.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Quick Preset Helper Cards -->
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-[#162235] border border-slate-200 dark:border-[#26364B] space-y-2">
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                    Supported Payment Gateway Types &amp; Integrations
+                </span>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <div class="p-3 rounded-lg bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-xs">
+                        <div class="font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                            <span>💳</span> Cards (Visa, Master, MPU)
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                            Accept local MPU debit cards and international Visa/Mastercard payments with merchant authorization reference and receipts.
+                        </p>
+                    </div>
+
+                    <div class="p-3 rounded-lg bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-xs">
+                        <div class="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                            <span>📱</span> Mobile Wallets (KBZPay, Wave)
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                            Accept KPay and WavePay wallet transfers with quick phone number copy and transaction slip verification.
+                        </p>
+                    </div>
+
+                    <div class="p-3 rounded-lg bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-xs">
+                        <div class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                            <span>🏦</span> Bank Transfers (KBZ, CB, AYA)
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                            Accept commercial bank transfers directly to your corporate or merchant accounts with deposit slip review.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: NATIONAL MMQR GATEWAY CONFIGURATION -->
+    <div id="sectionMMQR" class="space-y-6 hidden">
+        <!-- Missing Requirements Audit Checklist -->
+        {% if missing_requirements %}
+        <div class="p-5 rounded-2xl bg-[#FFFBEB] dark:bg-[#302719] border border-[#FDE68A] dark:border-[#423522] shadow-sm space-y-3">
+            <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm">
+                    !
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-[#92400E] dark:text-[#FCD34D]">
+                        <span class="lang-en">Checklist: Configuration Needed Before MMQR Activation</span>
+                        <span class="lang-my">စိစစ်ချက် - MMQR အသုံးမပြုမီ ပြည့်စုံရန် လိုအပ်ချက်များ</span>
+                    </h3>
+                    <p class="text-xs text-[#92400E]/90 dark:text-[#FCD34D]/90">
+                        <span class="lang-en">Customer checkout is protected against fake QR codes. Upload the official QR image below to activate MMQR.</span>
+                        <span class="lang-my">တရားမဝင် QR ပုံများ မပြသမိစေရန် စစ်ဆေးထားပြီး အောက်ပါ အချက်များ ဖြည့်စွက်ပြီးပါက တရားဝင် စတင်အသုံးပြုနိုင်ပါမည်။</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-2 border-t border-[#FDE68A]/60 dark:border-[#423522]/60">
+                {% for item in missing_requirements %}
+                <div class="flex items-start gap-2 text-xs text-[#92400E] dark:text-[#FCD34D]">
+                    <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <span>{{ item }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="p-4 rounded-2xl bg-[#F0FDF4] dark:bg-[#142B25] border border-[#BBF7D0] dark:border-[#1E3A30] shadow-sm flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-[#166534] dark:text-[#86EFAC] flex items-center justify-center font-bold text-sm">
+                    &check;
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold text-[#166534] dark:text-[#86EFAC]">
+                        <span class="lang-en">All MMQR Requirements Satisfied</span>
+                        <span class="lang-my">MMQR လိုအပ်ချက်များ ပြည့်စုံပြီးဖြစ်ပါသည်</span>
+                    </h3>
+                    <p class="text-[11px] text-[#166534]/90 dark:text-[#86EFAC]/90">
+                        <span class="lang-en">Official MMQR code is verified and ready for customer scanning during checkout.</span>
+                        <span class="lang-my">တရားဝင် MMQR ပုံရိပ် တင်ထားပြီး ကျောင်းသားများသည် စကင်ဖတ်၍ ငွေလွှဲနိုင်ပါပြီ။</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- MMQR Configuration Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Form Left (7 Cols) -->
+            <div class="lg:col-span-7">
+                <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-6">
+                    <div class="pb-4 border-b border-slate-200 dark:border-[#26364B]">
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">
+                            <span class="lang-en">National MMQR Gateway Configuration</span>
+                            <span class="lang-my">တရားဝင် MMQR ကုန်သည်နှင့် စနစ်ဆက်တင်များ</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span class="lang-en">Changes take effect immediately across all customer checkout sessions without server restart.</span>
+                            <span class="lang-my">ဤနေရာတွင် ပြင်ဆင်ချက်များသည် ချက်ချင်း အကျိုးသက်ရောက်ပါမည်။</span>
+                        </p>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data" class="space-y-5">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                        <div class="p-3 rounded-xl bg-[#FEF2F2] dark:bg-[#321F26] border border-[#FECDD3] dark:border-[#452934] text-[#991B1B] dark:text-[#FCA5A5] text-xs">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <!-- Activation Toggle -->
+                        <div class="p-4 rounded-xl bg-slate-50 dark:bg-[#162235] border border-slate-200 dark:border-[#26364B] flex items-start gap-3">
+                            <div class="pt-0.5">
+                                {{ form.is_active }}
+                            </div>
+                            <div>
+                                <label for="{{ form.is_active.id_for_label }}" class="text-xs font-bold text-slate-900 dark:text-white cursor-pointer">
+                                    <span class="lang-en">Enable MMQR on Customer Checkout</span>
+                                    <span class="lang-my">ကျောင်းသားများ အပ်နှံရာတွင် MMQR အသုံးပြုခွင့် ဖွင့်မည်</span>
+                                </label>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                                    <span class="lang-en">When enabled and QR image is uploaded, students can scan the official MMQR to purchase courses and subscriptions.</span>
+                                    <span class="lang-my">ဤအမှန်ခြစ်ကို ဖွင့်ထားပြီး QR ပုံ တင်ထားပါက ကျောင်းသားများသည် MMQR စကင်ဖတ်၍ သင်တန်းများ ဝယ်ယူနိုင်ပါမည်။</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Channel Name & Merchant Name -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-semibold">
+                                    <span class="lang-en">Channel Name</span><span class="lang-my">နည်းလမ်း အမည်</span>
+                                </label>
+                                {{ form.name }}
+                                {% for error in form.name.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+
+                            <div>
+                                <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-semibold">
+                                    <span class="lang-en">Merchant / Display Name</span><span class="lang-my">ကုန်သည် / ပလက်ဖောင်း အမည်</span>
+                                </label>
+                                {{ form.account_name }}
+                                {% for error in form.account_name.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Merchant ID / Terminal Reference -->
+                        <div>
+                            <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-semibold">
+                                <span class="lang-en">Merchant Reference / Terminal ID</span><span class="lang-my">ကုန်သည် နံပါတ် / တာမီနယ် နံပါတ်</span>
+                            </label>
+                            {{ form.account_number }}
+                            {% for error in form.account_number.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{{ error }}</p>{% endfor %}
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Official merchant identification number provided by your acquirer bank or MMQR provider.</p>
+                        </div>
+
+                        <!-- QR Code Image Upload Box -->
+                        <div class="p-5 rounded-xl border border-slate-200 dark:border-[#26364B] bg-slate-50 dark:bg-[#162235]/60 space-y-3">
+                            <label class="block text-slate-800 dark:text-slate-200 uppercase tracking-wider text-[11px] font-bold">
+                                <span class="lang-en">Upload / Replace MMQR Code Image Asset</span>
+                                <span class="lang-my">တရားဝင် MMQR ပုံရိပ် တင်သွင်းရန် သို့မဟုတ် အသစ်လဲလှယ်ရန်</span>
+                            </label>
+                            {{ form.qr_image }}
+                            {% for error in form.qr_image.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{{ error }}</p>{% endfor %}
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400">Accepted: PNG, JPG, WebP. Recommended: Square ratio, minimum 400x400 px, max 5 MB.</p>
+
+                            {% if mmqr.qr_image %}
+                            <div class="pt-2 border-t border-slate-200 dark:border-[#26364B] flex items-center gap-2">
+                                {{ form.remove_qr_image }}
+                                <label for="{{ form.remove_qr_image.id_for_label }}" class="text-xs text-rose-600 dark:text-rose-400 font-semibold cursor-pointer">
+                                    {{ form.remove_qr_image.label }}
+                                </label>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Bilingual Payment Instructions -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-semibold">
+                                    <span class="lang-en">Customer Payment Instructions (English)</span>
+                                    <span class="lang-my">ငွေပေးချေမှု လမ်းညွှန် (အင်္ဂလိပ်)</span>
+                                </label>
+                                {{ form.instructions }}
+                                {% for error in form.instructions.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+
+                            <div>
+                                <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-semibold">
+                                    <span class="lang-en">Customer Payment Instructions (Myanmar)</span>
+                                    <span class="lang-my">ငွေပေးချေမှု လမ်းညွှန် (မြန်မာဘာသာ)</span>
+                                </label>
+                                {{ form.instructions_my }}
+                                {% for error in form.instructions_my.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Save Action Button -->
+                        <div class="pt-4 border-t border-slate-200 dark:border-[#26364B] flex items-center justify-between">
+                            <span class="text-[11px] text-slate-500 dark:text-slate-400">
+                                Last modified: {{ mmqr.updated_at|date:"M d, Y H:i" }}
+                            </span>
+                            <button type="submit"
+                                    class="px-6 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span>Save MMQR Configuration</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right: Real QR Preview & Phase B Integration (5 Cols) -->
+            <div class="lg:col-span-5 space-y-6">
+                <!-- Live QR Asset Preview -->
+                <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#26364B]">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+                            <span class="lang-en">Official MMQR Preview</span>
+                            <span class="lang-my">တရားဝင် QR ကုဒ် အစမ်းပြသမှု</span>
+                        </h3>
+                        {% if mmqr.qr_image %}
+                        <span class="text-[10px] px-2 py-0.5 rounded font-mono uppercase bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-bold">
+                            Verified Asset
+                        </span>
+                        {% else %}
+                        <span class="text-[10px] px-2 py-0.5 rounded font-mono uppercase bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            No QR Asset
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if mmqr.qr_image %}
+                    <div class="p-6 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] text-center space-y-4">
+                        <div class="relative inline-block mx-auto p-4 bg-white rounded-2xl shadow-md border border-slate-200">
+                            <!-- Reticle Corners -->
+                            <div class="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-[#0284C7]"></div>
+                            <div class="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-[#0284C7]"></div>
+                            <div class="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-[#0284C7]"></div>
+                            <div class="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-[#0284C7]"></div>
+
+                            <img src="{{ mmqr.qr_image.url }}" alt="Official MMQR Code" class="w-48 h-48 object-contain mx-auto rounded">
+                        </div>
+
+                        <div>
+                            <div class="text-sm font-bold text-slate-900 dark:text-white">{{ mmqr.account_name|default:"THUTA E-Learning Platform" }}</div>
+                            {% if mmqr.account_number %}
+                            <div class="text-xs font-mono text-[#0284C7] dark:text-[#38BDF8] mt-0.5">Ref / ID: {{ mmqr.account_number }}</div>
+                            {% endif %}
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                                Scan with KBZPay, WavePay, AYA Pay, CB Pay, or any Myanmar mobile banking app.
+                            </p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-8 rounded-xl border-2 border-dashed border-slate-200 dark:border-[#26364B] bg-slate-50 dark:bg-[#162235]/40 text-center space-y-3">
+                        <div class="w-14 h-14 mx-auto rounded-2xl bg-slate-100 dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] flex items-center justify-center text-slate-400">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200">No QR Code Image Uploaded</h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                                Upload your merchant QR image in the form on the left to activate customer checkout.
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Phase B: API Gateway & Automated Webhooks Status -->
+                <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-4">
+                    <div class="pb-3 border-b border-slate-200 dark:border-[#26364B]">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+                                <span class="lang-en">Phase B — Webhooks &amp; Gateway API</span>
+                                <span class="lang-my">အဆင့် (B) အလိုအလျောက် ငွေပေးချေမှုစနစ်</span>
+                            </h3>
+                            <span class="text-[10px] px-2 py-0.5 rounded font-mono uppercase bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-semibold">
+                                Ready
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 text-xs">
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-[#162235] border border-slate-200 dark:border-[#26364B]">
+                            <span class="text-slate-600 dark:text-slate-400 font-medium">Merchant Ref:</span>
+                            <span class="font-mono font-bold text-slate-800 dark:text-slate-200">{{ merchant_id_status.value }}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-[#162235] border border-slate-200 dark:border-[#26364B]">
+                            <span class="text-slate-600 dark:text-slate-400 font-medium">API Key:</span>
+                            {% if api_key_status.configured %}
+                            <span class="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">&check; {{ api_key_status.masked_preview }}</span>
+                            {% else %}
+                            <span class="font-mono text-slate-400 dark:text-slate-500">Not Set (Env)</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-[#162235] border border-slate-200 dark:border-[#26364B] space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Webhook URL:</span>
+                                <button type="button" onclick="navigator.clipboard.writeText('{{ webhook_status.url }}'); alert('Webhook URL copied!');"
+                                        class="text-[10px] text-[#0284C7] dark:text-[#38BDF8] hover:underline font-semibold">
+                                    Copy URL
+                                </button>
+                            </div>
+                            <input type="text" readonly value="{{ webhook_status.url }}"
+                                   class="w-full text-[11px] font-mono px-2 py-1.5 rounded-lg bg-white dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] text-slate-800 dark:text-slate-200 select-all">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchSettingsTab(tab) {
+    const secChannels = document.getElementById('sectionChannels');
+    const secMMQR = document.getElementById('sectionMMQR');
+    const btnChannels = document.getElementById('tabBtnChannels');
+    const btnMMQR = document.getElementById('tabBtnMMQR');
+
+    if (tab === 'mmqr') {
+        secChannels.classList.add('hidden');
+        secMMQR.classList.remove('hidden');
+
+        btnMMQR.className = 'px-4 py-2 text-xs font-bold rounded-t-xl transition border-b-2 text-[#0284C7] dark:text-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] bg-sky-50 dark:bg-sky-950/40';
+        btnChannels.className = 'px-4 py-2 text-xs font-bold rounded-t-xl transition border-b-2 text-slate-600 dark:text-slate-400 border-transparent hover:text-slate-900 dark:hover:text-white';
+        window.location.hash = 'mmqr';
+    } else {
+        secMMQR.classList.add('hidden');
+        secChannels.classList.remove('hidden');
+
+        btnChannels.className = 'px-4 py-2 text-xs font-bold rounded-t-xl transition border-b-2 text-[#0284C7] dark:text-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] bg-sky-50 dark:bg-sky-950/40';
+        btnMMQR.className = 'px-4 py-2 text-xs font-bold rounded-t-xl transition border-b-2 text-slate-600 dark:text-slate-400 border-transparent hover:text-slate-900 dark:hover:text-white';
+        window.location.hash = 'channels';
+    }
+}
+
+// Auto-switch based on URL hash if provided
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash === '#mmqr') {
+        switchSettingsTab('mmqr');
+    }
+});
+</script>
+{% endblock %}

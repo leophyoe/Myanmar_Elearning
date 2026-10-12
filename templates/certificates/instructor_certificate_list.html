@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+
+{% block title %}Faculty Student Credentials &amp; Certificate Ledger — {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- Header & Action Toolbar -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/70 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl backdrop-blur-sm">
+        <div>
+            <div class="flex items-center gap-2 mb-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wider uppercase bg-amber-950 text-amber-300 border border-amber-800/80">
+                    Faculty Command Center
+                </span>
+                <span class="text-xs text-slate-500 font-medium">Academic Audit &amp; Credentials</span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-black text-white tracking-wide flex items-center gap-3">
+                <span class="text-2xl">📜</span>
+                <span class="lang-en">Student Credentials &amp; Certificate Ledger</span>
+                <span class="lang-my">ကျောင်းသားများ၏ အောင်လက်မှတ်နှင့် ဒီပလိုမာ မှတ်တမ်းဇယား</span>
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
+                <span class="lang-en">Monitor, verify, and audit all official course completion and exam-verified credentials awarded to students across your courses.</span>
+                <span class="lang-my">သင့်သင်တန်းများမှ ကျောင်းသားများ ရရှိထားသော တရားဝင် သင်တန်းဆင်းလက်မှတ်နှင့် စာမေးပွဲအောင်လက်မှတ် မှတ်တမ်းများကို စစ်ဆေးစီမံနိုင်သည်။</span>
+            </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <a href="{% url 'certificate-template-list' %}" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-2 border border-slate-700 shadow-sm">
+                <span>🎨</span>
+                <span class="lang-en">Certificate Studio</span>
+                <span class="lang-my">ဒီဇိုင်း စတူဒီယို</span>
+            </a>
+            <a href="{% url 'instructor-certificate-export-csv' %}?course={{ selected_course }}&q={{ query }}&status={{ active_status }}" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-2 border border-slate-700 shadow-sm">
+                <span>📥</span>
+                <span class="lang-en">Export CSV</span>
+                <span class="lang-my">စာရင်း ထုတ်ယူရန်</span>
+            </a>
+            <a href="{% url 'certificate-lookup' %}" target="_blank" class="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-cyan-950/50">
+                <span>🛡️</span>
+                <span class="lang-en">Public Registry</span>
+                <span class="lang-my">စစ်ဆေးရန် စာမျက်နှာ</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Metrics Grid -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Issued -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Issued</span>
+                <span class="text-base text-amber-400">📜</span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-white font-mono">{{ total_issued }}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Across all your courses</div>
+        </div>
+
+        <!-- Active & Valid -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Active &amp; Valid</span>
+                <span class="text-base text-emerald-400">✓</span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono">{{ valid_count }}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Cryptographically verified</div>
+        </div>
+
+        <!-- Distinctions & Honors -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Distinctions</span>
+                <span class="text-base text-purple-400">★</span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-purple-300 font-mono">{{ distinction_count }}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Outstanding merit standing</div>
+        </div>
+
+        <!-- Exam Certified -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Exam Certified</span>
+                <span class="text-base text-cyan-400">📝</span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-cyan-400 font-mono">{{ exam_count }}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Proctored examination verified</div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Controls -->
+    <div class="bg-slate-900/70 p-5 rounded-2xl border border-slate-800 space-y-4">
+        <!-- Search and Course Filter Row -->
+        <form method="GET" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <!-- Course Filter Dropdown -->
+            <div class="sm:w-64 shrink-0">
+                <select name="course" onchange="this.form.submit()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    <option value="">All My Courses</option>
+                    {% for c in teacher_courses %}
+                    <option value="{{ c.id }}" {% if selected_course == c.id|stringformat:"s" %}selected{% endif %}>
+                        {{ c.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Keyword Search -->
+            <div class="relative flex-1">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search by student name, username, email, serial code..."
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 pl-9 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+
+            <input type="hidden" name="status" value="{{ active_status }}">
+
+            <button type="submit" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition">
+                Search
+            </button>
+            {% if query or selected_course or active_status != 'all' %}
+            <a href="{% url 'instructor-certificate-list' %}" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition text-center">
+                Reset
+            </a>
+            {% endif %}
+        </form>
+
+        <!-- Status Filter Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pt-2 border-t border-slate-800/80 text-xs font-medium scrollbar-none">
+            <a href="?course={{ selected_course }}&q={{ query }}&status=all"
+               class="px-3.5 py-1.5 rounded-lg transition shrink-0 {% if active_status == 'all' or not active_status %}bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                All Credentials
+            </a>
+            <a href="?course={{ selected_course }}&q={{ query }}&status=valid"
+               class="px-3.5 py-1.5 rounded-lg transition shrink-0 {% if active_status == 'valid' %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                Active &amp; Valid
+            </a>
+            <a href="?course={{ selected_course }}&q={{ query }}&status=exam"
+               class="px-3.5 py-1.5 rounded-lg transition shrink-0 {% if active_status == 'exam' %}bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                Exam Certified
+            </a>
+            <a href="?course={{ selected_course }}&q={{ query }}&status=distinction"
+               class="px-3.5 py-1.5 rounded-lg transition shrink-0 {% if active_status == 'distinction' %}bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                Distinction / Honors
+            </a>
+            <a href="?course={{ selected_course }}&q={{ query }}&status=revoked"
+               class="px-3.5 py-1.5 rounded-lg transition shrink-0 {% if active_status == 'revoked' %}bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                Revoked
+            </a>
+        </div>
+    </div>
+
+    <!-- Official Student Credentials Table -->
+    <div class="bg-slate-900/70 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+                <thead class="text-[11px] uppercase tracking-wider bg-slate-950 text-slate-400 border-b border-slate-800 font-bold">
+                    <tr>
+                        <th class="py-3.5 px-4">Serial ID</th>
+                        <th class="py-3.5 px-4">Student Name</th>
+                        <th class="py-3.5 px-4">Course Title</th>
+                        <th class="py-3.5 px-4">Grade / Standing</th>
+                        <th class="py-3.5 px-4">Awarded Date</th>
+                        <th class="py-3.5 px-4">Ledger Status</th>
+                        <th class="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60">
+                    {% for cert in certificates %}
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <!-- Serial Code & QR Link -->
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-2">
+                                <a href="{% url 'certificate-qr' cert_id=cert.id %}" target="_blank" title="View QR Code" class="w-7 h-7 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center hover:border-cyan-500 transition shrink-0">
+                                    <span class="text-xs">📱</span>
+                                </a>
+                                <div class="font-mono font-bold text-amber-400 text-xs">
+                                    {{ cert.certificate_code }}
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Recipient Name & Username -->
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-white text-sm">{{ cert.student_name }}</div>
+                            <div class="text-[11px] text-slate-400 font-mono">@{{ cert.student.username }}</div>
+                        </td>
+
+                        <!-- Course Title & Badge -->
+                        <td class="py-3.5 px-4">
+                            <div class="font-medium text-slate-200">{{ cert.program_title }}</div>
+                            <div class="flex items-center gap-2 mt-1">
+                                {% if cert.is_exam_certificate %}
+                                <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                                    Exam Certified
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                                    Course Completion
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Grade & Standing -->
+                        <td class="py-3.5 px-4">
+                            {% if 'Distinction' in cert.grade %}
+                            <span class="font-mono font-bold text-amber-300 bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded text-[10px]">
+                                ★ {{ cert.grade }}
+                            </span>
+                            {% elif cert.grade %}
+                            <span class="font-mono font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 rounded text-[10px]">
+                                {{ cert.grade }}
+                            </span>
+                            {% else %}
+                            <span class="font-mono text-slate-400 text-[10px]">PASSED</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Concurrence / Awarded Date -->
+                        <td class="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
+                            {{ cert.issued_at|date:"M d, Y" }}
+                        </td>
+
+                        <!-- Ledger Status -->
+                        <td class="py-3.5 px-4">
+                            {% if cert.is_revoked %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-950 text-red-400 border border-red-800">
+                                Revoked
+                            </span>
+                            {% else %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1.5 w-fit">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                <span>Verified</span>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Action Toolbar -->
+                        <td class="py-3.5 px-4 text-right">
+                            <div class="inline-flex items-center gap-2">
+                                <a href="{% url 'certificate-verify' cert_id=cert.id %}" target="_blank"
+                                   class="px-3 py-1.5 rounded-xl bg-cyan-950 border border-cyan-800 text-cyan-300 hover:bg-cyan-900 transition text-[11px] font-bold flex items-center gap-1 shadow-sm">
+                                    <span>Inspect Dossier &rarr;</span>
+                                </a>
+                                <a href="{% url 'certificate-qr' cert_id=cert.id %}" download="{{ cert.certificate_code }}.png"
+                                   class="px-2.5 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition text-[11px]" title="Download QR">
+                                    QR
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-14 text-center text-slate-500">
+                            <div class="max-w-md mx-auto space-y-3">
+                                <span class="text-4xl block">🎓</span>
+                                <h4 class="text-sm font-bold text-slate-300">No Student Certificates Found</h4>
+                                <p class="text-xs text-slate-500">
+                                    When students enrolled in your courses finish all modules, submit required coursework, or pass final assessments, their official credentials and cryptographic audit records will appear here.
+                                </p>
+                                <div class="pt-2 flex items-center justify-center gap-3">
+                                    <a href="{% url 'manage-home' %}" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-semibold transition">
+                                        Open Course Builder &rarr;
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="px-6 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <div>
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ paginator.count }} total records)
+            </div>
+            <div class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&course={{ selected_course }}&q={{ query }}&status={{ active_status }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+                    &larr; Previous
+                </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&course={{ selected_course }}&q={{ query }}&status={{ active_status }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+                    Next &rarr;
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+

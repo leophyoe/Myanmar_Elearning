@@ -46,6 +46,11 @@
         }
     </script>
     <link rel="stylesheet" href="/static/css/mel-design-system.css">
+    <!-- THUTA Official Brand Favicon & Touch Icons -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon.png' %}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/thuta_icon_192.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/thuta_icon.png' %}">
     {% include 'includes/theme_head.html' %}
     {% include 'includes/lang_head.html' %}
     {% block extra_head %}{% endblock %}
@@ -92,8 +97,9 @@
     <!-- Structured Footer -->
     <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#070b14] py-6 text-xs text-slate-500 dark:text-slate-400">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-3">
-            <div class="flex items-center gap-2">
-                <span class="text-slate-900 dark:text-white font-semibold">{{ PLATFORM_NAME }}</span>
+            <div class="flex items-center gap-2.5">
+                <img src="{% static 'images/thuta_icon.png' %}" alt="THUTA" class="w-5 h-5 object-contain">
+                <span class="text-slate-900 dark:text-white font-bold tracking-wider">THUT<span class="text-cyan-500">Λ</span></span>
                 <span>• 
                     <span class="lang-en">Online Education Platform &amp; Practical Cyber Labs</span>
                     <span class="lang-my">အွန်လိုင်း ပညာရေး ပလက်ဖောင်းနှင့် လက်တွေ့ ဆိုက်ဘာဓာတ်ခွဲခန်းများ</span>

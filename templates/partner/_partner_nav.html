@@ -41,6 +41,14 @@
             <span class="lang-my">သင်တန်းများ</span>
         </a>
 
+        <a href="{% url 'standalone-exam-list' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'exams' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>📝</span>
+            <span class="lang-en">Exams &amp; Tests</span>
+            <span class="lang-my">စာမေးပွဲများ</span>
+        </a>
+
         <a href="{% url 'partner-cohorts' %}"
            class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
            {% if active == 'cohorts' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
@@ -63,6 +71,14 @@
             <span>📜</span>
             <span class="lang-en">Certificates</span>
             <span class="lang-my">အောင်လက်မှတ်များ</span>
+        </a>
+
+        <a href="{% url 'certificate-template-list' %}"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-xl transition shrink-0
+           {% if active == 'templates' %}bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220] shadow-sm{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60{% endif %}">
+            <span>🎨</span>
+            <span class="lang-en">Certificate Studio</span>
+            <span class="lang-my">ဒီဇိုင်း စတူဒီယို</span>
         </a>
 
         <a href="{% url 'partner-reports' %}"

@@ -926,13 +926,14 @@ class PartnerCertificateListView(LoginRequiredMixin, ListView):
     model = Certificate
     template_name = 'partner/certificate_list.html'
     context_object_name = 'certificates'
+    paginate_by = 25
 
     def dispatch(self, request, *args, **kwargs):
         if not getattr(request.user, 'is_partner', False) and not request.user.is_admin:
             raise PermissionDenied("Partner access required.")
         return super().dispatch(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_base_queryset(self):
         institutions = get_user_partner_institutions(self.request.user)
         if self.request.user.is_admin:
             return Certificate.objects.all().select_related('student', 'course')
@@ -940,6 +941,155 @@ class PartnerCertificateListView(LoginRequiredMixin, ListView):
             Q(course__partner_institution__in=institutions) |
             Q(student__partner_memberships__institution__in=institutions)
         ).select_related('student', 'course').distinct()
+
+    def get_queryset(self):
+        qs = self.get_base_queryset()
+
+        institution_id = self.request.GET.get('institution', '').strip()
+        if institution_id:
+            qs = qs.filter(
+                Q(course__partner_institution_id=institution_id) |
+                Q(student__partner_memberships__institution_id=institution_id)
+            )
+
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(certificate_code__icontains=q) |
+                Q(student__username__icontains=q) |
+                Q(student__first_name__icontains=q) |
+                Q(student__last_name__icontains=q) |
+                Q(student__email__icontains=q) |
+                Q(course__title__icontains=q)
+            )
+
+        status = self.request.GET.get('status', 'all').strip().lower()
+        if status == 'valid':
+            qs = qs.filter(is_revoked=False)
+        elif status == 'revoked':
+            qs = qs.filter(is_revoked=True)
+        elif status == 'distinction':
+            qs = qs.filter(is_revoked=False, grade__icontains='Distinction')
+        elif status == 'exam':
+            qs = qs.filter(
+                Q(is_revoked=False) &
+                (Q(exam__isnull=False) | Q(certificate_type=Certificate.CertificateType.EXAM_VERIFIED))
+            )
+
+        return qs.order_by('-issued_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        base_qs = self.get_base_queryset()
+        institutions = get_user_partner_institutions(self.request.user)
+
+        exam_cert_count = base_qs.filter(
+            Q(is_revoked=False) &
+            (Q(exam__isnull=False) | Q(certificate_type=Certificate.CertificateType.EXAM_VERIFIED))
+        ).count()
+
+        context.update({
+            'active': 'certificates',
+            'institutions': institutions,
+            'selected_institution': self.request.GET.get('institution', ''),
+            'total_issued': base_qs.count(),
+            'valid_count': base_qs.filter(is_revoked=False).count(),
+            'distinction_count': base_qs.filter(is_revoked=False, grade__icontains='Distinction').count(),
+            'exam_count': exam_cert_count,
+            'query': self.request.GET.get('q', ''),
+            'active_status': self.request.GET.get('status', 'all'),
+        })
+        return context
+
+
+class PartnerCertificateExportCSVView(LoginRequiredMixin, View):
+    """
+    Exports partner institutional student certificates roster to CSV for university accreditation and compliance.
+    """
+    def dispatch(self, request, *args, **kwargs):
+        if not getattr(request.user, 'is_partner', False) and not request.user.is_admin:
+            raise PermissionDenied("Partner access required.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        institutions = get_user_partner_institutions(request.user)
+        if request.user.is_admin:
+            qs = Certificate.objects.all().select_related('student', 'course')
+        else:
+            qs = Certificate.objects.filter(
+                Q(course__partner_institution__in=institutions) |
+                Q(student__partner_memberships__institution__in=institutions)
+            ).select_related('student', 'course').distinct()
+
+        institution_id = request.GET.get('institution', '').strip()
+        if institution_id:
+            qs = qs.filter(
+                Q(course__partner_institution_id=institution_id) |
+                Q(student__partner_memberships__institution_id=institution_id)
+            )
+
+        q = request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(certificate_code__icontains=q) |
+                Q(student__username__icontains=q) |
+                Q(student__first_name__icontains=q) |
+                Q(student__last_name__icontains=q) |
+                Q(student__email__icontains=q) |
+                Q(course__title__icontains=q)
+            )
+
+        status = request.GET.get('status', 'all').strip().lower()
+        if status == 'valid':
+            qs = qs.filter(is_revoked=False)
+        elif status == 'revoked':
+            qs = qs.filter(is_revoked=True)
+        elif status == 'distinction':
+            qs = qs.filter(is_revoked=False, grade__icontains='Distinction')
+        elif status == 'exam':
+            qs = qs.filter(
+                Q(is_revoked=False) &
+                (Q(exam__isnull=False) | Q(certificate_type=Certificate.CertificateType.EXAM_VERIFIED))
+            )
+
+        qs = qs.order_by('-issued_at')
+
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        date_str = timezone.localdate().strftime('%Y%m%d')
+        response['Content-Disposition'] = f'attachment; filename="partner_certificates_roster_{date_str}.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow([
+            'Serial Code',
+            'Recipient Full Name',
+            'Username',
+            'Email',
+            'Program / Course Title',
+            'Institution',
+            'Grade / Standing',
+            'Certification Type',
+            'SHA-256 Ledger Fingerprint',
+            'Awarded Date',
+            'Ledger Status',
+        ])
+
+        for cert in qs:
+            inst_name = (cert.course.partner_institution.name if cert.course and cert.course.partner_institution else 'THUTA Academic Network')
+            writer.writerow([
+                cert.certificate_code,
+                cert.student_name,
+                cert.student.username,
+                cert.student.email,
+                cert.program_title,
+                inst_name,
+                cert.grade or 'PASS',
+                cert.get_certificate_type_display(),
+                cert.sha256_hash,
+                cert.issued_at.strftime('%Y-%m-%d %H:%M') if cert.issued_at else '-',
+                'REVOKED' if cert.is_revoked else 'VALID & VERIFIED',
+            ])
+
+        return response
 
 
 class PartnerReportsView(LoginRequiredMixin, TemplateView):

@@ -333,6 +333,22 @@ def can_take_course_exam(user, course: Course) -> tuple[bool, str]:
     if not can_access_course(user, course):
         return False, "Active course enrollment and completion required."
 
+    # When exam is required for course completion, all curriculum lessons must be finished first
+    if getattr(course, 'exam_required', False):
+        from django.db.models import Q
+        from apps.courses.models import Lesson, UserProgress
+
+        total_lessons = Lesson.objects.filter(module__course=course).count()
+        if total_lessons > 0:
+            completed_lessons = UserProgress.objects.filter(
+                Q(course=course) | Q(lesson__module__course=course),
+                user=user,
+                is_completed=True,
+                lesson__isnull=False,
+            ).distinct().count()
+            if completed_lessons < total_lessons:
+                return False, f"All curriculum lessons must be completed before taking the Final Assessment ({completed_lessons}/{total_lessons} completed)."
+
     voucher_price = getattr(course, 'exam_voucher_price', None)
     if voucher_price and voucher_price > Decimal('0.00'):
         from apps.billing.models import Payment

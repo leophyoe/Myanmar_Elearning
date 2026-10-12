@@ -22,6 +22,14 @@
                     item.setAttribute('aria-label', title);
                 }
             });
+
+            // Update text content for elements that cannot contain child HTML spans (e.g. <option>)
+            document.querySelectorAll('[data-text-en]').forEach(function(item) {
+                var txt = (lang === 'my') ? item.getAttribute('data-text-my') : item.getAttribute('data-text-en');
+                if (txt !== null && txt !== undefined) {
+                    item.textContent = txt;
+                }
+            });
         }
 
         document.addEventListener('click', function (event) {

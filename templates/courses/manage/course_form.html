@@ -1,50 +1,696 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ view.object|default:"New" }} - {{ PLATFORM_NAME }}{% endblock %}
+{% block title %}{% if object %}Edit {{ object.title }}{% else %}New Course{% endif %} - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <a href="{% url 'manage-home' %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to Content Studio</a>
-
-    <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mt-4">
-        <div class="flex items-center justify-between pb-5 mb-6 border-b border-slate-800">
-            <h1 class="text-xl font-bold text-white">
-                {% if object %}Edit Course{% else %}Create Course{% endif %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <a href="{% url 'manage-home' %}" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                <span class="lang-en">Back to Content Studio</span>
+                <span class="lang-my">သင်ရိုးစီမံခန့်ခွဲမှု စတူဒီယိုသို့ ပြန်သွားရန်</span>
+            </a>
+            <h1 class="text-2xl font-bold text-white mt-2">
+                {% if object %}
+                    <span class="lang-en">Edit Course:</span>
+                    <span class="lang-my">သင်တန်း ပြင်ဆင်ရန်:</span>
+                    <span class="text-cyan-400">{{ object.title }}</span>
+                {% else %}
+                    <span class="lang-en">Create New Course</span>
+                    <span class="lang-my">သင်တန်း အသစ် ဖန်တီးရန်</span>
+                {% endif %}
             </h1>
-            {% if object %}
-            <span class="text-[11px] font-mono text-slate-500">{{ object.slug }}</span>
-            {% endif %}
+            <p class="text-xs text-slate-400 mt-1">
+                {% if object %}
+                    <span class="lang-en">Update course metadata, pricing, certificates, and curriculum modules.</span>
+                    <span class="lang-my">သင်တန်း အချက်အလက်များ၊ စျေးနှုန်း၊ လက်မှတ်နှင့် အခန်းများကို ပြင်ဆင်ပါ။</span>
+                {% else %}
+                    <span class="lang-en">Fill in course specifications and publish for students.</span>
+                    <span class="lang-my">သင်တန်း အချက်အလက်များကို ဖြည့်သွင်းပြီး ကျောင်းသားများအတွက် ထုတ်ဝေပါ။</span>
+                {% endif %}
+            </p>
         </div>
 
-        <form method="POST" class="space-y-5 text-sm" enctype="multipart/form-data">
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- Language Switcher -->
+            <div class="inline-flex items-center rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs font-semibold shadow-inner">
+                <button type="button" onclick="setFormLang('en');" id="formLangBtnEn"
+                        class="px-3 py-1.5 rounded-lg transition font-mono">
+                    English
+                </button>
+                <button type="button" onclick="setFormLang('my');" id="formLangBtnMy"
+                        class="px-3 py-1.5 rounded-lg transition font-sans">
+                    မြန်မာစာ
+                </button>
+            </div>
+
+            {% if object %}
+            <a href="{% url 'course-detail' slug=object.slug %}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition">
+                <svg class="w-3.5 h-3.5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span class="lang-en">View Live Page</span>
+                <span class="lang-my">သင်တန်း စာမျက်နှာ ကြည့်မည်</span>
+            </a>
+            <a href="{% url 'module-create' %}?course={{ object.id }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-sm transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span class="lang-en">+ Add Module</span>
+                <span class="lang-my">+ အခန်းအသစ် ထည့်မည်</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Course Edit Form Card -->
+    <div class="p-6 sm:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mb-10">
+        <form method="POST" class="space-y-6 text-sm" enctype="multipart/form-data">
             {% csrf_token %}
 
             {% if form.non_field_errors %}
-            <div class="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs">
+            <div class="p-3.5 rounded-xl bg-red-950/60 border border-red-800 text-red-300 text-xs space-y-1">
                 {{ form.non_field_errors }}
             </div>
             {% endif %}
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {% for field in form %}
-                <div class="{% if field.name == 'description' %}md:col-span-2{% endif %}">
-                    <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">
-                        {{ field.label }}{% if field.field.required %} <span class="text-red-400">*</span>{% endif %}
-                    </label>
-                    {{ field }}
-                    {% if field.help_text %}<p class="text-[10px] text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
-                    {% for error in field.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+            <!-- Section 1: Basic Information -->
+            <div class="pb-6 border-b border-slate-800">
+                <div class="mb-4">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+                        <span class="lang-en">1. Basic Information</span>
+                        <span class="lang-my">၁။ အခြေခံ အချက်အလက်များ</span>
+                    </h2>
+                    <p class="text-[11px] text-slate-400 mt-0.5">
+                        <span class="lang-en">Title, URL slug, academic category and summary description.</span>
+                        <span class="lang-my">သင်တန်းအမည်၊ URL လိပ်စာ၊ ဘာသာရပ်ကဏ္ဍ နှင့် အကျဉ်းချုပ် ဖော်ပြချက်။</span>
+                    </p>
                 </div>
-                {% endfor %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Title -->
+                    <div class="md:col-span-2">
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Course Title</span>
+                            <span class="lang-my">သင်တန်း အမည်</span>
+                            <span class="text-red-400">*</span>
+                        </label>
+                        {{ form.title }}
+                        {% if form.title.help_text %}<p class="text-[11px] text-slate-500 mt-1">{{ form.title.help_text }}</p>{% endif %}
+                        {% for error in form.title.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Slug -->
+                    <div>
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">URL Slug (Auto-generated if blank)</span>
+                            <span class="lang-my">လိပ်စာ အတိုကောက် (မဖြည့်ပါက အလိုအလျောက် သတ်မှတ်မည်)</span>
+                        </label>
+                        {{ form.slug }}
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            <span class="lang-en">Example: <code class="text-cyan-400">python-basic</code></span>
+                            <span class="lang-my">ဥပမာ- <code class="text-cyan-400">python-basic</code></span>
+                        </p>
+                        {% for error in form.slug.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Subject -->
+                    <div>
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Subject Category</span>
+                            <span class="lang-my">ဘာသာရပ် ကဏ္ဍ</span>
+                        </label>
+                        {{ form.subject }}
+                        {% for error in form.subject.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Description -->
+                    <div class="md:col-span-2">
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Course Description</span>
+                            <span class="lang-my">သင်တန်း အကြောင်းအရာ ရှင်းလင်းချက်</span>
+                            <span class="text-red-400">*</span>
+                        </label>
+                        {{ form.description }}
+                        {% for error in form.description.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Thumbnail -->
+                    <div class="md:col-span-2">
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Course Thumbnail</span>
+                            <span class="lang-my">မျက်နှာဖုံး ပုံရိပ်</span>
+                        </label>
+                        {{ form.thumbnail }}
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            <span class="lang-en">Recommended aspect ratio: 16:9 (JPG or PNG).</span>
+                            <span class="lang-my">အကြံပြုထားသော ပုံစံချိုး- ၁၆:၉ (JPG သို့မဟုတ် PNG)။</span>
+                        </p>
+                        {% for error in form.thumbnail.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
             </div>
 
-            <div class="flex gap-3 pt-2">
-                <button type="submit" class="px-6 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition">
-                    Save Course
+            <!-- Section 2: Educational Details -->
+            <div class="pb-6 border-b border-slate-800">
+                <div class="mb-4">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                        <span class="lang-en">2. Pedagogy &amp; Duration</span>
+                        <span class="lang-my">၂။ သင်ကြားမှု အဆင့်အတန်း နှင့် ကြာမြင့်ချိန်</span>
+                    </h2>
+                    <p class="text-[11px] text-slate-400 mt-0.5">
+                        <span class="lang-en">Target skill level, instructional language, and estimated completion timeframe.</span>
+                        <span class="lang-my">သင်တန်းအဆင့်၊ သင်ကြားမည့် ဘာသာစကား နှင့် ခန့်မှန်း ကြာမြင့်ချိန်။</span>
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <!-- Level -->
+                    <div>
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Skill Level</span>
+                            <span class="lang-my">သင်တန်း အဆင့်</span>
+                        </label>
+                        {{ form.level }}
+                        {% for error in form.level.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Language -->
+                    <div>
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Instruction Language</span>
+                            <span class="lang-my">သင်ကြားမည့် ဘာသာစကား</span>
+                        </label>
+                        {{ form.language }}
+                        {% for error in form.language.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Duration Months -->
+                    <div>
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Duration</span>
+                            <span class="lang-my">ကြာမြင့်ချိန်</span>
+                        </label>
+                        {{ form.duration_months }}
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            <span class="lang-en">Number of months (e.g. 1, 3, 6, 10).</span>
+                            <span class="lang-my">လအရေအတွက် (ဥပမာ- ၁၊ ၃၊ ၆၊ ၁၀)။</span>
+                        </p>
+                        {% for error in form.duration_months.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Access & Pricing -->
+            <div class="pb-6 border-b border-slate-800">
+                <div class="mb-4">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span class="lang-en">3. Access Type &amp; Pricing</span>
+                        <span class="lang-my">၃။ ဝင်ရောက်ခွင့် နှင့် စျေးနှုန်း သတ်မှတ်ချက်</span>
+                    </h2>
+                    <p class="text-[11px] text-slate-400 mt-0.5">
+                        <span class="lang-en">Determine whether the course is free, membership-based, or direct purchase.</span>
+                        <span class="lang-my">သင်တန်းကို အခမဲ့၊ အသင်းဝင်ကြေး သို့မဟုတ် သီးသန့်ဝယ်ယူမှု သတ်မှတ်ပါ။</span>
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Access Type -->
+                    <div>
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Access Type</span>
+                            <span class="lang-my">ဝင်ရောက်ခွင့် အမျိုးအစား</span>
+                        </label>
+                        {{ form.access_type }}
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            <span class="lang-en">Select Free for open courses, or Standard/Premium for subscription tiers.</span>
+                            <span class="lang-my">အခမဲ့သင်တန်းအတွက် Free၊ လစဉ်ကြေးအတွက် Standard/Premium ရွေးချယ်ပါ။</span>
+                        </p>
+                        {% for error in form.access_type.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Membership Tier Required -->
+                    <div>
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Membership Tier Required</span>
+                            <span class="lang-my">အနည်းဆုံး လိုအပ်သော အဖွဲ့ဝင်အဆင့်</span>
+                        </label>
+                        {{ form.membership_tier_required }}
+                        {% for error in form.membership_tier_required.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Price -->
+                    <div>
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Course Price (MMK)</span>
+                            <span class="lang-my">သင်တန်းကြေး (ကျပ်)</span>
+                        </label>
+                        {{ form.price }}
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            <span class="lang-en">Set <code class="text-emerald-400">0</code> for free course.</span>
+                            <span class="lang-my">အခမဲ့သင်တန်းဖြစ်ပါက <code class="text-emerald-400">0</code> ထားပါ။</span>
+                        </p>
+                        {% for error in form.price.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Billing Period -->
+                    <div>
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Billing Period</span>
+                            <span class="lang-my">ငွေပေးချေမှု ကာလ</span>
+                        </label>
+                        {{ form.billing_period }}
+                        {% for error in form.billing_period.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Certification & Exam -->
+            <div class="pb-6 border-b border-slate-800">
+                <div class="mb-4">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <span class="lang-en">4. Examination &amp; Certification</span>
+                        <span class="lang-my">၄။ စာမေးပွဲ နှင့် လက်မှတ် သတ်မှတ်ချက်</span>
+                    </h2>
+                    <p class="text-[11px] text-slate-400 mt-0.5">
+                        <span class="lang-en">Control whether passing a formal proctored exam is required for certificate issuance.</span>
+                        <span class="lang-my">အောင်လက်မှတ်ရယူရန် တရားဝင် စာမေးပွဲ အောင်မြင်ရန် လိုမလို သတ်မှတ်ပါ။</span>
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                    <!-- Exam Required -->
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <span class="mt-0.5">{{ form.exam_required }}</span>
+                            <div>
+                                <span class="font-semibold text-white text-xs block">
+                                    <span class="lang-en">Exam Required</span>
+                                    <span class="lang-my">စာမေးပွဲ ဖြေဆိုရန် လိုအပ်သည်</span>
+                                </span>
+                                <span class="text-[11px] text-slate-400 block mt-0.5">
+                                    <span class="lang-en">Students must pass a proctored examination before earning the verified course certificate.</span>
+                                    <span class="lang-my">စိစစ်ပြီး အောင်လက်မှတ် ရယူရန် ကျောင်းသားများသည် စာမေးပွဲကို အောင်မြင်စွာ ဖြေဆိုရပါမည်။</span>
+                                </span>
+                            </div>
+                        </label>
+                        {% for error in form.exam_required.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Exam Voucher Price -->
+                    <div>
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            <span class="lang-en">Exam Voucher Price (MMK)</span>
+                            <span class="lang-my">စာမေးပွဲကြေး (ကျပ်)</span>
+                        </label>
+                        {{ form.exam_voucher_price }}
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            <span class="lang-en">Set <code class="text-amber-400">0</code> if the exam is already included in course fee.</span>
+                            <span class="lang-my">သင်တန်းကြေးတွင် စာမေးပွဲကြေး ပါဝင်ပြီးဖြစ်ပါက <code class="text-amber-400">0</code> ထားပါ။</span>
+                        </p>
+                        {% for error in form.exam_voucher_price.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Certificate Template Selector -->
+                    <div class="col-span-full pt-2">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-slate-300 font-semibold text-xs">
+                                <span class="lang-en">Awarded Certificate Design / Template</span>
+                                <span class="lang-my">ပေးအပ်မည့် Certificate ဒီဇိုင်းပုံစံ</span>
+                            </label>
+                            <a href="{% url 'certificate-template-create' %}" target="_blank" class="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 transition">
+                                <span>➕</span>
+                                <span class="lang-en">Upload / Create Custom Template</span>
+                                <span class="lang-my">ကိုယ်ပိုင် ဒီဇိုင်းအသစ် ဖန်တီး / Upload တင်ရန် &rarr;</span>
+                            </a>
+                        </div>
+                        {{ form.certificate_template }}
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            <span class="lang-en">Select a custom or branded certificate layout. Leave blank to use the official platform default diploma.</span>
+                            <span class="lang-my">ကျောင်းသားများ သင်တန်းပြီးဆုံးပါက ထုတ်ပေးမည့် Certificate ဒီဇိုင်းကို ရွေးချယ်ပါ။ နေရာလွတ်ထားပါက Platform မူရင်း ဒီပလိုမာကို အသုံးပြုပါမည်။</span>
+                        </p>
+                        {% for error in form.certificate_template.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+
+                {% if object %}
+                <div class="mt-5 p-4 rounded-xl bg-slate-950 border border-slate-800">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <span class="text-xs font-bold text-white flex items-center gap-2">
+                                <span>🎓</span>
+                                <span class="lang-en">Course Final Assessment Exam</span>
+                                <span class="lang-my">သင်တန်း နောက်ဆုံး အကဲဖြတ် စာမေးပွဲ (Final Assessment)</span>
+                            </span>
+                            {% if course_final_exam %}
+                            <p class="text-[11px] text-slate-300 mt-1">
+                                <strong class="text-amber-400 font-semibold">{{ course_final_exam.title }}</strong> &bull;
+                                <span class="text-slate-400">{{ course_final_exam.questions.count }} <span class="lang-en">Questions</span><span class="lang-my">မေးခွန်း</span></span> &bull;
+                                <span class="text-slate-400"><span class="lang-en">Passing:</span><span class="lang-my">အောင်မှတ်:</span> {{ course_final_exam.passing_percentage }}%</span> &bull;
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if course_final_exam.status == 'published' %}bg-emerald-950 text-emerald-300 border border-emerald-800{% else %}bg-slate-800 text-slate-300{% endif %}">
+                                    {{ course_final_exam.get_status_display }}
+                                </span>
+                            </p>
+                            {% else %}
+                            <p class="text-[11px] text-slate-400 mt-0.5">
+                                <span class="lang-en">No Final Assessment attached to this course yet. Add one so students must pass it before earning their certificate.</span>
+                                <span class="lang-my">ဤသင်တန်းအတွက် Final Assessment မဖန်တီးရသေးပါ။ ကျောင်းသားများ သင်ခန်းစာအားလုံးပြီးဆုံးပါက အောင်လက်မှတ်ရယူရန် ဤစာမေးပွဲကို အောင်မြင်စွာ ဖြေဆိုရမည်ဖြစ်ပါသည်။</span>
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex items-center gap-2 shrink-0">
+                            {% if course_final_exam %}
+                            <a href="{% url 'standalone-exam-edit' exam_id=course_final_exam.id %}"
+                               class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition">
+                                <span class="lang-en">✏️ Edit Exam</span><span class="lang-my">✏️ ပြင်ဆင်မည်</span>
+                            </a>
+                            <a href="{% url 'quiz-edit' lesson_id=course_final_exam.id %}"
+                               class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-md">
+                                <span class="lang-en">⚙️ Manage Questions ({{ course_final_exam.questions.count }})</span>
+                                <span class="lang-my">⚙️ မေးခွန်းများ စီမံမည် ({{ course_final_exam.questions.count }})</span>
+                            </a>
+                            {% else %}
+                            <a href="{% url 'standalone-exam-create' %}?course={{ object.id }}"
+                               class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-md transition flex items-center gap-1.5">
+                                <span>➕</span>
+                                <span class="lang-en">Create Final Assessment</span>
+                                <span class="lang-my">Final Assessment အသစ် ဖန်တီးမည်</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Section 5: Administration & Publishing (Admin Only) -->
+            {% if user.is_admin %}
+            <div class="pb-6 border-b border-slate-800">
+                <div class="mb-4">
+                    <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                        <span class="lang-en">5. Publishing &amp; Platform Control</span>
+                        <span class="lang-my">၅။ ထုတ်ဝေမှု နှင့် ပလက်ဖောင်း အဆင့်အတန်း</span>
+                    </h2>
+                    <p class="text-[11px] text-slate-400 mt-0.5">
+                        <span class="lang-en">Administrative controls to publish immediately and mark as official platform program.</span>
+                        <span class="lang-my">ချက်ချင်းထုတ်ဝေရန်နှင့် THUTA တရားဝင်သင်ရိုးအဖြစ် သတ်မှတ်ရန် စီမံခန့်ခွဲမှု ခလုတ်များ။</span>
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Is Published -->
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <span class="mt-0.5">{{ form.is_published }}</span>
+                            <div>
+                                <span class="font-semibold text-white text-xs block">
+                                    <span class="lang-en">Is Published</span>
+                                    <span class="lang-my">လူထုသို့ ထုတ်ဝေပြသမည်</span>
+                                </span>
+                                <span class="text-[11px] text-slate-400 block mt-0.5">
+                                    <span class="lang-en">When checked, the course appears live in the public catalog and search.</span>
+                                    <span class="lang-my">အမှန်ခြစ်ထားပါက သင်တန်းစာရင်းနှင့် ရှာဖွေမှုများတွင် ချက်ချင်း ပေါ်လာပါမည်။</span>
+                                </span>
+                            </div>
+                        </label>
+                        {% for error in form.is_published.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+
+                    <!-- Is Official -->
+                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                        <label class="flex items-start gap-3 cursor-pointer">
+                            <span class="mt-0.5">{{ form.is_official }}</span>
+                            <div>
+                                <span class="font-semibold text-white text-xs block">
+                                    <span class="lang-en">Is Official Course</span>
+                                    <span class="lang-my">THUTA တရားဝင် သင်တန်း</span>
+                                </span>
+                                <span class="text-[11px] text-slate-400 block mt-0.5">
+                                    <span class="lang-en">Designates this program as an official platform curriculum with direct certification authority.</span>
+                                    <span class="lang-my">ဤသင်တန်းကို THUTA တရားဝင် လက်မှတ်ထုတ်ပေးနိုင်သော သင်ရိုးအဖြစ် သတ်မှတ်သည်။</span>
+                                </span>
+                            </div>
+                        </label>
+                        {% for error in form.is_official.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="flex items-center gap-3 pt-2">
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition shadow-md">
+                    <span class="lang-en">Save Course</span>
+                    <span class="lang-my">သင်တန်း သိမ်းဆည်းမည်</span>
                 </button>
-                <a href="{% url 'manage-home' %}" class="px-6 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition">Cancel</a>
+                <a href="{% url 'manage-home' %}" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium transition">
+                    <span class="lang-en">Cancel</span>
+                    <span class="lang-my">မလုပ်တော့ပါ</span>
+                </a>
             </div>
         </form>
     </div>
+
+    {% if object %}
+    <!-- Course Curriculum Studio (Modules & Lessons) -->
+    <div class="p-6 sm:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 mb-6 border-b border-slate-800">
+            <div>
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span class="lang-en">Curriculum &amp; Lesson Content</span>
+                    <span class="lang-my">သင်ရိုးနှင့် သင်ခန်းစာများ</span>
+                    <span class="px-2 py-0.5 text-xs rounded-full bg-cyan-950 border border-cyan-800 text-cyan-400 font-mono">
+                        {{ modules.count }} Module{{ modules.count|pluralize }} · {{ total_lessons }} Lesson{{ total_lessons|pluralize }}
+                    </span>
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">
+                    <span class="lang-en">Manage chapters (modules), video lectures, articles, quizzes, and labs for this course.</span>
+                    <span class="lang-my">ဤသင်တန်းအတွက် အခန်းများ၊ ဗီဒီယိုများ၊ စာဖတ်မှတ်စုများ၊ Quiz များနှင့် Lab များကို စီမံခန့်ခွဲပါ။</span>
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="{% url 'module-create' %}?course={{ object.id }}" class="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-sm transition">
+                    <span class="lang-en">+ Add Chapter / Module</span>
+                    <span class="lang-my">+ အခန်းအသစ် ထည့်မည်</span>
+                </a>
+            </div>
+        </div>
+
+        {% if modules %}
+        <div class="space-y-6">
+            {% for module in modules %}
+            <div class="p-5 rounded-xl bg-slate-950 border border-slate-800/80">
+                <!-- Module Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-800/60">
+                    <div class="flex items-center gap-2.5">
+                        <span class="px-2 py-0.5 rounded bg-slate-800 text-cyan-400 font-mono text-xs font-bold">{{ module.code }}</span>
+                        <h3 class="text-sm font-bold text-white">{{ module.title }}</h3>
+                        <span class="text-[11px] text-slate-500 font-normal">({{ module.lessons.count }} lesson{{ module.lessons.count|pluralize }})</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs flex-wrap">
+                        <a href="{% url 'lesson-create' %}?module={{ module.id }}" class="px-2.5 py-1 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 font-medium transition">
+                            <span class="lang-en">+ Add Lesson</span>
+                            <span class="lang-my">+ သင်ခန်းစာ</span>
+                        </a>
+                        <a href="{% url 'assignment-create' %}?module={{ module.id }}" class="px-2.5 py-1 rounded bg-violet-950 hover:bg-violet-900 border border-violet-800 text-violet-300 font-medium transition">
+                            <span class="lang-en">+ Assignment</span>
+                            <span class="lang-my">+ အိမ်စာ</span>
+                        </a>
+                        <a href="{% url 'module-edit' module_id=module.id %}" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+                            <span class="lang-en">Edit</span>
+                            <span class="lang-my">ပြင်ဆင်ရန်</span>
+                        </a>
+                        <a href="{% url 'module-delete' module_id=module.id %}" class="px-2 py-1 rounded bg-slate-800 hover:bg-red-950 hover:text-red-400 text-slate-400 transition">
+                            <span class="lang-en">Delete</span>
+                            <span class="lang-my">ဖျက်မည်</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Lessons in this module -->
+                {% if module.lessons.all %}
+                <div class="divide-y divide-slate-800/40 pl-2">
+                    {% for lesson in module.lessons.all %}
+                    <div class="py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-5 text-slate-500 font-mono text-center">{{ lesson.order }}.</span>
+                            <span class="font-medium text-slate-200">{{ lesson.title }}</span>
+                            <span class="px-1.5 py-0.5 text-[10px] rounded uppercase font-bold
+                                {% if lesson.lesson_type == 'video' %}bg-blue-950 text-blue-300 border border-blue-800
+                                {% elif lesson.lesson_type == 'quiz' %}bg-amber-950 text-amber-300 border border-amber-800
+                                {% elif lesson.lesson_type == 'lab' %}bg-purple-950 text-purple-300 border border-purple-800
+                                {% else %}bg-slate-800 text-slate-400 border border-slate-700{% endif %}">
+                                {{ lesson.get_lesson_type_display }}
+                            </span>
+                            {% if lesson.estimated_minutes %}
+                            <span class="text-[10px] text-slate-500 font-mono">{{ lesson.estimated_minutes }}m</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-2 pl-7 sm:pl-0 flex-wrap">
+                            <a href="{% url 'quiz-edit' lesson_id=lesson.id %}" class="px-2 py-0.5 rounded bg-amber-950/70 hover:bg-amber-900 border border-amber-800/70 text-amber-300 text-[11px] font-semibold transition">
+                                <span class="lang-en">{% if lesson.has_quiz %}Edit Quiz{% else %}+ Quiz{% endif %}</span>
+                                <span class="lang-my">{% if lesson.has_quiz %}Quiz ပြင်ရန်{% else %}+ Quiz ထည့်မည်{% endif %}</span>
+                            </a>
+                            <span class="text-slate-600">·</span>
+                            <a href="{% url 'lesson-edit' lesson_id=lesson.id %}" class="text-cyan-400 hover:underline">
+                                <span class="lang-en">Edit</span>
+                                <span class="lang-my">ပြင်ဆင်ရန်</span>
+                            </a>
+                            <span class="text-slate-600">·</span>
+                            <a href="{% url 'lesson-delete' lesson_id=lesson.id %}" class="text-red-400 hover:underline">
+                                <span class="lang-en">Delete</span>
+                                <span class="lang-my">ဖျက်မည်</span>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="py-3 text-center">
+                    <p class="text-xs text-slate-500">
+                        <span class="lang-en">No lessons added to this chapter yet.</span>
+                        <span class="lang-my">ဤအခန်းထဲသို့ သင်ခန်းစာများ မထည့်သွင်းရသေးပါ။</span>
+                    </p>
+                    <a href="{% url 'lesson-create' %}?module={{ module.id }}" class="inline-block mt-1 text-xs text-cyan-400 hover:underline">
+                        <span class="lang-en">+ Add first lesson to {{ module.title }}</span>
+                        <span class="lang-my">+ {{ module.title }} ထဲသို့ ပထမဆုံး သင်ခန်းစာ ထည့်မည်</span>
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Module Assignments -->
+                {% if module.assignments.all %}
+                <div class="mt-3 pt-2.5 border-t border-slate-800/50 pl-2">
+                    <span class="text-[10px] uppercase font-bold text-violet-400 tracking-wider">Chapter Assignments ({{ module.assignments.count }}):</span>
+                    <div class="divide-y divide-slate-800/40 mt-1">
+                        {% for assignment in module.assignments.all %}
+                        <div class="py-1.5 flex items-center justify-between text-xs text-slate-300">
+                            <div class="flex items-center gap-2">
+                                <span class="text-violet-400">📝</span>
+                                <span class="font-medium text-slate-200">{{ assignment.title }}</span>
+                                <span class="text-[10px] text-slate-500 font-mono">({{ assignment.max_score }} pts)</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <a href="{% url 'assignment-edit' assignment_id=assignment.id %}" class="text-cyan-400 hover:underline text-[11px]">Edit</a>
+                                <span class="text-slate-600">·</span>
+                                <a href="{% url 'assignment-delete' assignment_id=assignment.id %}" class="text-red-400 hover:underline text-[11px]">Delete</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-10 px-4 rounded-xl border border-dashed border-slate-800">
+            <svg class="w-10 h-10 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            <h3 class="text-sm font-semibold text-white">
+                <span class="lang-en">This course has no chapters/modules yet</span>
+                <span class="lang-my">ဤသင်တန်းတွင် အခန်းများ မရှိသေးပါ</span>
+            </h3>
+            <p class="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
+                <span class="lang-en">Create your first chapter to start organizing videos, reading materials, quizzes, and hands-on labs.</span>
+                <span class="lang-my">ဗီဒီယိုများ၊ စာဖတ်မှတ်စုများ၊ မေးခွန်းများနှင့် လက်တွေ့လေ့ကျင့်ခန်းများကို စတင်ထည့်သွင်းရန် ပထမဆုံး အခန်းကို ဖန်တီးပါ။</span>
+            </p>
+            <a href="{% url 'module-create' %}?course={{ object.id }}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md transition">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span class="lang-en">Create Chapter</span>
+                <span class="lang-my">အခန်းအသစ် ဖန်တီးမည်</span>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
+
+<!-- Language Controller & Select Options Localizer -->
+<script>
+    var SELECT_TRANSLATIONS = {
+        'id_level': {
+            'beginner': { en: 'Beginner', my: 'အခြေခံအဆင့်' },
+            'intermediate': { en: 'Intermediate', my: 'အလယ်အလတ်အဆင့်' },
+            'advanced': { en: 'Advanced', my: 'အဆင့်မြင့်' },
+            'all_levels': { en: 'All Levels', my: 'အဆင့်အားလုံး' }
+        },
+        'id_language': {
+            'my': { en: 'Myanmar', my: 'မြန်မာဘာသာ' },
+            'en': { en: 'English', my: 'အင်္ဂလိပ်ဘာသာ' },
+            'bi': { en: 'Bilingual (Myanmar + English)', my: 'နှစ်ဘာသာတွဲ (မြန်မာ + အင်္ဂလိပ်)' }
+        },
+        'id_access_type': {
+            'free': { en: 'Free', my: 'အခမဲ့' },
+            'starter': { en: 'Starter Tier', my: 'Starter အဆင့်' },
+            'standard': { en: 'Standard Tier', my: 'Standard အဆင့်' },
+            'premium': { en: 'Premium Tier', my: 'Premium အဆင့်' },
+            'partner_only': { en: 'Partner Organization Only', my: 'မိတ်ဖက်အဖွဲ့အစည်းသာ' },
+            'paid': { en: 'Paid (Direct Purchase)', my: 'သီးသန့်ဝယ်ယူမှု' },
+            'instructor_course': { en: 'Instructor Course', my: 'ဆရာ့သင်ရိုး' }
+        },
+        'id_membership_tier_required': {
+            'starter': { en: 'Starter (Free / Exploratory)', my: 'Starter (စတင်လေ့လာသူ - အခမဲ့)' },
+            'standard': { en: 'Standard Tier', my: 'Standard အဆင့်' },
+            'premium': { en: 'Premium Tier', my: 'Premium အဆင့်' }
+        },
+        'id_billing_period': {
+            'one_time': { en: 'One-time payment', my: 'တစ်ကြိမ်သာ ပေးချေရန်' },
+            'monthly': { en: 'Monthly subscription', my: 'လစဉ်ကြေး စာရင်းသွင်းမှု' }
+        }
+    };
+
+    function updateSelectOptions(lang) {
+        Object.keys(SELECT_TRANSLATIONS).forEach(function(selectId) {
+            var selectEl = document.getElementById(selectId);
+            if (!selectEl) return;
+            var mapping = SELECT_TRANSLATIONS[selectId];
+            for (var i = 0; i < selectEl.options.length; i++) {
+                var opt = selectEl.options[i];
+                var val = opt.value;
+                if (mapping[val]) {
+                    opt.textContent = mapping[val][lang] || mapping[val]['en'];
+                }
+            }
+        });
+    }
+
+    function setFormLang(lang) {
+        if (lang !== 'my' && lang !== 'en') lang = 'en';
+        var el = document.documentElement;
+        el.setAttribute('data-lang', lang);
+        el.classList.toggle('lang-en', lang === 'en');
+        el.classList.toggle('lang-my', lang === 'my');
+
+        try { localStorage.setItem('mel-lang', lang); } catch (e) {}
+        document.cookie = "mel_lang=" + lang + ";path=/;max-age=31536000;SameSite=Lax";
+
+        var btnEn = document.getElementById('formLangBtnEn');
+        var btnMy = document.getElementById('formLangBtnMy');
+        if (btnEn && btnMy) {
+            if (lang === 'en') {
+                btnEn.className = 'px-3 py-1.5 rounded-lg transition font-mono bg-cyan-600 text-white shadow-sm';
+                btnMy.className = 'px-3 py-1.5 rounded-lg transition font-sans text-slate-400 hover:text-white';
+            } else {
+                btnEn.className = 'px-3 py-1.5 rounded-lg transition font-mono text-slate-400 hover:text-white';
+                btnMy.className = 'px-3 py-1.5 rounded-lg transition font-sans bg-cyan-600 text-white shadow-sm';
+            }
+        }
+
+        updateSelectOptions(lang);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var initialLang = document.documentElement.getAttribute('data-lang') || 'en';
+        try {
+            var stored = localStorage.getItem('mel-lang');
+            if (stored === 'my' || stored === 'en') initialLang = stored;
+        } catch (e) {}
+        setFormLang(initialLang);
+    });
+</script>
 {% endblock %}

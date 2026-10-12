@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+
+{% block title %}Exam Center &amp; Skill Certifications - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <!-- Header Banner -->
+    <div class="mb-8 pb-6 border-b border-slate-200 dark:border-slate-800">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-50 dark:bg-cyan-950/80 border border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 mb-2.5">
+                    <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+                    <span class="lang-en">Official Exam Center</span>
+                    <span class="lang-my">စာမေးပွဲနှင့် အကဲဖြတ်စစ်ဆေးရေးဗဟို</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    <span class="lang-en">Standalone Exams &amp; Verified Certifications</span>
+                    <span class="lang-my">သီးခြားစာမေးပွဲများနှင့် အသိအမှတ်ပြု လက်မှတ်ရွေးချယ်မှုများ</span>
+                </h1>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                    <span class="lang-en">Take exams independently without mandatory course lecture completion. Validate your competencies, pass standardized tests, and earn cryptographically verified credentials.</span>
+                    <span class="lang-my">သင်ခန်းစာဗီဒီယိုများ ကြည့်ရှုရန်မလိုဘဲ မိမိကျွမ်းကျင်မှုကို တိုက်ရိုက်စစ်ဆေးနိုင်ပြီး သတ်မှတ်အောင်မှတ်ပြည့်မီပါက စစ်မှန်သော အသိအမှတ်ပြုလက်မှတ် ရယူနိုင်ပါသည်။</span>
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3 shrink-0">
+                {% if user.is_authenticated and user.is_teacher %}
+                <a href="{% url 'exam-grading-queue' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 font-semibold text-xs transition">
+                    <span>📋</span>
+                    <span class="lang-en">Grading Queue</span>
+                    <span class="lang-my">စစ်ဆေးရန်ကျန်စာမေးပွဲများ</span>
+                </a>
+                <a href="{% url 'standalone-exam-create' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-sm transition">
+                    <span>➕</span>
+                    <span class="lang-en">Create Exam</span>
+                    <span class="lang-my">စာမေးပွဲအသစ်ဖန်တီးရန်</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Search Toolbar -->
+    <div class="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm mb-8 space-y-4">
+        <form method="GET" action="{% url 'standalone-exam-list' %}" class="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4 items-center">
+            <!-- Search Keyword -->
+            <div class="sm:col-span-5 relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <input type="text" name="q" value="{{ search_query }}"
+                       placeholder="Search exams, subjects, certifications..."
+                       data-placeholder-en="Search exams, subjects, certifications..."
+                       data-placeholder-my="စာမေးပွဲ၊ ဘာသာရပ်၊ လက်မှတ်များ ရှာဖွေပါ..."
+                       class="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition">
+            </div>
+
+            <!-- Exam Type Filter -->
+            <div class="sm:col-span-3">
+                <select name="type" onchange="this.form.submit()"
+                        class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition">
+                    <option value="all" {% if selected_type == 'all' %}selected{% endif %} data-text-en="All Exam Types" data-text-my="စာမေးပွဲ အမျိုးအစားအားလုံး">All Exam Types</option>
+                    <option value="free" {% if selected_type == 'free' %}selected{% endif %} data-text-en="Free Practice Exams" data-text-my="အခမဲ့ လေ့ကျင့်ရေး စာမေးပွဲများ">Free Practice Exams</option>
+                    <option value="paid" {% if selected_type == 'paid' %}selected{% endif %} data-text-en="Paid Exams" data-text-my="အခပေး စာမေးပွဲများ">Paid Exams</option>
+                    <option value="verified" {% if selected_type == 'verified' %}selected{% endif %} data-text-en="Verified Credential Exams" data-text-my="တရားဝင် လက်မှတ်ရ စာမေးပွဲများ">Verified Credential Exams</option>
+                </select>
+            </div>
+
+            <!-- Institution Filter -->
+            <div class="sm:col-span-3">
+                <select name="institution" onchange="this.form.submit()"
+                        class="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition">
+                    <option value="" data-text-en="All Institutions" data-text-my="အဖွဲ့အစည်း/ဌာန အားလုံး">All Institutions</option>
+                    {% for inst in institutions %}
+                    <option value="{{ inst.id }}" {% if selected_institution == inst.id|stringformat:"s" %}selected{% endif %}>{{ inst.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="sm:col-span-1">
+                <button type="submit" class="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-sm transition flex items-center justify-center">
+                    <span class="lang-en">Filter</span>
+                    <span class="lang-my">ရှာ</span>
+                </button>
+            </div>
+        </form>
+
+        <!-- Quick filter badges -->
+        <div class="flex flex-wrap items-center gap-2 pt-2 text-xs border-t border-slate-100 dark:border-slate-800">
+            <span class="text-slate-400 font-medium">
+                <span class="lang-en">Quick Filters:</span>
+                <span class="lang-my">အမြန်ရွေးချယ်ရန်:</span>
+            </span>
+            <a href="{% url 'standalone-exam-list' %}?type=all" class="px-3 py-1 rounded-full text-xs font-medium {% if selected_type == 'all' %}bg-cyan-500/20 text-cyan-400 border border-cyan-500/40{% else %}bg-slate-800 text-slate-300 hover:bg-slate-700{% endif %} transition">
+                <span class="lang-en">All ({{ total_count }})</span>
+                <span class="lang-my">အားလုံး ({{ total_count }})</span>
+            </a>
+            <a href="{% url 'standalone-exam-list' %}?type=free" class="px-3 py-1 rounded-full text-xs font-medium {% if selected_type == 'free' %}bg-emerald-500/20 text-emerald-400 border border-emerald-500/40{% else %}bg-slate-800 text-slate-300 hover:bg-slate-700{% endif %} transition">
+                <span class="lang-en">Free Practice</span>
+                <span class="lang-my">အခမဲ့ လေ့ကျင့်ရေး</span>
+            </a>
+            <a href="{% url 'standalone-exam-list' %}?type=verified" class="px-3 py-1 rounded-full text-xs font-medium {% if selected_type == 'verified' %}bg-cyan-500/20 text-cyan-400 border border-cyan-500/40{% else %}bg-slate-800 text-slate-300 hover:bg-slate-700{% endif %} transition">
+                <span class="lang-en">Verified Certificates</span>
+                <span class="lang-my">လက်မှတ်ရ စာမေးပွဲများ</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Exam Cards Grid -->
+    {% if exams %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for exam in exams %}
+        <div class="flex flex-col justify-between rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm hover:border-cyan-500/50 hover:shadow-lg transition-all overflow-hidden group">
+            <div class="p-6">
+                <!-- Badges Row -->
+                <div class="flex items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        {% if exam.is_free %}
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            <span class="lang-en">Free Exam</span>
+                            <span class="lang-my">အခမဲ့ စာမေးပွဲ</span>
+                        </span>
+                        {% else %}
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                            {{ exam.price|floatformat:0 }} {{ exam.currency }}
+                        </span>
+                        {% endif %}
+
+                        {% if exam.certificate_type == 'exam_verified' %}
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-400" title="Issues Exam-Based Verified Certificate" data-title-en="Issues Exam-Based Verified Certificate" data-title-my="တရားဝင် စစ်မှန်ကြောင်း အသိအမှတ်ပြု လက်မှတ်ထုတ်ပေးပါသည်">
+                            <span class="lang-en">Verified Cert ★</span>
+                            <span class="lang-my">လက်မှတ်ရ ★</span>
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <span class="text-xs text-slate-400 font-mono flex items-center gap-1">
+                        ⏱ {% if exam.time_limit_minutes %}{{ exam.time_limit_minutes }} <span class="lang-en">mins</span><span class="lang-my">မိနစ်</span>{% else %}<span class="lang-en">Untimed</span><span class="lang-my">အချိန်ကန့်သတ်မရှိ</span>{% endif %}
+                    </span>
+                </div>
+
+                <!-- Exam Title -->
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-cyan-400 transition-colors line-clamp-2 mb-2">
+                    <a href="{% url 'standalone-exam-detail' exam_id=exam.id %}">{{ exam.title }}</a>
+                </h3>
+
+                <!-- Description -->
+                <p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed mb-4">
+                    {{ exam.description|default:"Comprehensive skills assessment evaluating key theoretical principles and practical problem solving." }}
+                </p>
+
+                <!-- Exam Metrics -->
+                <div class="grid grid-cols-3 gap-2 py-3 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/80 text-center text-xs mb-4">
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase font-medium">
+                            <span class="lang-en">Questions</span>
+                            <span class="lang-my">မေးခွန်းများ</span>
+                        </div>
+                        <div class="font-bold text-slate-900 dark:text-white mt-0.5">{{ exam.questions.count }}</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase font-medium">
+                            <span class="lang-en">Pass Mark</span>
+                            <span class="lang-my">အောင်မှတ်</span>
+                        </div>
+                        <div class="font-bold text-cyan-500 mt-0.5">{{ exam.passing_percentage }}%</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-400 uppercase font-medium">
+                            <span class="lang-en">Attempts</span>
+                            <span class="lang-my">ဖြေဆိုခွင့်</span>
+                        </div>
+                        <div class="font-bold text-slate-900 dark:text-white mt-0.5">{% if exam.max_attempts %}{{ exam.max_attempts }}{% else %}∞{% endif %}</div>
+                    </div>
+                </div>
+
+                <!-- Institution or Author -->
+                {% if exam.institution %}
+                <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span class="text-slate-400">
+                        <span class="lang-en">🏛 Partner:</span>
+                        <span class="lang-my">🏛 ဌာန/အဖွဲ့အစည်း:</span>
+                    </span>
+                    <span class="font-semibold text-slate-700 dark:text-slate-200">{{ exam.institution.name }}</span>
+                </div>
+                {% elif exam.owner %}
+                <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span class="text-slate-400">
+                        <span class="lang-en">👤 Instructor:</span>
+                        <span class="lang-my">👤 သင်ကြားသူ:</span>
+                    </span>
+                    <span class="font-semibold text-slate-700 dark:text-slate-200">{{ exam.owner.get_full_name|default:exam.owner.username }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Footer Action -->
+            <div class="p-4 bg-slate-50 dark:bg-[#0c1421] border-t border-slate-200 dark:border-[#26364B] flex items-center justify-between">
+                <div>
+                    {% if user.is_authenticated %}
+                        {% with exam_id_str=exam.id|stringformat:"s" %}
+                            {% if exam_id_str in user_certs_by_exam %}
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400">
+                                <span>✓</span>
+                                <span class="lang-en">Certified</span>
+                                <span class="lang-my">အောင်လက်မှတ်ရပြီး</span>
+                            </span>
+                            {% elif exam_id_str in user_attempts_by_exam %}
+                            <span class="text-[11px] text-cyan-400 font-medium">
+                                <span class="lang-en">Attempted ({{ user_attempts_by_exam.score_percentage }}%)</span>
+                                <span class="lang-my">ဖြေဆိုထားသည် ({{ user_attempts_by_exam.score_percentage }}%)</span>
+                            </span>
+                            {% endif %}
+                        {% endwith %}
+                    {% endif %}
+                </div>
+
+                <a href="{% url 'standalone-exam-detail' exam_id=exam.id %}"
+                   class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-cyan-600 hover:bg-cyan-500 text-white shadow-sm transition">
+                    <span class="lang-en">View &amp; Take Exam &rarr;</span>
+                    <span class="lang-my">စတင်ဖြေဆိုမည် &rarr;</span>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="mt-8 flex justify-center items-center gap-2 text-xs font-mono">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&type={{ selected_type }}&institution={{ selected_institution }}&q={{ search_query }}"
+           class="px-3 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">
+            <span class="lang-en">&larr; Previous</span>
+            <span class="lang-my">&larr; ရှေ့သို့</span>
+        </a>
+        {% endif %}
+        <span class="px-4 py-2 text-slate-400">
+            <span class="lang-en">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            <span class="lang-my">စာမျက်နှာ {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </span>
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&type={{ selected_type }}&institution={{ selected_institution }}&q={{ search_query }}"
+           class="px-3 py-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">
+            <span class="lang-en">Next &rarr;</span>
+            <span class="lang-my">နောက်သို့ &rarr;</span>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="p-12 text-center rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B]">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-2xl text-cyan-400">
+            📝
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">
+            <span class="lang-en">No Examinations Found</span>
+            <span class="lang-my">စာမေးပွဲများ ရှာမတွေ့ပါ</span>
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+            <span class="lang-en">Try adjusting your filters or search keywords to find available examinations.</span>
+            <span class="lang-my">အခြားသော စာမေးပွဲအမျိုးအစား သို့မဟုတ် စကားလုံးများဖြင့် ရှာဖွေကြည့်ပါ။</span>
+        </p>
+        <a href="{% url 'standalone-exam-list' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white transition">
+            <span class="lang-en">Clear Filters</span>
+            <span class="lang-my">စစ်ထုတ်မှုများ ဖယ်ရှားမည်</span>
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+

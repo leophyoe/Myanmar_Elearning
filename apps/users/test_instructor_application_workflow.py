@@ -77,6 +77,9 @@ class InstructorApplicationWorkflowTests(TestCase):
             'bio': 'Passionate cybersecurity researcher with extensive industrial red teaming experience.',
             'qualifications': 'OSCP, OSCE, CISSP, M.Sc Information Security',
             'sample_lecture_url': 'https://youtube.com/watch?v=sample123',
+            'free_tutorial_title': 'Practical Red Teaming Free Primer',
+            'free_tutorial_url': 'https://youtube.com/watch?v=free123',
+            'terms_accepted': True,
             'website': 'https://security-research.example.com',
             'linkedin_url': 'https://linkedin.com/in/secbob',
             'github_url': 'https://github.com/secbob',
@@ -241,7 +244,7 @@ class InstructorApplicationWorkflowTests(TestCase):
         )
 
         response = self.client.post(action_url, {
-            'awarded_level': InstructorApplication.AwardedLevel.MASTER,
+            'awarded_level': InstructorApplication.AwardedLevel.PROFESSIONAL,
             'admin_notes': 'Credentials confirmed. Verified OSCP certificate.',
         })
         self.assertEqual(response.status_code, 302)
@@ -249,13 +252,13 @@ class InstructorApplicationWorkflowTests(TestCase):
         # Application state verified
         app.refresh_from_db()
         self.assertEqual(app.status, InstructorApplication.Status.APPROVED)
-        self.assertEqual(app.awarded_level, InstructorApplication.AwardedLevel.MASTER)
+        self.assertEqual(app.awarded_level, InstructorApplication.AwardedLevel.PROFESSIONAL)
         self.assertEqual(app.reviewed_by, self.admin)
         self.assertIsNotNone(app.reviewed_at)
 
         # User state verified
         self.student.refresh_from_db()
-        self.assertEqual(self.student.role, UserRole.TEACHER)
+        self.assertEqual(self.student.role, UserRole.INSTRUCTOR)
         self.assertEqual(self.student.active_mode, ActiveMode.INSTRUCTOR)
         self.assertTrue(self.student.is_teacher)
         self.assertTrue(self.student.groups.filter(name='Instructor').exists())
@@ -263,7 +266,7 @@ class InstructorApplicationWorkflowTests(TestCase):
         # Teacher profile verified
         tp = TeacherProfile.objects.get(user=self.student)
         self.assertTrue(tp.is_verified)
-        self.assertEqual(tp.level, InstructorApplication.AwardedLevel.MASTER)
+        self.assertEqual(tp.level, InstructorApplication.AwardedLevel.PROFESSIONAL)
         self.assertEqual(tp.department, 'Information Security')
         self.assertEqual(tp.title, 'Principal Analyst')
 
@@ -352,6 +355,9 @@ class InstructorApplicationWorkflowTests(TestCase):
             'teaching_experience': '5 years practical training and workshop experience.',
             'bio': 'Updated bio with 5 years training experience.',
             'qualifications': 'B.C.Sc and professional teaching certification.',
+            'free_tutorial_title': 'Python & Django Starter Tutorial',
+            'free_tutorial_url': 'https://youtube.com/watch?v=starter123',
+            'terms_accepted': True,
         }
 
         response = self.client.post(url, post_data, follow=True)

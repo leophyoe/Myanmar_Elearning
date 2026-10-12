@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout - {{ exam.title }} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <!-- Header -->
+    <div class="mb-8 pb-6 border-b border-slate-200 dark:border-slate-800 text-center sm:text-left">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-50 dark:bg-cyan-950/80 border border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 mb-2.5">
+            <span>💳</span>
+            <span>Exam Registration Checkout</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Confirm &amp; Register for Examination
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+            Complete payment verification below to unlock access to <b>{{ exam.title }}</b>.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+
+        <!-- Left: Payment Form & Methods (7 cols) -->
+        <div class="md:col-span-7 space-y-6">
+
+            <!-- Payment Methods Info Box -->
+            <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-4">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>📱</span>
+                    <span>Accepted Myanmar Payment Channels</span>
+                </h3>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {% for m in payment_methods %}
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center">
+                        <div class="text-xs font-bold text-slate-900 dark:text-white">{{ m.name }}</div>
+                        <div class="text-[10px] text-cyan-400 font-mono mt-0.5">{{ m.account_number|default:"MMQR / Direct" }}</div>
+                        {% if m.account_name %}
+                        <div class="text-[9px] text-slate-400 truncate">{{ m.account_name }}</div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center">
+                        <div class="text-xs font-bold text-white">KBZPay / WavePay</div>
+                        <div class="text-[10px] text-cyan-400 font-mono mt-0.5">09-XXXXXXXXX</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Upload & Reference Submission Form -->
+            <form method="POST" enctype="multipart/form-data" class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-5">
+                {% csrf_token %}
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Payment Channel Used *
+                    </label>
+                    {{ form.method }}
+                    {% if form.method.errors %}<p class="text-xs text-red-400 mt-1">{{ form.method.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Transaction ID / Reference Number *
+                    </label>
+                    {{ form.reference }}
+                    <p class="text-[11px] text-slate-400 mt-1">E.g. Transaction ID, wallet phone number or slip reference.</p>
+                    {% if form.reference.errors %}<p class="text-xs text-red-400 mt-1">{{ form.reference.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Upload Transfer Receipt Screenshot *
+                    </label>
+                    {{ form.receipt }}
+                    <p class="text-[11px] text-slate-400 mt-1">Attach PNG, JPG, or PDF receipt confirmation.</p>
+                    {% if form.receipt.errors %}<p class="text-xs text-red-400 mt-1">{{ form.receipt.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Additional Notes (Optional)
+                    </label>
+                    {{ form.note }}
+                </div>
+
+                <button type="submit"
+                        class="w-full py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/20 transition flex items-center justify-center gap-2">
+                    <span>Submit Payment Proof for Verification</span>
+                    <span>&rarr;</span>
+                </button>
+            </form>
+
+        </div>
+
+        <!-- Right: Order Summary (5 cols) -->
+        <div class="md:col-span-5 space-y-4">
+            <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-4">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Registration Summary
+                </h3>
+
+                <div class="pb-4 border-b border-slate-100 dark:border-slate-800">
+                    <h4 class="font-bold text-sm text-slate-900 dark:text-white">{{ exam.title }}</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Standardized Examination Admission</p>
+                </div>
+
+                <div class="space-y-2.5 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Duration:</span>
+                        <span class="font-mono text-slate-200">{% if exam.time_limit_minutes %}{{ exam.time_limit_minutes }} Minutes{% else %}Untimed{% endif %}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Passing Mark:</span>
+                        <span class="font-mono text-cyan-400 font-bold">{{ exam.passing_percentage }}%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Attempts:</span>
+                        <span class="font-mono text-slate-200">{% if exam.max_attempts %}{{ exam.max_attempts }}{% else %}Unlimited{% endif %}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Certificate:</span>
+                        <span class="text-emerald-400 font-medium">{% if exam.certificate_type == 'exam_verified' %}Verified Credential ★{% else %}Completion Cert{% endif %}</span>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-sm font-bold">
+                    <span class="text-slate-900 dark:text-white">Total Amount:</span>
+                    <span class="text-cyan-400 font-mono text-xl">{{ exam.price|floatformat:0 }} {{ exam.currency }}</span>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <a href="{% url 'standalone-exam-detail' exam_id=exam.id %}" class="text-xs text-slate-400 hover:text-cyan-400 transition">
+                    &larr; Cancel and return to exam details
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+

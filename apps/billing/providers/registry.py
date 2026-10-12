@@ -5,6 +5,7 @@ from .sandbox import SandboxGatewayProvider
 
 _PROVIDERS: Dict[str, Any] = {
     'manual_transfer': ManualTransferProvider,
+    'mmqr': ManualTransferProvider,
     'sandbox_gateway': SandboxGatewayProvider,
     'sandbox': SandboxGatewayProvider,
 }

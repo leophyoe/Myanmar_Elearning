@@ -242,6 +242,14 @@ class Course(BaseModel):
         default=True,
         help_text="Grants verified completion certificate upon passing criteria.",
     )
+    certificate_template = models.ForeignKey(
+        'certificates.CertificateTemplate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='courses',
+        help_text="Custom or branded certificate design template awarded upon completion.",
+    )
     exam_required = models.BooleanField(
         default=False,
         help_text="Requires passing an official proctored examination before certification.",
@@ -256,6 +264,11 @@ class Course(BaseModel):
         default=False,
         db_index=True,
         help_text="Designates official Myanmar E-Learning platform course created/owned by administration."
+    )
+    is_free_tutorial = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Designates this course as a qualifying free tutorial submission."
     )
     thumbnail = models.ImageField(upload_to='courses/', null=True, blank=True)
 
@@ -484,6 +497,17 @@ class Course(BaseModel):
             'reason': 'Standard course price.',
         }
 
+    def clean(self):
+        super().clean()
+        if self.price and self.price > 0 and self.owner and not getattr(self.owner, 'is_admin', False):
+            teacher_profile = getattr(self.owner, 'teacher_profile', None)
+            if teacher_profile and not teacher_profile.can_sell_paid_courses:
+                from django.core.exceptions import ValidationError
+                raise ValidationError(
+                    "Teachers at the entry-level Teacher rank may only publish free tutorials. "
+                    "Promotion to Associate Instructor or higher is required before publishing paid courses."
+                )
+
     def save(self, *args, **kwargs):
         if self.owner and hasattr(self.owner, 'is_admin') and self.owner.is_admin:
             self.is_official = True
@@ -506,6 +530,14 @@ class Course(BaseModel):
             self.access_type = self.AccessType.FREE
 
         super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        if self.price and self.price > 0 and self.owner and not getattr(self.owner, 'is_admin', False):
+            teacher_profile = getattr(self.owner, 'teacher_profile', None)
+            if teacher_profile and not teacher_profile.can_sell_paid_courses:
+                from django.core.exceptions import ValidationError
+                raise ValidationError("Teachers at the entry-level Teacher rank may only publish free tutorials. Promotion to Associate Instructor or higher is required before publishing paid courses.")
 
     @property
     def is_free(self):
@@ -681,8 +713,84 @@ class Lesson(BaseModel):
         return bool(self.video_file or self.video_url)
 
     @property
+    def video_embed_url(self):
+        """
+        Derives embeddable URL for YouTube, Vimeo, Bunny Stream, Cloudflare Stream, or direct video.
+        """
+        url = (self.video_url or '').strip()
+        if not url:
+            return None
+        import re
+        # YouTube
+        yt_match = re.search(r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})', url)
+        if yt_match:
+            return f"https://www.youtube-nocookie.com/embed/{yt_match.group(1)}?rel=0&modestbranding=1"
+
+        # Vimeo
+        vimeo_match = re.search(r'vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|video\/|)(\d+)', url)
+        if vimeo_match:
+            vid_id = vimeo_match.group(3) or vimeo_match.group(2) or vimeo_match.group(1)
+            return f"https://player.vimeo.com/video/{vid_id}"
+
+        # Bunny Stream embed URL
+        if 'iframe.mediadelivery.net' in url or 'bunnycdn.com' in url or 'b-cdn.net' in url:
+            return url
+
+        # Cloudflare Stream embed URL
+        if 'cloudflarestream.com' in url or 'watch.cloudflarestream.com' in url:
+            return url
+
+        # Google Drive Video Preview
+        gdrive_match = re.search(r'drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)', url)
+        if gdrive_match:
+            return f"https://drive.google.com/file/d/{gdrive_match.group(1)}/preview"
+
+        # Loom Video Embed
+        loom_match = re.search(r'loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)', url)
+        if loom_match:
+            return f"https://www.loom.com/embed/{loom_match.group(1)}"
+
+        return url
+
+    @property
     def has_document(self):
         return bool(self.document_file)
+
+    @property
+    def document_extension(self):
+        if not self.document_file or not self.document_file.name:
+            return ''
+        import os
+        return os.path.splitext(self.document_file.name)[1].lower().lstrip('.')
+
+    @property
+    def is_pdf(self):
+        if self.document_extension:
+            return self.document_extension == 'pdf'
+        return self.lesson_type == 'pdf'
+
+    @property
+    def is_presentation(self):
+        if self.document_extension:
+            return self.document_extension in ['ppt', 'pptx', 'odp', 'key', 'pps', 'ppsx']
+        return self.lesson_type in ['slides', 'presentation', 'ppt', 'pptx']
+
+    @property
+    def has_slides(self):
+        return bool(self.document_file and (self.is_pdf or self.is_presentation))
+
+    @property
+    def slide_viewer_type(self):
+        if self.is_presentation:
+            return 'presentation'
+        if self.is_pdf:
+            return 'pdf'
+        return 'document'
+
+    @property
+    def slide_deck(self):
+        from apps.courses.services.slides import get_lesson_slide_deck
+        return get_lesson_slide_deck(self)
 
     @property
     def duration_minutes(self):
@@ -822,6 +930,64 @@ class Quiz(BaseModel):
         default=True,
         help_text="Whether passing this assessment is required for course completion."
     )
+    is_standalone = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Can be taken directly via Exam Center without course enrollment.",
+    )
+    price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Price for standalone exam access in MMK (0 = Free Exam).",
+    )
+    currency = models.CharField(max_length=8, default='MMK')
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='authored_quizzes',
+        help_text="Author/Instructor who owns this assessment.",
+    )
+    assigned_instructor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_grading_quizzes',
+        help_text="Designated instructor/evaluator for manual grading.",
+    )
+    institution = models.ForeignKey(
+        'partner.Institution',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quizzes',
+        help_text="Partner institution if this is an institutional exam.",
+    )
+    requires_manual_grading = models.BooleanField(
+        default=False,
+        help_text="Requires instructor/evaluator review before finalizing score and issuing certificate.",
+    )
+    certificate_type = models.CharField(
+        max_length=32,
+        choices=[
+            ('course_completion', 'Course Completion'),
+            ('exam_verified', 'Exam-Based Verified'),
+            ('none', 'No Certificate'),
+        ],
+        default='course_completion',
+        help_text="Type of certificate awarded upon passing.",
+    )
+    certificate_template = models.ForeignKey(
+        'certificates.CertificateTemplate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quizzes',
+        help_text="Custom or branded certificate design template awarded upon passing.",
+    )
 
     class Meta:
         ordering = ['title']
@@ -831,11 +997,27 @@ class Quiz(BaseModel):
 
     @property
     def is_exam(self):
-        return self.quiz_type in (
+        return self.is_standalone or self.quiz_type in (
             self.AssessmentType.COURSE_EXAM,
             self.AssessmentType.FINAL_EXAM,
             self.AssessmentType.EXAM,
         )
+
+    @property
+    def is_free(self):
+        return (self.price or Decimal('0.00')) <= Decimal('0.00')
+
+    @property
+    def has_manual_questions(self):
+        return self.requires_manual_grading or self.questions.filter(
+            question_type__in=[
+                Question.QuestionType.SHORT_ANSWER,
+                Question.QuestionType.CODING,
+                Question.QuestionType.PRACTICAL_LAB,
+                Question.QuestionType.FILE_SUBMISSION,
+                Question.QuestionType.PROJECT_EVALUATION,
+            ]
+        ).exists()
 
 
 class Question(BaseModel):
@@ -899,6 +1081,12 @@ class QuizAttempt(BaseModel):
     """
     Pedagogical audit trail for every student attempt at a quiz or exam.
     """
+    class AttemptStatus(models.TextChoices):
+        IN_PROGRESS = 'in_progress', 'In Progress'
+        SUBMITTED = 'submitted', 'Submitted'
+        PENDING_REVIEW = 'pending_review', 'Pending Manual Grading'
+        GRADED = 'graded', 'Graded & Finalized'
+
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -910,6 +1098,12 @@ class QuizAttempt(BaseModel):
         related_name='attempts',
     )
     attempt_number = models.PositiveSmallIntegerField(default=1)
+    status = models.CharField(
+        max_length=32,
+        choices=AttemptStatus.choices,
+        default=AttemptStatus.SUBMITTED,
+        db_index=True,
+    )
     score_percentage = models.PositiveSmallIntegerField(default=0)
     passed = models.BooleanField(default=False)
     points_earned = models.PositiveIntegerField(default=0)
@@ -917,6 +1111,23 @@ class QuizAttempt(BaseModel):
     time_taken_seconds = models.PositiveIntegerField(default=0)
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(auto_now=True)
+    graded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='graded_quiz_attempts',
+    )
+    graded_at = models.DateTimeField(null=True, blank=True)
+    feedback = models.TextField(blank=True, help_text="Evaluator / Instructor comprehensive comments.")
+    rubric_scores = models.JSONField(default=dict, blank=True, help_text="Structured rubric scores and criterion feedback.")
+    certificate = models.ForeignKey(
+        'certificates.Certificate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quiz_attempts',
+    )
 
     class Meta:
         ordering = ['-created_at']
@@ -1076,39 +1287,100 @@ class Enrollment(BaseModel):
 
 
 
+import secrets
+import uuid
+
+
 class LiveSession(BaseModel):
     """
-    A scheduled real-time class for a course (Zoom, Google Meet, Teams, ...).
-    Only students with access to the course can see the joining link.
+    A scheduled real-time class for a course (BigBlueButton, Zoom, Google Meet, Teams, ...).
+    Only students with access to the course can join or see the link.
+    Supports single-day sessions or recurring multi-day session series (e.g. Sat & Sun for 8 weeks).
     """
 
     class Provider(models.TextChoices):
+        BIGBLUEBUTTON = 'bigbluebutton', 'BigBlueButton (THUTA Classroom)'
         ZOOM = 'zoom', 'Zoom'
         GOOGLE_MEET = 'google_meet', 'Google Meet'
         TEAMS = 'teams', 'Microsoft Teams'
-        JITSI = 'jitsi', 'Jitsi Meet (Embedded / WebRTC)'
-        OTHER = 'other', 'Other / custom link'
+        OTHER = 'other', 'Other / Custom Link'
+        JITSI = 'jitsi', 'Jitsi Meet (Legacy)'
 
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='live_sessions')
     title = models.CharField(max_length=255)
     provider = models.CharField(
-        max_length=16, choices=Provider.choices, default=Provider.ZOOM
+        max_length=20, choices=Provider.choices, default=Provider.BIGBLUEBUTTON
     )
-    join_url = models.URLField(help_text="Direct joining URL for the session.")
+    join_url = models.URLField(
+        blank=True, default='',
+        help_text="Direct joining URL for external providers (Zoom/Meet), or auto-generated for BigBlueButton."
+    )
     recording_url = models.URLField(
         blank=True, default='',
-        help_text="Link to session recording or replay (YouTube, Vimeo, Google Drive, etc.)."
+        help_text="Link to session recording or replay (YouTube, Vimeo, Google Drive, BBB, etc.)."
+    )
+    meeting_id = models.CharField(
+        max_length=128, blank=True, default='', db_index=True,
+        help_text="Unique room identifier on conferencing server."
+    )
+    moderator_password = models.CharField(
+        max_length=64, blank=True, default='',
+        help_text="Teacher / host entry key."
+    )
+    attendee_password = models.CharField(
+        max_length=64, blank=True, default='',
+        help_text="Student / attendee entry key."
+    )
+    record_meeting = models.BooleanField(
+        default=True,
+        help_text="Automatically record classroom session for student replay."
+    )
+    bbb_recording_id = models.CharField(
+        max_length=128, blank=True, default='',
+        help_text="BigBlueButton recording identifier."
     )
     starts_at = models.DateTimeField(db_index=True)
     duration_minutes = models.PositiveIntegerField(default=60)
     notes = models.TextField(blank=True)
     is_published = models.BooleanField(default=True, db_index=True)
 
+    # Multi-day recurring series metadata
+    series_id = models.UUIDField(
+        null=True, blank=True, db_index=True,
+        help_text="Grouping ID for recurring multi-day session series."
+    )
+    session_number = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="Session sequence number (e.g. Session 1 of 8)."
+    )
+    total_sessions_in_series = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="Total sessions in this series."
+    )
+    recurrence_rule = models.CharField(
+        max_length=128, blank=True, default='',
+        help_text="Human-readable schedule, e.g. 'Every Sat, Sun for 4 weeks'"
+    )
+
     class Meta:
         ordering = ['starts_at']
 
+    def save(self, *args, **kwargs):
+        if not self.meeting_id:
+            clean_id = str(self.id).replace('-', '')[:16]
+            self.meeting_id = f"thuta-live-{clean_id}"
+        if not self.moderator_password:
+            self.moderator_password = secrets.token_urlsafe(12)
+        if not self.attendee_password:
+            self.attendee_password = secrets.token_urlsafe(12)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.title} ({self.get_provider_display()})"
+
+    @property
+    def is_bbb(self):
+        return self.provider == self.Provider.BIGBLUEBUTTON
 
     @property
     def ends_at(self):
@@ -1143,14 +1415,31 @@ class LiveSession(BaseModel):
     def has_replay(self):
         return bool(self.recording_url and self.recording_url.strip())
 
+    @property
+    def is_series(self):
+        return bool(self.series_id)
+
+    @property
+    def series_display(self):
+        if self.series_id and self.total_sessions_in_series > 1:
+            return f"Session {self.session_number} of {self.total_sessions_in_series}"
+        return ""
+
+    def get_series_sessions(self):
+        if not self.series_id:
+            return LiveSession.objects.filter(pk=self.pk)
+        return LiveSession.objects.filter(series_id=self.series_id).order_by('session_number', 'starts_at')
+
 
 class LiveSessionAttendance(BaseModel):
     """
     Audited log of student and instructor attendance in virtual classrooms.
-    Records entry, exit, duration, and client details.
+    Records entry, exit, duration, role, and client details.
     """
     session = models.ForeignKey(LiveSession, on_delete=models.CASCADE, related_name='attendances')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='live_session_attendances')
+    role = models.CharField(max_length=32, default='student', help_text="Role: student, teacher, host, moderator")
+    is_moderator = models.BooleanField(default=False, help_text="True if joined as classroom moderator/host.")
     joined_at = models.DateTimeField(auto_now_add=True)
     left_at = models.DateTimeField(null=True, blank=True)
     duration_seconds = models.PositiveIntegerField(default=0)
@@ -1163,5 +1452,87 @@ class LiveSessionAttendance(BaseModel):
         verbose_name_plural = 'Live Session Attendances'
 
     def __str__(self):
-        return f"{self.user} - {self.session.title} ({self.joined_at.strftime('%Y-%m-%d %H:%M')})"
+        return f"{self.user} ({self.role}) - {self.session.title} ({self.joined_at.strftime('%Y-%m-%d %H:%M')})"
+
+
+class LiveProviderSetting(BaseModel):
+    """
+    Admin-configurable live teaching provider settings.
+    Stored in database so administrators can modify URLs, API keys, and availability
+    from the THUTA Admin Console without application restarts or code deployments.
+    """
+    class Provider(models.TextChoices):
+        BIGBLUEBUTTON = 'bigbluebutton', 'BigBlueButton (THUTA Classroom)'
+        ZOOM = 'zoom', 'Zoom'
+        GOOGLE_MEET = 'google_meet', 'Google Meet'
+        TEAMS = 'teams', 'Microsoft Teams'
+        OTHER = 'other', 'Other / Custom Link'
+
+    provider = models.CharField(max_length=32, choices=Provider.choices, unique=True)
+    is_enabled = models.BooleanField(default=True, help_text="Allow teachers to select this provider.")
+    is_default = models.BooleanField(default=False, help_text="Default provider for new live sessions.")
+    api_url = models.CharField(max_length=255, blank=True, default='', help_text="Base API URL for self-hosted server.")
+    shared_secret = models.CharField(max_length=255, blank=True, default='', help_text="Shared secret or API key.")
+    webhook_secret = models.CharField(max_length=255, blank=True, default='', help_text="Signing secret for incoming webhooks.")
+    notes = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['provider']
+        verbose_name = 'Live Provider Setting'
+        verbose_name_plural = 'Live Provider Settings'
+
+    def __str__(self):
+        return f"{self.get_provider_display()} ({'Enabled' if self.is_enabled else 'Disabled'})"
+
+    @classmethod
+    def ensure_default_providers(cls):
+        """Ensures default records exist in DB for all supported providers."""
+        from django.conf import settings
+        default_configs = [
+            {
+                'provider': cls.Provider.BIGBLUEBUTTON,
+                'is_enabled': True,
+                'is_default': True,
+                'api_url': getattr(settings, 'BBB_API_URL', 'https://test-install.blindsidenetworks.com/bigbluebutton/api/'),
+                'shared_secret': getattr(settings, 'BBB_SHARED_SECRET', '8cd8ef52e8e101574e400365b55e11a6'),
+                'notes': 'THUTA Primary Open-Source Virtual Classroom.',
+            },
+            {
+                'provider': cls.Provider.ZOOM,
+                'is_enabled': True,
+                'is_default': False,
+                'notes': 'External meeting links for Zoom.',
+            },
+            {
+                'provider': cls.Provider.GOOGLE_MEET,
+                'is_enabled': True,
+                'is_default': False,
+                'notes': 'External meeting links for Google Meet.',
+            },
+            {
+                'provider': cls.Provider.TEAMS,
+                'is_enabled': True,
+                'is_default': False,
+                'notes': 'External meeting links for Microsoft Teams.',
+            },
+            {
+                'provider': cls.Provider.OTHER,
+                'is_enabled': True,
+                'is_default': False,
+                'notes': 'Custom meeting link.',
+            },
+        ]
+        for item in default_configs:
+            prov = item['provider']
+            if not cls.objects.filter(provider=prov).exists():
+                cls.objects.create(**item)
+
+    @classmethod
+    def get_setting(cls, provider_code: str):
+        try:
+            cls.ensure_default_providers()
+            return cls.objects.filter(provider=provider_code).first()
+        except Exception:
+            return None
+
 

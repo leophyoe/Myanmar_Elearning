@@ -7,7 +7,7 @@ from .views import (
     MySubscriptionAPIView, SubscribeAPIView, CancelSubscriptionAPIView,
     PaymentWebhookAPIView,
     PaymentMethodListView, PaymentMethodCreateView, PaymentMethodUpdateView,
-    PaymentMethodToggleView, PaymentMethodDeleteView,
+    PaymentMethodToggleView, PaymentMethodDeleteView, MMQRPaymentSettingsView,
     PromotionListView, PromotionCreateView, PromotionUpdateView,
     PromotionToggleView, PromotionDeleteView, PromotionAnalyticsView,
 )
@@ -26,7 +26,8 @@ urlpatterns = [
     path('revenue/settle/<uuid:record_id>/', PartnerRevenueSettlementView.as_view(), name='partner-revenue-settle'),
     path('invoices/<str:invoice_id>/', InvoiceDetailView.as_view(), name='invoice-detail'),
 
-    # Payment Methods Management (Admin)
+    # Payment Methods & National MMQR Gateway Management (Admin)
+    path('settings/', MMQRPaymentSettingsView.as_view(), name='payment-settings'),
     path('methods/', PaymentMethodListView.as_view(), name='method-list'),
     path('methods/create/', PaymentMethodCreateView.as_view(), name='method-create'),
     path('methods/<uuid:pk>/edit/', PaymentMethodUpdateView.as_view(), name='method-edit'),

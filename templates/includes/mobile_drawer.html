@@ -1,21 +1,22 @@
+{% load static %}
 <!-- Mobile Navigation Drawer (Off-Canvas) -->
 <div id="melDrawerBackdrop" class="mel-drawer-backdrop" aria-hidden="true"></div>
 <div id="melDrawer" class="mel-drawer p-5 justify-between" role="dialog" aria-modal="true" aria-label="Mobile Navigation">
     <div class="space-y-6">
         <!-- Drawer Header -->
         <div class="flex items-center justify-between pb-4 border-b border-slate-800">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-black text-white shadow-sm shrink-0">
-                    T
+            <a href="{% url 'landing-page' %}" class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl bg-slate-800/90 p-1 flex items-center justify-center shadow-xs shrink-0 border border-slate-700/80">
+                    <img src="{% static 'images/thuta_icon.png' %}" alt="THUTA" class="w-full h-full object-contain">
                 </div>
                 <div>
-                    <span class="font-bold text-sm tracking-wide text-white block">THUTA</span>
-                    <span class="text-[10px] text-slate-400 block uppercase">
+                    <span class="font-black text-sm tracking-wider text-white block">THUT<span class="text-cyan-400">Λ</span></span>
+                    <span class="text-[9px] text-cyan-400 font-bold block uppercase tracking-widest">
                         <span class="lang-en">Education Platform</span>
                         <span class="lang-my">ပညာရေး ပလက်ဖောင်း</span>
                     </span>
                 </div>
-            </div>
+            </a>
             <button type="button" id="melDrawerCloseBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" aria-label="Close Navigation">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -31,6 +32,11 @@
                 <span>📚</span>
                 <span class="lang-en">All Courses</span>
                 <span class="lang-my">သင်ရိုးများအားလုံး</span>
+            </a>
+            <a href="{% url 'standalone-exam-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
+                <span>📝</span>
+                <span class="lang-en">Exam Center</span>
+                <span class="lang-my">စာမေးပွဲဗဟို</span>
             </a>
             <a href="{% url 'pricing' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>💎</span>
@@ -83,6 +89,16 @@
                 <span class="lang-en">My Courses</span>
                 <span class="lang-my">ကျွန်ုပ်၏ သင်ရိုးများ</span>
             </a>
+            <a href="{% url 'chat:inbox' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
+                <div class="flex items-center gap-3">
+                    <span>💬</span>
+                    <span class="lang-en">Messenger</span>
+                    <span class="lang-my">မက်ဆင်ဂျာ</span>
+                </div>
+                {% if unread_chat_count and unread_chat_count > 0 %}
+                <span class="px-1.5 py-0.5 rounded text-[10px] bg-sky-900 text-sky-300 border border-sky-700">{{ unread_chat_count }}</span>
+                {% endif %}
+            </a>
             <a href="{% url 'project-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>🎯</span>
                 <span class="lang-en">Capstone Projects</span>
@@ -115,7 +131,7 @@
                 <span class="lang-en">Instructor Hub</span>
                 <span class="lang-my">သင်ကြားရေး နေရာ</span>
             </div>
-            <a href="{% url 'teacher-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-emerald-400 hover:bg-slate-800 transition">
+            <a href="{% url 'teacher-dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#38BDF8] hover:bg-slate-800 transition">
                 <span>📊</span>
                 <span class="lang-en">Instructor Hub</span>
                 <span class="lang-my">ဆရာ ဒက်ရှ်ဘုတ်</span>
@@ -135,6 +151,16 @@
                 <span class="lang-en">Grading Queue</span>
                 <span class="lang-my">အမှတ်ပေးရန် စာရင်း</span>
             </a>
+            <a href="{% url 'chat:inbox' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
+                <div class="flex items-center gap-3">
+                    <span>💬</span>
+                    <span class="lang-en">Student Messages</span>
+                    <span class="lang-my">ကျောင်းသား မက်ဆေ့ခ်ျများ</span>
+                </div>
+                {% if unread_chat_count and unread_chat_count > 0 %}
+                <span class="px-1.5 py-0.5 rounded text-[10px] bg-sky-900 text-sky-300 border border-sky-700">{{ unread_chat_count }}</span>
+                {% endif %}
+            </a>
             <a href="{% url 'live-session-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>📹</span>
                 <span class="lang-en">Live Classes</span>
@@ -151,6 +177,16 @@
                 <span>🏛️</span>
                 <span class="lang-en">Partner Dashboard</span>
                 <span class="lang-my">မိတ်ဖက် ဒက်ရှ်ဘုတ်</span>
+            </a>
+            <a href="{% url 'chat:inbox' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
+                <div class="flex items-center gap-3">
+                    <span>💬</span>
+                    <span class="lang-en">Messenger</span>
+                    <span class="lang-my">မက်ဆင်ဂျာ</span>
+                </div>
+                {% if unread_chat_count and unread_chat_count > 0 %}
+                <span class="px-1.5 py-0.5 rounded text-[10px] bg-sky-900 text-sky-300 border border-sky-700">{{ unread_chat_count }}</span>
+                {% endif %}
             </a>
             <a href="{% url 'partner-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>📋</span>
@@ -173,6 +209,16 @@
                 <span>⚙️</span>
                 <span class="lang-en">Admin Console</span>
                 <span class="lang-my">စီမံခန့်ခွဲသူ နေရာ</span>
+            </a>
+            <a href="{% url 'chat:inbox' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
+                <div class="flex items-center gap-3">
+                    <span>💬</span>
+                    <span class="lang-en">Messenger</span>
+                    <span class="lang-my">မက်ဆင်ဂျာ</span>
+                </div>
+                {% if unread_chat_count and unread_chat_count > 0 %}
+                <span class="px-1.5 py-0.5 rounded text-[10px] bg-sky-900 text-sky-300 border border-sky-700">{{ unread_chat_count }}</span>
+                {% endif %}
             </a>
             <a href="{% url 'console-instructor-application-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-200 hover:bg-slate-800 transition">
                 <span>📝</span>

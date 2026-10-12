@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Results: {{ exam.title }} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <!-- Header Result Banner -->
+    <div class="p-8 sm:p-10 rounded-3xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-xl text-center relative overflow-hidden mb-8">
+        <div class="absolute top-0 left-0 w-full h-1.5 {% if attempt.passed %}bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500{% elif attempt.status == 'pending_review' %}bg-gradient-to-r from-amber-500 via-yellow-400 to-orange-500{% else %}bg-gradient-to-r from-red-500 via-rose-400 to-pink-500{% endif %}"></div>
+
+        <!-- Status Icon & Pill -->
+        <div class="mb-4">
+            {% if attempt.status == 'pending_review' %}
+            <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                <span>⏳</span>
+                <span>Instructor Review Pending</span>
+            </span>
+            {% elif attempt.passed %}
+            <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                <span>✓</span>
+                <span>Passed with Distinction</span>
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500/10 border border-red-500/30 text-red-400">
+                <span>✕</span>
+                <span>Did Not Meet Pass Requirement</span>
+            </span>
+            {% endif %}
+        </div>
+
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
+            {{ exam.title }}
+        </h1>
+        <p class="text-xs text-slate-500 font-mono mb-6">Attempt #{{ attempt.attempt_number }} • Submitted {{ attempt.created_at|date:"M d, Y • H:i" }}</p>
+
+        <!-- Big Score Display -->
+        <div class="inline-flex flex-col items-center justify-center w-36 h-36 rounded-full bg-slate-50 dark:bg-slate-900 border-4 {% if attempt.passed %}border-emerald-500 text-emerald-400{% elif attempt.status == 'pending_review' %}border-amber-500 text-amber-400{% else %}border-red-500 text-red-400{% endif %} shadow-inner mb-6">
+            <span class="text-4xl font-extrabold font-mono leading-none">{{ attempt.score_percentage }}%</span>
+            <span class="text-[10px] text-slate-400 uppercase font-semibold mt-1">Pass Mark: {{ exam.passing_percentage }}%</span>
+        </div>
+
+        <!-- Pending Review Notice -->
+        {% if attempt.status == 'pending_review' %}
+        <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 max-w-lg mx-auto mb-6 leading-relaxed">
+            <b>Evaluation in Progress:</b> Your submission contains open-ended, coding, or practical questions that require instructor grading against our standardized rubric. You will receive an official notification once the evaluation is finalized.
+        </div>
+        {% endif %}
+
+        <!-- Verified Certificate Box (if earned) -->
+        {% if certificate %}
+        <div class="p-6 rounded-2xl bg-emerald-950/30 border border-emerald-800/80 max-w-lg mx-auto text-center space-y-3 mb-6 shadow-lg">
+            <div class="text-emerald-400 font-bold text-sm flex items-center justify-center gap-2">
+                <span>🎓</span>
+                <span>Verified Credential Awarded!</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Congratulations! You have satisfied all examination benchmarks and earned an officially verifiable credential.
+            </p>
+            <div class="text-xs font-mono text-cyan-400">
+                Credential Serial: <b>{{ certificate.certificate_code }}</b>
+            </div>
+            <a href="{% url 'certificate-verify' cert_id=certificate.id %}"
+               class="inline-block px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition">
+                View &amp; Verify Credential &rarr;
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Stat Summary Grid -->
+        <div class="grid grid-cols-3 gap-3 max-w-md mx-auto text-xs py-3 px-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 mb-6">
+            <div>
+                <span class="text-[10px] text-slate-400 uppercase font-medium">Points Earned</span>
+                <span class="block font-bold text-slate-900 dark:text-white font-mono mt-0.5">{{ attempt.points_earned }}</span>
+            </div>
+            <div>
+                <span class="text-[10px] text-slate-400 uppercase font-medium">Time Taken</span>
+                <span class="block font-bold text-slate-900 dark:text-white font-mono mt-0.5">{{ attempt.time_taken_seconds }}s</span>
+            </div>
+            <div>
+                <span class="text-[10px] text-slate-400 uppercase font-medium">Result</span>
+                <span class="block font-bold {% if attempt.passed %}text-emerald-400{% else %}text-red-400{% endif %} mt-0.5">
+                    {% if attempt.status == 'pending_review' %}Pending{% elif attempt.passed %}Passed{% else %}Failed{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <!-- Instructor Feedback (if graded) -->
+        {% if attempt.feedback %}
+        <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 text-left text-xs max-w-lg mx-auto mb-6">
+            <span class="font-bold text-cyan-400 block mb-1">Evaluator Feedback:</span>
+            <p class="text-slate-300 whitespace-pre-line">{{ attempt.feedback }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Bottom Action CTA -->
+        <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <a href="{% url 'standalone-exam-list' %}"
+               class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition">
+                &larr; Back to Exam Center
+            </a>
+            <a href="{% url 'standalone-exam-detail' exam_id=exam.id %}"
+               class="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-md transition">
+                Exam Overview &amp; Attempts
+            </a>
+        </div>
+    </div>
+
+    <!-- Question-by-Question Breakdown Card -->
+    {% if attempt.answers_data %}
+    <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-6">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800">
+            Assessment Submission Breakdown
+        </h3>
+
+        <div class="space-y-4">
+            {% for qid, item in attempt.answers_data.items %}
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="font-mono text-slate-400">Question Item</span>
+                    <span class="font-mono font-bold {% if item.is_correct %}text-emerald-400{% elif attempt.status == 'pending_review' %}text-amber-400{% else %}text-red-400{% endif %}">
+                        {{ item.points_earned }} / {{ item.max_points }} Points
+                    </span>
+                </div>
+
+                <div class="text-slate-900 dark:text-white font-medium text-sm leading-relaxed">
+                    {{ item.prompt }}
+                </div>
+
+                <div class="pt-2 border-t border-slate-200/50 dark:border-slate-800/80 text-[11px] space-y-1">
+                    <div class="text-slate-400">
+                        <b>Your Answer:</b> <span class="font-mono text-slate-200">{{ item.raw_answer|default:"No response" }}</span>
+                    </div>
+                    {% if item.feedback %}
+                    <div class="text-cyan-400">
+                        <b>Feedback:</b> {{ item.feedback }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+

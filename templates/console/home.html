@@ -41,7 +41,7 @@
         </a>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
         <!-- Courses -->
         <a href="{% url 'console-course-list' %}" class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] hover:border-[#0284C7] dark:hover:border-[#38BDF8] transition block shadow-sm">
             <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 font-medium">Course catalogue</div>
@@ -63,12 +63,24 @@
             <div class="text-xs text-amber-600 dark:text-amber-400 font-semibold mt-4">Open fee overview &rarr;</div>
         </a>
 
+        <!-- MMQR Payment Gateway -->
+        <a href="{% url 'billing:payment-settings' %}" class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] hover:border-emerald-500 transition block shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 font-medium">Payment Gateway</div>
+            <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-1 flex items-center gap-2">
+                <span>📱 MMQR</span>
+            </div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">
+                Upload QR image, toggle availability, merchant info
+            </div>
+            <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-4">MMQR Settings &rarr;</div>
+        </a>
+
         <!-- Users -->
-        <a href="{% url 'console-user-create' %}" class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] hover:border-emerald-500 transition block shadow-sm">
+        <a href="{% url 'console-user-create' %}" class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] hover:border-cyan-500 transition block shadow-sm">
             <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 font-medium">Provisioning</div>
-            <div class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">+ Account</div>
+            <div class="text-3xl font-bold text-cyan-600 dark:text-cyan-400 mb-1">+ Account</div>
             <div class="text-[11px] text-slate-500 dark:text-slate-400">Create a student, teacher or administrator</div>
-            <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-4">Create account &rarr;</div>
+            <div class="text-xs text-cyan-600 dark:text-cyan-400 font-semibold mt-4">Create account &rarr;</div>
         </a>
     </div>
 
@@ -76,6 +88,7 @@
         <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
             <h3 class="text-sm font-bold text-slate-900 dark:text-[#F1F5F9] uppercase tracking-wider mb-4">Quick actions</h3>
             <div class="flex flex-wrap gap-2 text-xs">
+                <a href="{% url 'billing:payment-settings' %}" class="px-3 py-2 rounded-xl bg-[#F0FDF4] hover:bg-emerald-100 dark:bg-[#142B25] dark:hover:bg-[#1a3830] border border-[#BBF7D0] dark:border-[#1E3A30] text-[#166534] dark:text-[#86EFAC] font-semibold transition">📱 MMQR Settings</a>
                 <a href="{% url 'console-log-list' %}" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#162235] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-[#26364B] font-semibold transition">📋 Audit Logs</a>
                 <a href="{% url 'cyber-home' %}" class="px-3 py-2 rounded-xl bg-[#E0F2FE] hover:bg-sky-100 dark:bg-[#172B40] dark:hover:bg-[#1f3752] border border-[#BAE6FD] dark:border-[#26364B] text-[#075985] dark:text-[#7DD3FC] font-semibold transition">🛡️ Cyber Range</a>
                 <a href="{% url 'cyber-lab-upload' %}" class="px-3 py-2 rounded-xl bg-[#F0FDF4] hover:bg-emerald-100 dark:bg-[#142B25] dark:hover:bg-[#1a3830] border border-[#BBF7D0] dark:border-[#1E3A30] text-[#166534] dark:text-[#86EFAC] font-semibold transition">⬆️ Upload Lab Bundle</a>

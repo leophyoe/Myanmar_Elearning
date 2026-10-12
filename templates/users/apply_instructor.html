@@ -5,6 +5,21 @@
 
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 py-8">
+  <!-- Top Navigation & Back Action -->
+  <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <a href="javascript:history.back()" onclick="if(history.length<=1){window.location.href='{% url 'dashboard' %}'; return false;}"
+       class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-300 hover:text-cyan-400 hover:border-cyan-700 transition shadow-2xs">
+      <span>&larr;</span>
+      <span class="lang-en">Back</span>
+      <span class="lang-my">နောက်သို့ ပြန်သွားရန်</span>
+    </a>
+    <nav class="flex items-center space-x-2 text-xs text-slate-500 font-mono">
+      <a href="{% url 'dashboard' %}" class="hover:text-cyan-400">Dashboard</a>
+      <span>/</span>
+      <span class="text-slate-300 font-semibold">Faculty Application</span>
+    </nav>
+  </div>
+
   <!-- Header -->
   <div class="mb-8">
     <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-cyan-400 text-xs font-mono uppercase tracking-wider mb-3">
@@ -213,6 +228,33 @@
             {% endif %}
           </div>
 
+          <!-- Qualifying Free Tutorial Section -->
+          <div class="p-4 rounded-xl bg-slate-950/80 border border-cyan-800/60 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-cyan-400 font-bold text-xs uppercase font-mono tracking-wider">🎓 Qualifying Free Tutorial Requirement</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">Mandatory for Promotion</span>
+            </div>
+            <p class="text-xs text-slate-400">
+              New teachers contribute at least one free tutorial or introductory course on THUTA before qualifying for paid course monetization.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-1.5">Free Tutorial Title</label>
+                {{ form.free_tutorial_title }}
+                {% if form.free_tutorial_title.errors %}
+                <p class="text-rose-400 text-xs mt-1">{{ form.free_tutorial_title.errors.0 }}</p>
+                {% endif %}
+              </div>
+              <div>
+                <label class="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-1.5">Free Tutorial URL / Video Link</label>
+                {{ form.free_tutorial_url }}
+                {% if form.free_tutorial_url.errors %}
+                <p class="text-rose-400 text-xs mt-1">{{ form.free_tutorial_url.errors.0 }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label class="block text-xs font-mono text-slate-300 uppercase tracking-wider mb-2">
@@ -245,6 +287,31 @@
             </div>
           </div>
 
+          <!-- Platform Faculty Terms & Code of Conduct -->
+          <div class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+            <h4 class="text-xs font-bold text-white uppercase font-mono tracking-wider flex items-center justify-between">
+              <span>📜 Faculty Agreement &amp; Revenue Terms (v2026.1)</span>
+              <span class="text-slate-500 font-normal lowercase text-[11px]">policy-enforced</span>
+            </h4>
+            <div class="text-[11px] text-slate-400 max-h-32 overflow-y-auto p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1.5 leading-relaxed font-mono">
+              <p>• <strong>Free Tutorial Commitment:</strong> All new teachers agree to publish or contribute at least one high-quality free tutorial to support Myanmar students before accessing paid course sales.</p>
+              <p>• <strong>Revenue Sharing Policy:</strong> Net sales revenue is calculated from the actual amount paid by the student after all promotions/coupons. Associate Instructors receive 40% (THUTA 60%), Instructors receive 50% (THUTA 50%), and Professional Instructors receive 60% (THUTA 40%).</p>
+              <p>• <strong>Originality &amp; Academic Integrity:</strong> Teachers certify that submitted course content, slides, source code, and recorded lectures are original or properly licensed.</p>
+              <p>• <strong>Student Safeguards:</strong> Instructors agree to maintain professional conduct and protect student privacy.</p>
+            </div>
+
+            <div class="flex items-start gap-3 pt-1">
+              {{ form.terms_accepted }}
+              <label for="{{ form.terms_accepted.id_for_label }}" class="text-xs text-slate-300 cursor-pointer">
+                I have read and agree to the <strong>THUTA Faculty Agreement, Revenue Terms, and Code of Conduct</strong> (Version 2026.1).
+              </label>
+            </div>
+            {% if form.terms_accepted.errors %}
+            <p class="text-rose-400 text-xs mt-1">{{ form.terms_accepted.errors.0 }}</p>
+            {% endif %}
+            {{ form.terms_version }}
+          </div>
+
           <div class="pt-4 border-t border-slate-800">
             <button type="submit" class="w-full py-3.5 px-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
               <span class="lang-en">Submit Faculty Application</span>
@@ -260,34 +327,43 @@
     <div class="space-y-6">
       <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800">
         <h3 class="text-sm font-bold text-white uppercase tracking-wider font-mono mb-4 text-cyan-400">
-          Faculty Pedagogical Ranks
+          Faculty Pedagogical Ranks &amp; Revenue Splits
         </h3>
         <ul class="space-y-4 text-xs">
           <li class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
             <div class="font-bold text-white flex items-center justify-between">
-              <span>Associate Instructor</span>
-              <span class="text-cyan-400 font-mono">Entry Rank</span>
+              <span>Teacher</span>
+              <span class="text-slate-400 font-mono">Entry Rank</span>
             </div>
             <p class="text-slate-400 mt-1">
-              Qualified subject-matter specialist. Delivers introductory modules and grades assignments.
+              Entry rank upon verification. Publishes qualifying free tutorials to build student following and reviews. Cannot publish paid courses.
+            </p>
+          </li>
+          <li class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div class="font-bold text-white flex items-center justify-between">
+              <span>Associate Instructor</span>
+              <span class="text-cyan-400 font-mono">Split: 60/40</span>
+            </div>
+            <p class="text-slate-400 mt-1">
+              Approved to publish and sell paid courses. Revenue split: <strong class="text-white">THUTA 60% / Instructor 40%</strong>.
+            </p>
+          </li>
+          <li class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div class="font-bold text-white flex items-center justify-between">
+              <span>Instructor</span>
+              <span class="text-blue-400 font-mono">Split: 50/50</span>
+            </div>
+            <p class="text-slate-400 mt-1">
+              High course completion rates and student ratings. Revenue split: <strong class="text-white">THUTA 50% / Instructor 50%</strong>.
             </p>
           </li>
           <li class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
             <div class="font-bold text-white flex items-center justify-between">
               <span>Professional Instructor</span>
-              <span class="text-blue-400 font-mono">Mid Rank</span>
+              <span class="text-purple-400 font-mono">Split: 40/60</span>
             </div>
             <p class="text-slate-400 mt-1">
-              Experienced educator with proven industry background. Leads diploma modules and live classrooms.
-            </p>
-          </li>
-          <li class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-            <div class="font-bold text-white flex items-center justify-between">
-              <span>Master Instructor</span>
-              <span class="text-purple-400 font-mono">Senior Rank</span>
-            </div>
-            <p class="text-slate-400 mt-1">
-              Senior faculty member or enterprise leader overseeing capstone projects and academic committees.
+              Senior faculty or verified curriculum authority. Revenue split: <strong class="text-white">THUTA 40% / Instructor 60%</strong>.
             </p>
           </li>
         </ul>

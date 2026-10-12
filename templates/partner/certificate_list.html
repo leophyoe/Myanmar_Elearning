@@ -1,112 +1,273 @@
 {% extends 'base.html' %}
 
-{% block title %}Issued Digital Credentials — {{ PLATFORM_NAME }}{% endblock %}
+{% block title %}Institutional Digital Credentials Roster — {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
     {% include 'partner/_partner_nav.html' %}
 
-    <!-- Header & Search -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/60 p-6 rounded-2xl border border-slate-800">
+    <!-- Header & Action Toolbar -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/70 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl backdrop-blur-sm">
         <div>
-            <h1 class="text-xl font-bold text-white flex items-center gap-2">
-                <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                </svg>
-                Institutional Digital Credentials Roster
+            <div class="flex items-center gap-2 mb-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wider uppercase bg-cyan-950 text-cyan-300 border border-cyan-800/80">
+                    Institutional Governance
+                </span>
+                <span class="text-xs text-slate-500 font-medium">Academic Audit &amp; Verification</span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-black text-white tracking-wide flex items-center gap-3">
+                <span class="text-2xl">🏛️</span>
+                <span class="lang-en">Institutional Digital Credentials Roster</span>
+                <span class="lang-my">အဖွဲ့အစည်းဆိုင်ရာ ဒီဂျစ်တယ် အောင်လက်မှတ် မှတ်တမ်းဇယား</span>
             </h1>
-            <p class="text-xs text-slate-400 mt-1">Cryptographically verifiable certificates awarded to your institution's enrolled learners.</p>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
+                <span class="lang-en">Cryptographically verifiable diplomas and course completion certificates conferred to learners enrolled in your institution's programs and academic cohorts.</span>
+                <span class="lang-my">သင့်အဖွဲ့အစည်း၏ သင်တန်းများနှင့် Cohorts များမှ အောင်မြင်သော ကျောင်းသားများအတွက် ထုတ်ပေးထားသည့် တရားဝင် အောင်လက်မှတ်မှတ်တမ်းများ။</span>
+            </p>
         </div>
 
-        <form method="GET" class="w-full sm:w-80 flex items-center gap-2">
+        <!-- Action Toolbar -->
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <a href="{% url 'certificate-template-list' %}" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-2 border border-slate-700 shadow-sm">
+                <span>🎨</span>
+                <span class="lang-en">Certificate Studio</span>
+                <span class="lang-my">ဒီဇိုင်း စတူဒီယို</span>
+            </a>
+            <a href="{% url 'partner-certificate-export-csv' %}?institution={{ selected_institution }}&q={{ query }}&status={{ active_status }}" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-2 border border-slate-700 shadow-sm">
+                <span>📥</span>
+                <span class="lang-en">Export CSV</span>
+                <span class="lang-my">စာရင်း ထုတ်ယူရန်</span>
+            </a>
+            <a href="{% url 'certificate-lookup' %}" target="_blank" class="px-4 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-cyan-950/50">
+                <span>🛡️</span>
+                <span class="lang-en">Public Registry</span>
+                <span class="lang-my">စစ်ဆေးရန် စာမျက်နှာ</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Metrics Grid -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Issued -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Awarded</span>
+                <span class="text-base text-amber-400">📜</span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-white font-mono">{{ total_issued }}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Across all cohorts</div>
+        </div>
+
+        <!-- Active & Valid -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Active &amp; Valid</span>
+                <span class="text-base text-emerald-400">✓</span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono">{{ valid_count }}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Cryptographically verified</div>
+        </div>
+
+        <!-- Distinctions -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Distinctions</span>
+                <span class="text-base text-purple-400">★</span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-purple-300 font-mono">{{ distinction_count }}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Honors &amp; merit standing</div>
+        </div>
+
+        <!-- Exam Certified -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/90 shadow-sm">
+            <div class="flex items-center justify-between text-slate-400 mb-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Exam Certified</span>
+                <span class="text-base text-cyan-400">📝</span>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-cyan-400 font-mono">{{ exam_count }}</div>
+            <div class="text-[11px] text-slate-500 mt-1">Institutional examination verified</div>
+        </div>
+    </div>
+
+    <!-- Filter & Search Controls -->
+    <div class="bg-slate-900/70 p-5 rounded-2xl border border-slate-800 space-y-4">
+        <!-- Search and Institution Filter Row -->
+        <form method="GET" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <!-- Institution Dropdown (if multiple) -->
+            {% if institutions.count > 1 %}
+            <div class="sm:w-64 shrink-0">
+                <select name="institution" onchange="this.form.submit()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    <option value="">All Affiliated Institutions</option>
+                    {% for inst in institutions %}
+                    <option value="{{ inst.id }}" {% if selected_institution == inst.id|stringformat:"s" %}selected{% endif %}>
+                        {{ inst.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <!-- Keyword Search -->
             <div class="relative flex-1">
-                <input type="text" name="q" value="{{ query }}" placeholder="Search serial, student, course..."
-                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 pl-9 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
-                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search by recipient name, student ID, serial code, program..."
+                       class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 pl-9 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                <svg class="w-4 h-4 text-slate-500 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
             </div>
-            <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold transition">
+
+            <input type="hidden" name="status" value="{{ active_status }}">
+
+            <button type="submit" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition">
                 Search
             </button>
-            {% if query %}
-            <a href="{% url 'partner-certificates' %}" class="px-3 py-2 bg-slate-800/50 hover:bg-slate-800 text-slate-400 rounded-xl text-xs transition">
+            {% if query or selected_institution or active_status != 'all' %}
+            <a href="{% url 'partner-certificates' %}" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition text-center">
                 Reset
             </a>
             {% endif %}
         </form>
+
+        <!-- Status Filter Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pt-2 border-t border-slate-800/80 text-xs font-medium scrollbar-none">
+            <a href="?institution={{ selected_institution }}&q={{ query }}&status=all"
+               class="px-3.5 py-1.5 rounded-lg transition shrink-0 {% if active_status == 'all' or not active_status %}bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                All Credentials
+            </a>
+            <a href="?institution={{ selected_institution }}&q={{ query }}&status=valid"
+               class="px-3.5 py-1.5 rounded-lg transition shrink-0 {% if active_status == 'valid' %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                Active &amp; Valid
+            </a>
+            <a href="?institution={{ selected_institution }}&q={{ query }}&status=exam"
+               class="px-3.5 py-1.5 rounded-lg transition shrink-0 {% if active_status == 'exam' %}bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                Exam Certified
+            </a>
+            <a href="?institution={{ selected_institution }}&q={{ query }}&status=distinction"
+               class="px-3.5 py-1.5 rounded-lg transition shrink-0 {% if active_status == 'distinction' %}bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                Distinction / Honors
+            </a>
+            <a href="?institution={{ selected_institution }}&q={{ query }}&status=revoked"
+               class="px-3.5 py-1.5 rounded-lg transition shrink-0 {% if active_status == 'revoked' %}bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold{% else %}text-slate-400 hover:text-white hover:bg-slate-800{% endif %}">
+                Revoked
+            </a>
+        </div>
     </div>
 
     <!-- Credentials Table -->
-    <div class="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+    <div class="bg-slate-900/70 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-slate-300">
-                <thead class="text-[11px] uppercase tracking-wider bg-slate-950 text-slate-400 border-b border-slate-800">
+                <thead class="text-[11px] uppercase tracking-wider bg-slate-950 text-slate-400 border-b border-slate-800 font-bold">
                     <tr>
-                        <th class="py-3 px-4">Serial / Code</th>
-                        <th class="py-3 px-4">Recipient</th>
-                        <th class="py-3 px-4">Program / Course</th>
-                        <th class="py-3 px-4">Institution</th>
-                        <th class="py-3 px-4">Grade</th>
-                        <th class="py-3 px-4">Awarded Date</th>
-                        <th class="py-3 px-4">Status</th>
-                        <th class="py-3 px-4 text-right">Verification</th>
+                        <th class="py-3.5 px-4">Serial / Code</th>
+                        <th class="py-3.5 px-4">Recipient</th>
+                        <th class="py-3.5 px-4">Program / Course</th>
+                        <th class="py-3.5 px-4">Institution</th>
+                        <th class="py-3.5 px-4">Grade / Standing</th>
+                        <th class="py-3.5 px-4">Awarded Date</th>
+                        <th class="py-3.5 px-4">Ledger Status</th>
+                        <th class="py-3.5 px-4 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-800/60">
                     {% for cert in certificates %}
                     <tr class="hover:bg-slate-800/40 transition">
-                        <td class="py-3.5 px-4 font-mono font-bold text-amber-400">
-                            {{ cert.certificate_code }}
+                        <!-- Serial Code & QR Link -->
+                        <td class="py-3.5 px-4">
+                            <div class="flex items-center gap-2">
+                                <a href="{% url 'certificate-qr' cert_id=cert.id %}" target="_blank" title="View QR Code" class="w-7 h-7 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center hover:border-cyan-500 transition shrink-0">
+                                    <span class="text-xs">📱</span>
+                                </a>
+                                <div class="font-mono font-bold text-amber-400 text-xs">
+                                    {{ cert.certificate_code }}
+                                </div>
+                            </div>
                         </td>
+
+                        <!-- Recipient Name & Username -->
                         <td class="py-3.5 px-4">
                             <div class="font-bold text-white text-sm">{{ cert.student_name }}</div>
                             <div class="text-[11px] text-slate-400 font-mono">@{{ cert.student.username }}</div>
                         </td>
-                        <td class="py-3.5 px-4 font-medium text-slate-200">
-                            {{ cert.program_title }}
+
+                        <!-- Program / Course Title -->
+                        <td class="py-3.5 px-4">
+                            <div class="font-medium text-slate-200">{{ cert.program_title }}</div>
+                            <div class="flex items-center gap-2 mt-1">
+                                {% if cert.is_exam_certificate %}
+                                <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
+                                    Exam Certified
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                                    Course Completion
+                                </span>
+                                {% endif %}
+                            </div>
                         </td>
+
+                        <!-- Institution -->
                         <td class="py-3.5 px-4 text-slate-400 text-[11px]">
                             {{ cert.course.partner_institution.name|default:"THUTA Academic Network" }}
                         </td>
+
+                        <!-- Grade & Standing -->
                         <td class="py-3.5 px-4">
-                            <span class="font-mono font-bold text-amber-300 bg-amber-950/60 border border-amber-800 px-2 py-0.5 rounded text-[10px]">
-                                {{ cert.grade|default:"PASSED" }}
+                            {% if 'Distinction' in cert.grade %}
+                            <span class="font-mono font-bold text-amber-300 bg-amber-950/80 border border-amber-800 px-2 py-0.5 rounded text-[10px]">
+                                ★ {{ cert.grade }}
                             </span>
+                            {% elif cert.grade %}
+                            <span class="font-mono font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 rounded text-[10px]">
+                                {{ cert.grade }}
+                            </span>
+                            {% else %}
+                            <span class="font-mono text-slate-400 text-[10px]">PASSED</span>
+                            {% endif %}
                         </td>
+
+                        <!-- Awarded Date -->
                         <td class="py-3.5 px-4 text-slate-400 font-mono text-[11px]">
                             {{ cert.issued_at|date:"M d, Y" }}
                         </td>
+
+                        <!-- Ledger Status -->
                         <td class="py-3.5 px-4">
                             {% if cert.is_revoked %}
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-950 text-red-400 border border-red-800">Revoked</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-950 text-red-400 border border-red-800">
+                                Revoked
+                            </span>
                             {% else %}
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">Valid</span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center gap-1.5 w-fit">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                <span>Verified</span>
+                            </span>
                             {% endif %}
                         </td>
+
+                        <!-- Action Toolbar -->
                         <td class="py-3.5 px-4 text-right">
                             <div class="inline-flex items-center gap-2">
-                                <a href="{% url 'certificate-verify' cert_id=cert.id %}" target="_blank" class="px-2.5 py-1 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-300 hover:bg-cyan-900 transition text-[11px] font-semibold flex items-center gap-1">
-                                    <span>Verify</span>
-                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                    </svg>
+                                <a href="{% url 'certificate-verify' cert_id=cert.id %}" target="_blank"
+                                   class="px-3 py-1.5 rounded-xl bg-cyan-950 border border-cyan-800 text-cyan-300 hover:bg-cyan-900 transition text-[11px] font-bold flex items-center gap-1 shadow-sm">
+                                    <span>Inspect Dossier &rarr;</span>
                                 </a>
-                                <a href="{% url 'certificate-qr' cert_id=cert.id %}" download="{{ cert.certificate_code }}.png" class="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition text-[11px]">
-                                    QR Code
+                                <a href="{% url 'certificate-qr' cert_id=cert.id %}" download="{{ cert.certificate_code }}.png"
+                                   class="px-2.5 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition text-[11px]" title="Download QR">
+                                    QR
                                 </a>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="py-12 text-center text-slate-500">
-                            <div class="max-w-sm mx-auto space-y-3">
-                                <svg class="w-10 h-10 text-slate-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                                </svg>
-                                <p class="text-sm font-semibold text-slate-300">No credentials issued yet</p>
-                                <p class="text-xs text-slate-500">Certificates will automatically appear here once students in your institutional cohorts complete courses and pass assessments.</p>
+                        <td colspan="8" class="py-14 text-center text-slate-500">
+                            <div class="max-w-md mx-auto space-y-3">
+                                <span class="text-4xl block">🏛️</span>
+                                <h4 class="text-sm font-bold text-slate-300">No Credentials Issued Yet</h4>
+                                <p class="text-xs text-slate-500">
+                                    Official certificates and cryptographic verification records will automatically appear here once students enrolled in your institutional cohorts and courses complete their requirements.
+                                </p>
                             </div>
                         </td>
                     </tr>
@@ -114,6 +275,27 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="px-6 py-4 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <div>
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} ({{ paginator.count }} total records)
+            </div>
+            <div class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&institution={{ selected_institution }}&q={{ query }}&status={{ active_status }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+                    &larr; Previous
+                </a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&institution={{ selected_institution }}&q={{ query }}&status={{ active_status }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
+                    Next &rarr;
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

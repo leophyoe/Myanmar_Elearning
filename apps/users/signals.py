@@ -14,12 +14,12 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
 
     if instance.role == UserRole.STUDENT:
         if not hasattr(instance, 'student_profile'):
-            student_num = random.randint(1000, 9999)
+            student_id = instance.account_id or f"MEL-{instance.id or instance.username}"
             StudentProfile.objects.create(
                 user=instance,
-                student_id=f"MEL-2026-{student_num}"
+                student_id=student_id
             )
-    elif instance.role == UserRole.TEACHER:
+    elif instance.role in (UserRole.TEACHER, UserRole.INSTRUCTOR):
         if not hasattr(instance, 'teacher_profile'):
             TeacherProfile.objects.create(user=instance)
     elif instance.role == UserRole.ADMIN:

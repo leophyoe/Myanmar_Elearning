@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.views.generic import CreateView, DetailView, TemplateView, UpdateView, View
 
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from apps.billing.models import Payment
 from apps.courses.models import Course, Enrollment
 from apps.common.permissions import RoleRequiredMixin
@@ -80,7 +81,7 @@ class UserListView(AdminRequiredMixin, TemplateView):
     template_name = 'console/user_list.html'
 
     ROLE_FILTERS = set(UserRole.values) | {'all'}
-    STATUS_FILTERS = {'all', 'active', 'inactive'}
+    STATUS_FILTERS = {'all', 'active', 'inactive', 'pending_deletion'}
 
     def get_params(self):
         query = (self.request.GET.get('q') or '').strip()
@@ -105,14 +106,16 @@ class UserListView(AdminRequiredMixin, TemplateView):
         if role != 'all':
             qs = qs.filter(role=role)
         if status == 'active':
-            qs = qs.filter(is_active=True)
+            qs = qs.filter(is_active=True, is_pending_deletion=False)
         elif status == 'inactive':
             if role == 'teacher':
                 qs = qs.filter(
                     Q(is_active=False) | Q(role=UserRole.TEACHER, teacher_profile__is_verified=False)
                 ).distinct()
             else:
-                qs = qs.filter(is_active=False)
+                qs = qs.filter(is_active=False, is_pending_deletion=False)
+        elif status == 'pending_deletion':
+            qs = qs.filter(is_pending_deletion=True)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -139,8 +142,9 @@ class UserListView(AdminRequiredMixin, TemplateView):
             'total_users': User.objects.count(),
             'counts': {
                 'all': User.objects.count(),
-                'active': User.objects.filter(is_active=True).count(),
+                'active': User.objects.filter(is_active=True, is_pending_deletion=False).count(),
                 'inactive': User.objects.filter(is_active=False).count(),
+                'pending_deletion': User.objects.filter(is_pending_deletion=True).count(),
             },
             'role_counts': {
                 value: User.objects.filter(role=value).count()
@@ -202,6 +206,8 @@ class UserDetailView(AdminRequiredMixin, DetailView):
         except Exception:
             context['certificates'] = []
         context['instructor_applications'] = target.instructor_applications.all()
+        context['level_history'] = target.instructor_level_history.select_related('changed_by').all()[:10]
+        context['term_agreements'] = target.term_agreements.all()[:10]
         return context
 
 
@@ -302,6 +308,137 @@ class UserToggleActiveView(AdminRequiredMixin, View):
         if next_url:
             return redirect(next_url)
         return redirect('console-user-detail', user_id=target.pk)
+
+
+class UserDeleteView(AdminRequiredMixin, View):
+    """
+    Schedules user deletion with a 48-hour cooling-off grace period.
+    Security policy:
+    1. Administrator accounts CANNOT be deleted.
+    2. Admin cannot delete their own account.
+    3. User is immediately deactivated and given a 48-hour countdown before permanent system exit.
+    """
+    template_name = 'console/user_confirm_delete.html'
+
+    def get_user(self):
+        return get_object_or_404(User, pk=self.kwargs['user_id'])
+
+    def get(self, request, *args, **kwargs):
+        target = self.get_user()
+        is_admin_protected = bool(target.is_admin or target.role == UserRole.ADMIN or target.is_superuser)
+        is_self = bool(target.pk == request.user.pk)
+
+        cannot_delete = is_admin_protected or is_self
+        reason_blocked = ""
+        if is_admin_protected:
+            reason_blocked = "Administrator accounts are protected and cannot be deleted for platform security reasons (စီမံခန့်ခွဲသူ အကောင့်များကို ဖျက်ပစ်ခွင့် မရှိပါ)."
+        elif is_self:
+            reason_blocked = "You cannot delete your own administrator account (မိမိ၏ အကောင့်အား ဖျက်ပစ်ခွင့် မရှိပါ)."
+
+        return render(request, self.template_name, {
+            'target_user': target,
+            'is_admin_protected': is_admin_protected,
+            'is_self': is_self,
+            'cannot_delete': cannot_delete,
+            'reason_blocked': reason_blocked,
+            'hours_grace': 48,
+            'next_url': request.GET.get('next') or reverse('console-user-list'),
+        })
+
+    def post(self, request, *args, **kwargs):
+        target = self.get_user()
+        if target.is_admin or target.role == UserRole.ADMIN or target.is_superuser:
+            messages.error(request, "Administrator accounts cannot be deleted for platform security reasons (Admin အကောင့်အား ဖျက်ခွင့်မရှိပါ).")
+            return redirect('console-user-detail', user_id=target.pk)
+
+        if target.pk == request.user.pk:
+            messages.error(request, "You cannot delete your own administrator account.")
+            return redirect('console-user-detail', user_id=target.pk)
+
+        reason = request.POST.get('reason', '').strip()
+        target.schedule_deletion(requested_by=request.user, reason=reason, hours=48)
+
+        # Audit Log
+        try:
+            from apps.analytics.models import SystemLog, SystemLogLevel
+            SystemLog.objects.create(
+                level=SystemLogLevel.WARNING,
+                component='console.user_lifecycle',
+                message=f"Account '{target.username}' scheduled for deletion in 48 hours by {request.user.username}.",
+                details={
+                    'target_user_id': str(target.id),
+                    'target_username': target.username,
+                    'target_email': target.email,
+                    'reason': reason,
+                    'deletion_due_at': target.deletion_due_at.isoformat() if target.deletion_due_at else '',
+                }
+            )
+        except Exception:
+            pass
+
+        messages.success(
+            request,
+            f"User '{target.username}' has been deactivated and scheduled for permanent deletion in 48 hours (၄၈ နာရီအတွင်း အပြီးတိုင် ဖျက်ပါမည်)."
+        )
+        next_url = request.POST.get('next') or reverse('console-user-list')
+        return redirect(next_url)
+
+
+class UserCancelDeletionView(AdminRequiredMixin, View):
+    """
+    Cancels scheduled deletion and restores the account to active status.
+    """
+    def post(self, request, *args, **kwargs):
+        target = get_object_or_404(User, pk=self.kwargs['user_id'])
+        if not target.is_pending_deletion:
+            messages.info(request, f"User '{target.username}' is not scheduled for deletion.")
+            return redirect('console-user-detail', user_id=target.pk)
+
+        target.cancel_deletion()
+
+        # Audit Log
+        try:
+            from apps.analytics.models import SystemLog, SystemLogLevel
+            SystemLog.objects.create(
+                level=SystemLogLevel.INFO,
+                component='console.user_lifecycle',
+                message=f"Deletion schedule cancelled for '{target.username}' by {request.user.username}. Account restored.",
+                details={'target_user_id': str(target.id), 'target_username': target.username}
+            )
+        except Exception:
+            pass
+
+        messages.success(request, f"Scheduled deletion cancelled for '{target.username}'. Account restored to active status.")
+        next_url = request.POST.get('next') or reverse('console-user-detail', kwargs={'user_id': target.pk})
+        return redirect(next_url)
+
+
+class UserPurgeExpiredView(AdminRequiredMixin, View):
+    """
+    Permanently expunges user from system after 48-hour cooling-off period has passed.
+    """
+    def post(self, request, *args, **kwargs):
+        target = get_object_or_404(User, pk=self.kwargs['user_id'])
+        if target.is_admin or target.role == UserRole.ADMIN or target.is_superuser:
+            messages.error(request, "Administrator accounts cannot be deleted.")
+            return redirect('console-user-list')
+
+        if not target.is_pending_deletion:
+            messages.error(request, "This account is not scheduled for deletion.")
+            return redirect('console-user-detail', user_id=target.pk)
+
+        if not target.is_deletion_due:
+            messages.warning(
+                request,
+                f"Cannot purge user yet: 48-hour cooling-off period is still active ({target.deletion_time_remaining_display})."
+            )
+            return redirect('console-user-detail', user_id=target.pk)
+
+        username = target.username
+        target.delete()
+        messages.success(request, f"User '{username}' has permanently exited the system.")
+        return redirect('console-user-list')
+
 
 
 class UserApproveInstructorView(AdminRequiredMixin, View):
@@ -421,7 +558,7 @@ class InstructorApplicationActionView(AdminRequiredMixin, View):
         if action == 'approve':
             level = request.POST.get('awarded_level') or app.awarded_level
             if level not in dict(InstructorApplication.AwardedLevel.choices):
-                level = InstructorApplication.AwardedLevel.ASSOCIATE
+                level = InstructorApplication.AwardedLevel.TEACHER
 
             app.status = InstructorApplication.Status.APPROVED
             app.awarded_level = level
@@ -430,20 +567,43 @@ class InstructorApplicationActionView(AdminRequiredMixin, View):
             app.reviewed_at = timezone.now()
             app.save(update_fields=['status', 'awarded_level', 'admin_notes', 'reviewed_by', 'reviewed_at'])
 
-            applicant.role = UserRole.TEACHER
+            is_advanced_rank = level in (
+                InstructorApplication.AwardedLevel.ASSOCIATE,
+                InstructorApplication.AwardedLevel.INSTRUCTOR,
+                InstructorApplication.AwardedLevel.PROFESSIONAL,
+                InstructorApplication.AwardedLevel.LEGACY_ASSOCIATE,
+                InstructorApplication.AwardedLevel.LEGACY_PROFESSIONAL,
+                InstructorApplication.AwardedLevel.LEGACY_MASTER,
+            )
+
+            applicant.role = UserRole.INSTRUCTOR if is_advanced_rank else UserRole.TEACHER
             applicant.active_mode = ActiveMode.INSTRUCTOR
             applicant.save(update_fields=['role', 'active_mode'])
 
             applicant.add_role(UserRole.TEACHER, assigned_by=request.user)
+            if is_advanced_rank:
+                applicant.add_role(UserRole.INSTRUCTOR, assigned_by=request.user)
 
             profile, _ = TeacherProfile.objects.get_or_create(user=applicant)
+            previous_lvl = profile.level
             profile.is_verified = True
             profile.level = level
+            if request.POST.get('free_tutorial_approved') or app.free_tutorial_url or app.sample_lecture_url:
+                profile.free_tutorial_approved = True
             if app.department:
                 profile.department = app.department
             if app.title:
                 profile.title = app.title
             profile.save()
+
+            from apps.users.models import InstructorLevelHistory
+            InstructorLevelHistory.objects.create(
+                user=applicant,
+                previous_level=previous_lvl,
+                new_level=level,
+                changed_by=request.user,
+                reason=f"Approved Faculty Application #{app.id}. Admin remarks: {admin_notes}"
+            )
 
             Notification.objects.create(
                 user=applicant,
@@ -813,5 +973,117 @@ class PartnerApplicationActionView(AdminRequiredMixin, View):
             messages.error(request, f"Unknown action: {action}")
 
         return redirect('console-partner-application-list')
+
+
+class AdminLiveTeachingSettingsView(AdminRequiredMixin, View):
+    """
+    Admin-only configuration panel under System Console -> Live Classrooms.
+    Administrators can:
+    - View and configure BigBlueButton primary virtual classroom server endpoint & secrets
+    - Enable/disable providers (BigBlueButton, Zoom, Google Meet, Teams, Other)
+    - Set the platform default live teaching provider
+    - Preview webhook integration endpoint and shared secrets
+    - Monitor real-time virtual classroom metrics (total sessions, active attendances, replay archives)
+    """
+    template_name = 'console/live_settings.html'
+
+    def get(self, request):
+        from apps.courses.models import LiveProviderSetting, LiveSession, LiveSessionAttendance
+        from apps.courses.live.bigbluebutton import BigBlueButtonClient
+        from apps.courses.live.registry import get_available_providers
+
+        LiveProviderSetting.ensure_default_providers()
+        providers = LiveProviderSetting.objects.all().order_by('provider')
+        bbb_setting = LiveProviderSetting.objects.filter(provider=LiveProviderSetting.Provider.BIGBLUEBUTTON).first()
+
+        now = timezone.now()
+        stats = {
+            'total_sessions': LiveSession.objects.count(),
+            'upcoming_sessions': LiveSession.objects.filter(starts_at__gt=now).count(),
+            'recorded_sessions': LiveSession.objects.exclude(recording_url='').count(),
+            'total_attendances': LiveSessionAttendance.objects.count(),
+            'bbb_sessions': LiveSession.objects.filter(provider=LiveSession.Provider.BIGBLUEBUTTON).count(),
+        }
+
+        bbb_client = BigBlueButtonClient()
+        masked_secret = ""
+        if bbb_setting and bbb_setting.shared_secret:
+            sec = bbb_setting.shared_secret
+            masked_secret = f"{sec[:4]}••••••••{sec[-4:]}" if len(sec) > 8 else "••••••••"
+
+        webhook_url = request.build_absolute_uri(
+            reverse('live-session-webhook', kwargs={'provider': 'bigbluebutton'})
+        )
+
+        context = {
+            'active': 'live_settings',
+            'providers': providers,
+            'bbb_setting': bbb_setting,
+            'bbb_api_url': bbb_client.api_url,
+            'masked_secret': masked_secret,
+            'webhook_url': webhook_url,
+            'stats': stats,
+            'available_providers': get_available_providers(),
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request):
+        from apps.courses.models import LiveProviderSetting
+        LiveProviderSetting.ensure_default_providers()
+
+        default_provider = request.POST.get('default_provider', 'bigbluebutton')
+
+        # Update BigBlueButton
+        bbb_setting = LiveProviderSetting.objects.filter(provider=LiveProviderSetting.Provider.BIGBLUEBUTTON).first()
+        if bbb_setting:
+            bbb_url = request.POST.get('bbb_api_url', '').strip()
+            bbb_secret = request.POST.get('bbb_shared_secret', '').strip()
+            bbb_webhook_sec = request.POST.get('bbb_webhook_secret', '').strip()
+            bbb_enabled = request.POST.get('bbb_is_enabled') == 'on'
+
+            if bbb_url:
+                bbb_setting.api_url = bbb_url
+            if bbb_secret:
+                bbb_setting.shared_secret = bbb_secret
+            if bbb_webhook_sec is not None:
+                bbb_setting.webhook_secret = bbb_webhook_sec
+            bbb_setting.is_enabled = bbb_enabled
+            bbb_setting.is_default = (default_provider == LiveProviderSetting.Provider.BIGBLUEBUTTON)
+            bbb_setting.save()
+
+        # Update other providers enabled & default states
+        for code, _ in LiveProviderSetting.Provider.choices:
+            if code == LiveProviderSetting.Provider.BIGBLUEBUTTON:
+                continue
+            setting = LiveProviderSetting.objects.filter(provider=code).first()
+            if setting:
+                setting.is_enabled = (request.POST.get(f'{code}_is_enabled') == 'on')
+                setting.is_default = (default_provider == code)
+                setting.save()
+
+        # Audit log
+        try:
+            from apps.analytics.models import SystemLog, SystemLogLevel
+            SystemLog.objects.create(
+                level=SystemLogLevel.INFO,
+                source='AdminLiveTeachingSettings',
+                message=f"Live teaching provider settings updated by {request.user.username}. Default provider: {default_provider}."
+            )
+        except Exception:
+            pass
+
+        messages.success(request, "Virtual classroom provider settings have been updated successfully.")
+        return redirect('console-live-settings')
+
+
+class AdminLiveTeachingPingView(AdminRequiredMixin, View):
+    """
+    AJAX endpoint for testing connectivity and credentials with the BigBlueButton server.
+    """
+    def post(self, request):
+        from apps.courses.live.bigbluebutton import BigBlueButtonClient
+        client = BigBlueButtonClient()
+        result = client.test_connection(timeout=5)
+        return JsonResponse(result)
 
 

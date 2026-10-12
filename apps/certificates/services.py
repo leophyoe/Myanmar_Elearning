@@ -14,7 +14,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.utils import timezone
 
-from .models import Certificate, AssociateCredential
+from .models import Certificate, CertificateTemplate, AssociateCredential
 
 
 def compute_grade(student, course):
@@ -72,9 +72,16 @@ def issue_certificate_for_enrollment(enrollment):
         return existing
 
     comp_date = enrollment.completed_at.date() if enrollment.completed_at else timezone.now().date()
+    tpl = getattr(course, 'certificate_template', None)
+    if not tpl and getattr(course, 'partner_institution', None):
+        tpl = CertificateTemplate.objects.filter(partner=course.partner_institution, is_active=True).first()
+    if not tpl:
+        tpl = CertificateTemplate.objects.filter(is_default=True, is_active=True).first()
+
     certificate = Certificate(
         student=student,
         course=course,
+        template=tpl,
         student_name=student.get_full_name() or student.username,
         program_title=course.title,
         grade=compute_grade(student, course),
@@ -92,6 +99,88 @@ def issue_certificate_for_enrollment(enrollment):
     else:
         certificate.certificate_code = f'{Certificate.generate_code()}-{enrollment.pk.hex[:6].upper()}'
         certificate.save()
+
+    try:
+        evaluate_associate_eligibility(student)
+    except Exception:
+        pass
+
+    return certificate
+
+
+def issue_certificate_for_exam(attempt, verified_by=None):
+    """
+    Issue (or return) an Exam-Based Verified Certificate for a passed exam attempt.
+    Safe to call repeatedly; returns existing unrevoked certificate if already minted.
+    """
+    exam = attempt.quiz
+    student = attempt.student
+
+    if not attempt.passed:
+        return None
+
+    if getattr(exam, 'certificate_type', None) == 'none':
+        return None
+
+    existing = Certificate.objects.filter(
+        student=student,
+        exam=exam,
+        certificate_type=Certificate.CertificateType.EXAM_VERIFIED,
+        is_revoked=False,
+    ).first()
+    if existing:
+        if not attempt.certificate:
+            attempt.certificate = existing
+            attempt.save(update_fields=['certificate'])
+        return existing
+
+    score = attempt.score_percentage
+    grade = 'Pass'
+    if score >= 90:
+        grade = 'High Distinction'
+    elif score >= 80:
+        grade = 'Distinction'
+    elif score >= 70:
+        grade = 'Merit'
+
+    verifier = verified_by or getattr(attempt, 'graded_by', None) or getattr(exam, 'assigned_instructor', None) or getattr(exam, 'owner', None)
+
+    tpl = getattr(exam, 'certificate_template', None)
+    if not tpl and exam.course:
+        tpl = getattr(exam.course, 'certificate_template', None)
+    if not tpl and getattr(exam, 'institution', None):
+        tpl = CertificateTemplate.objects.filter(partner=exam.institution, is_active=True).first()
+    if not tpl:
+        tpl = CertificateTemplate.objects.filter(is_default=True, is_active=True).first()
+
+    certificate = Certificate(
+        student=student,
+        course=exam.course if exam.course else None,
+        exam=exam,
+        template=tpl,
+        certificate_type=Certificate.CertificateType.EXAM_VERIFIED,
+        student_name=student.get_full_name() or student.username,
+        program_title=exam.title,
+        grade=grade,
+        exam_score=score,
+        verified_by=verifier,
+        completion_date=timezone.now().date(),
+    )
+
+    for _ in range(12):
+        certificate.certificate_code = Certificate.generate_code(cert_type='exam_verified')
+        try:
+            with transaction.atomic():
+                certificate.save()
+            break
+        except IntegrityError:
+            continue
+    else:
+        certificate.certificate_code = f"{Certificate.generate_code(cert_type='exam_verified')}-{attempt.pk.hex[:6].upper()}"
+        certificate.save()
+
+    attempt.certificate = certificate
+    attempt.save(update_fields=['certificate'])
 
     try:
         evaluate_associate_eligibility(student)

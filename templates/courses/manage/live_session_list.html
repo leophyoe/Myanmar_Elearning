@@ -1,83 +1,177 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
 {% block title %}Live Sessions - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-800">
+    <!-- Top Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-200 dark:border-[#26364B]">
         <div>
-            <h1 class="text-2xl font-bold text-white tracking-wide">Live Sessions</h1>
-            <p class="text-xs text-slate-400 mt-1">
-                Scheduled real-time classes. Students see the joining link only once they can access the course.
+            <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
+                <a href="{% url 'manage-home' %}" class="hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">Teacher Studio</a>
+                <span>/</span>
+                <span class="text-slate-700 dark:text-slate-300">Live Virtual Classrooms</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+                <span class="w-3 h-3 rounded-full bg-[#0284C7] dark:bg-[#38BDF8]"></span>
+                <span>Live Sessions Management</span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                တိုက်ရိုက်သင်ကြားမှု အချိန်ဇယားများ၊ BigBlueButton နှင့် Zoom/Meet စာသင်ခန်းများအား စီမံခန့်ခွဲခြင်း
             </p>
         </div>
-        <div class="flex flex-wrap gap-2 text-xs">
-            <a href="{% url 'manage-home' %}" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Content Studio</a>
-            <a href="{% url 'live-session-create' %}" class="px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">+ Schedule session</a>
+        <div class="flex flex-wrap items-center gap-2.5 text-xs">
+            <a href="{% url 'manage-home' %}" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-200 font-medium transition">
+                Content Studio
+            </a>
+            <a href="{% url 'live-session-create' %}" class="px-4 py-2 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white font-semibold shadow-md shadow-sky-600/20 transition flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <span class="lang-en">Schedule Session</span>
+                <span class="lang-my">အတန်းသစ်ဖွင့်မည်</span>
+            </a>
         </div>
     </div>
 
-    <div class="flex flex-wrap gap-2 mb-6">
+    <!-- Course Filter Tabs -->
+    <div class="flex items-center gap-2 mb-6 overflow-x-auto pb-2 text-xs">
         <a href="{% url 'live-session-list' %}"
-           class="text-xs px-3 py-1.5 rounded-lg border transition
-           {% if not active_course %}bg-cyan-600 border-cyan-500 text-white
-           {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
-            All courses
+           class="px-3.5 py-2 rounded-xl border font-medium transition shrink-0
+           {% if not active_course %}bg-[#0284C7] border-[#0284C7] text-white shadow-sm
+           {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
+            <span class="lang-en">All Courses ({{ total_count }})</span>
+            <span class="lang-my">သင်တန်းအားလုံး ({{ total_count }})</span>
         </a>
         {% for course in courses %}
         <a href="{% url 'live-session-list' %}?course={{ course.id }}"
-           class="text-xs px-3 py-1.5 rounded-lg border transition
-           {% if active_course == course.id|stringformat:'s' %}bg-cyan-600 border-cyan-500 text-white
-           {% else %}bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-600{% endif %}">
-            {{ course.title }}
+           class="px-3.5 py-2 rounded-xl border font-medium transition shrink-0
+           {% if active_course == course.id|stringformat:'s' %}bg-[#0284C7] border-[#0284C7] text-white shadow-sm
+           {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
+            {{ course.title|truncatechars:28 }}
         </a>
         {% endfor %}
     </div>
 
+    <!-- Sessions Table / Empty State -->
     {% if sessions %}
-    <div class="overflow-x-auto rounded-2xl bg-slate-900 border border-slate-800">
+    <div class="overflow-x-auto rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
         <table class="w-full text-sm text-left">
-            <thead class="text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-800">
+            <thead class="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-[#0B1220]/60 border-b border-slate-100 dark:border-[#26364B]">
                 <tr>
-                    <th class="px-5 py-3">When</th>
-                    <th class="px-5 py-3">Session</th>
-                    <th class="px-5 py-3">Course</th>
-                    <th class="px-5 py-3">Platform</th>
-                    <th class="px-5 py-3">Length</th>
-                    <th class="px-5 py-3">Visibility</th>
-                    <th class="px-5 py-3"></th>
+                    <th class="px-5 py-3.5">
+                        <span class="lang-en">Schedule</span>
+                        <span class="lang-my">အချိန်</span>
+                    </th>
+                    <th class="px-5 py-3.5">
+                        <span class="lang-en">Class</span>
+                        <span class="lang-my">အတန်းအမည်</span>
+                    </th>
+                    <th class="px-5 py-3.5">
+                        <span class="lang-en">Course</span>
+                        <span class="lang-my">သင်တန်း</span>
+                    </th>
+                    <th class="px-5 py-3.5">
+                        <span class="lang-en">Platform</span>
+                        <span class="lang-my">စနစ်</span>
+                    </th>
+                    <th class="px-5 py-3.5">
+                        <span class="lang-en">Duration</span>
+                        <span class="lang-my">ကြာမြင့်ချိန်</span>
+                    </th>
+                    <th class="px-5 py-3.5">
+                        <span class="lang-en">Status</span>
+                        <span class="lang-my">အခြေအနေ</span>
+                    </th>
+                    <th class="px-5 py-3.5 text-right">
+                        <span class="lang-en">Actions</span>
+                        <span class="lang-my">လုပ်ဆောင်ချက်</span>
+                    </th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-800">
+            <tbody class="divide-y divide-slate-100 dark:divide-[#26364B]">
                 {% for session in sessions %}
-                <tr>
-                    <td class="px-5 py-3 text-slate-300 whitespace-nowrap text-xs">
-                        {{ session.starts_at|date:"D, d M Y" }}<br>
-                        <span class="text-slate-500">{{ session.starts_at|date:"H:i" }}</span>
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-[#172B40]/20 transition">
+                    <td class="px-5 py-4 text-slate-700 dark:text-slate-300 whitespace-nowrap text-xs">
+                        <div class="font-medium text-slate-900 dark:text-white">{{ session.starts_at|date:"D, d M Y" }}</div>
+                        <div class="text-[11px] font-mono text-[#0284C7] dark:text-[#38BDF8] mt-0.5">{{ session.starts_at|date:"H:i" }}</div>
                     </td>
-                    <td class="px-5 py-3">
-                        <div class="text-white font-medium">{{ session.title }}</div>
-                        {% if session.notes %}<div class="text-[11px] text-slate-500 mt-0.5">{{ session.notes|truncatechars:80 }}</div>{% endif %}
-                    </td>
-                    <td class="px-5 py-3 text-slate-400 text-xs">{{ session.course.title }}</td>
-                    <td class="px-5 py-3 text-xs">
-                        <span class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">
-                            {{ session.get_provider_display }}
-                        </span>
-                    </td>
-                    <td class="px-5 py-3 text-xs text-slate-400 whitespace-nowrap">{{ session.duration_minutes }} min</td>
-                    <td class="px-5 py-3">
-                        {% if session.is_published %}
-                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 uppercase font-bold">Published</span>
-                        {% else %}
-                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 uppercase font-bold">Hidden</span>
+                    <td class="px-5 py-4">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <a href="{% url 'live-session-detail' session_id=session.id %}" class="font-semibold text-slate-900 dark:text-white hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
+                                {{ session.title }}
+                            </a>
+                            {% if session.series_id %}
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-[10px] font-semibold">
+                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                <span>Session {{ session.session_number }}/{{ session.total_sessions_in_series }}</span>
+                                {% if session.recurrence_rule %}<span class="text-purple-500 font-normal">({{ session.recurrence_rule }})</span>{% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% if session.notes %}
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">{{ session.notes }}</div>
                         {% endif %}
                     </td>
-                    <td class="px-5 py-3 text-right whitespace-nowrap">
-                        <a href="{% url 'live-session-edit' session_id=session.id %}"
-                           class="text-xs px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">Edit</a>
-                        <a href="{% url 'live-session-delete' session_id=session.id %}"
-                           class="text-xs px-3 py-1.5 rounded bg-red-950 hover:bg-red-900 border border-red-800 text-red-300 transition">Delete</a>
+                    <td class="px-5 py-4 text-xs text-slate-600 dark:text-slate-400">
+                        {{ session.course.title }}
+                    </td>
+                    <td class="px-5 py-4 text-xs whitespace-nowrap">
+                        {% if session.provider == 'bigbluebutton' %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-[11px] font-semibold gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#0284C7] dark:bg-[#38BDF8]"></span>
+                            <span>BigBlueButton</span>
+                        </span>
+                        {% elif session.provider == 'zoom' %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-[11px] font-semibold">
+                            Zoom
+                        </span>
+                        {% elif session.provider == 'google_meet' %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-semibold">
+                            Google Meet
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[11px] font-medium">
+                            {{ session.get_provider_display }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-4 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                        {{ session.duration_minutes }} mins
+                    </td>
+                    <td class="px-5 py-4 whitespace-nowrap text-xs">
+                        {% if session.is_live %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 border border-red-300 dark:border-red-800 animate-pulse">
+                            ● LIVE NOW
+                        </span>
+                        {% elif session.is_upcoming %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
+                            SCHEDULED
+                        </span>
+                        {% elif session.has_replay %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                            ✓ REPLAY READY
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                            ENDED
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-4 text-right whitespace-nowrap text-xs">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="{% url 'live-session-detail' session_id=session.id %}"
+                               class="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/60 dark:hover:bg-sky-900 text-[#0284C7] dark:text-[#38BDF8] border border-sky-200 dark:border-sky-800 font-medium transition">
+                                Open Room
+                            </a>
+                            <a href="{% url 'live-session-edit' session_id=session.id %}"
+                               class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-medium transition">
+                                Edit
+                            </a>
+                            <a href="{% url 'live-session-delete' session_id=session.id %}"
+                               class="px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/50 dark:hover:bg-red-900 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 font-medium transition">
+                                Delete
+                            </a>
+                        </div>
                     </td>
                 </tr>
                 {% endfor %}
@@ -85,10 +179,23 @@
         </table>
     </div>
     {% else %}
-    <div class="p-12 rounded-2xl bg-slate-900 border border-slate-800 text-center">
-        <p class="text-sm text-slate-400 mb-4">No live sessions scheduled yet.</p>
-        <a href="{% url 'live-session-create' %}" class="inline-block text-xs px-5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
-            Schedule the first one &rarr;
+    <!-- Empty State -->
+    <div class="p-12 sm:p-16 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-center shadow-sm">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-[#0284C7] dark:text-[#38BDF8]">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+        </div>
+        <h3 class="text-base font-bold text-slate-900 dark:text-white mb-1">
+            <span class="lang-en">No live sessions scheduled yet</span>
+            <span class="lang-my">သင်ကြားမှု အချိန်ဇယား မရှိသေးပါ</span>
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+            <span class="lang-en">Schedule an interactive virtual classroom with BigBlueButton or Zoom/Google Meet for your enrolled students.</span>
+            <span class="lang-my">BigBlueButton သို့မဟုတ် Zoom/Google Meet ဖြင့် ကျောင်းသားများနှင့် တိုက်ရိုက်ထိတွေ့ သင်ကြားမည့် virtual classroom အတန်းသစ်တစ်ခုကို ယခုပင် စတင်သတ်မှတ်နိုင်ပါသည်။</span>
+        </p>
+        <a href="{% url 'live-session-create' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white font-semibold text-xs shadow-lg shadow-sky-600/20 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            <span class="lang-en">Schedule First Live Class</span>
+            <span class="lang-my">အတန်းစတင်ဖွင့်လှစ်မည်</span>
         </a>
     </div>
     {% endif %}

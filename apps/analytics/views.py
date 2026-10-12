@@ -17,6 +17,13 @@ class TeacherDashboardView(RoleRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from apps.certificates.models import Certificate
+        user = self.request.user
+        if getattr(user, 'is_admin', False) or user.is_superuser:
+            total_certificates = Certificate.objects.filter(is_revoked=False).count()
+        else:
+            total_certificates = Certificate.objects.filter(course__owner=user, is_revoked=False).count()
+
         context.update({
             'total_students': StudentProfile.objects.count(),
             'active_students': User.objects.filter(role='student', is_active=True).count(),
@@ -26,6 +33,7 @@ class TeacherDashboardView(RoleRequiredMixin, TemplateView):
             'recent_activity': ActivityLog.objects.select_related('user')[:15],
             'total_challenges': Challenge.objects.count(),
             'total_solves': SolvedChallenge.objects.count(),
+            'total_certificates': total_certificates,
         })
         return context
 

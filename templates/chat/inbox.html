@@ -1,0 +1,874 @@
+{% extends 'base.html' %}
+
+{% block title %}Messages | THUTA Messenger{% endblock %}
+
+{% block content %}
+<div class="h-[calc(100vh-4rem)] max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4 flex flex-col">
+    <!-- Header / Breadcrumb Bar -->
+    <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#26364B] mb-2">
+        <div class="flex items-center gap-2.5">
+            <a href="javascript:history.back()" onclick="if(history.length<=1){window.location.href='{% url 'dashboard' %}'; return false;}"
+               class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-700"
+               title="Back" data-title-en="Back" data-title-my="နောက်သို့ ပြန်သွားရန်" aria-label="Back">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            </a>
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-white shadow-sm font-bold text-base shrink-0">
+                💬
+            </div>
+            <div>
+                <h1 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2 leading-tight">
+                    <span class="lang-en">THUTA Messenger</span>
+                    <span class="lang-my">တိုက်ရိုက် ဆက်သွယ်ရေး</span>
+                    <span id="connectionBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="connectionText">Live</span>
+                    </span>
+                </h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    <span class="lang-en">Secure direct communication between students and faculty</span>
+                    <span class="lang-my">ကျောင်းသားနှင့် ဆရာများအကြား လုံခြုံစိတ်ချရသော တိုက်ရိုက် မက်ဆေ့ခ်ျစနစ်</span>
+                </p>
+            </div>
+        </div>
+
+        <button type="button" id="openNewChatModalBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] font-semibold text-xs transition shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span class="lang-en">New Message</span>
+            <span class="lang-my">မက်ဆေ့ခ်ျအသစ်</span>
+        </button>
+    </div>
+
+    <!-- Main Two-Panel Layout Container -->
+    <div class="flex-1 flex overflow-hidden rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+
+        <!-- LEFT PANEL: Conversations List -->
+        <div id="conversationsPanel" class="w-full md:w-80 lg:w-96 flex flex-col border-r border-slate-200 dark:border-[#26364B] shrink-0 {% if active_conversation %}hidden md:flex{% else %}flex{% endif %}">
+            <!-- Search & Filter Bar -->
+            <div class="p-3 border-b border-slate-200 dark:border-[#26364B]">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <input type="text" id="conversationSearchInput" placeholder="Search by name, ID (MEL-...), course..."
+                           class="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition">
+                </div>
+            </div>
+
+            <!-- Conversations Scrollable List -->
+            <div id="conversationsList" class="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-[#1E293B]">
+                {% if conversations %}
+                    {% for c in conversations %}
+                    <a href="{% url 'chat:inbox' %}?c={{ c.id }}"
+                       class="conversation-item flex items-center gap-3 p-3 transition hover:bg-slate-50 dark:hover:bg-[#162235] {% if c.is_active %}bg-sky-50/70 dark:bg-[#17253B] border-l-4 border-l-[#0284C7] dark:border-l-[#38BDF8]{% endif %}"
+                       data-conversation-id="{{ c.id }}"
+                       data-search="{{ c.other_user.get_full_name|default:''|lower }} {{ c.other_user.username|lower }} {{ c.other_user.account_id|default:''|lower }} {{ c.other_user.member_level_display|lower }} {{ c.course.title|default:''|lower }}">
+                        <div class="relative shrink-0">
+                            {% if c.other_user.avatar %}
+                                <img src="{{ c.other_user.avatar.url }}" alt="{{ c.other_user.username }}" class="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700">
+                            {% else %}
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-600 text-white flex items-center justify-center font-bold text-xs uppercase shadow-xs">
+                                    {{ c.other_user.username|slice:":2" }}
+                                </div>
+                            {% endif %}
+                            {% if c.unread_count > 0 %}
+                                <span class="absolute -top-1 -right-1 w-3 h-3 bg-sky-500 border-2 border-white dark:border-[#111C2E] rounded-full"></span>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-0.5">
+                                <span class="font-semibold text-xs text-slate-900 dark:text-white truncate flex items-center gap-1">
+                                    {{ c.other_user.get_full_name|default:c.other_user.username }}
+                                    {% if c.other_user.is_verified %}
+                                        <svg class="w-3.5 h-3.5 text-[#0284C7] dark:text-[#38BDF8] shrink-0" viewBox="0 0 24 24" fill="currentColor" title="Verified Member">
+                                            <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                                        </svg>
+                                    {% endif %}
+                                </span>
+                                <span class="text-[10px] text-slate-400 shrink-0 ml-1">
+                                    {% if c.latest_message %}
+                                        {{ c.latest_message.created_at|date:"M j" }}
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+                                <span class="text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider
+                                    {% if c.other_user.role == 'teacher' or c.other_user.role == 'instructor' %}bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300
+                                    {% elif c.other_user.role == 'admin' %}bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300
+                                    {% elif c.other_user.role == 'partner' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300
+                                    {% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300{% endif %}">
+                                    {{ c.other_user.member_level_display }}
+                                </span>
+                                {% if c.other_user.account_id %}
+                                <span class="text-[9px] font-mono text-slate-400 dark:text-slate-500">
+                                    {{ c.other_user.account_id }}
+                                </span>
+                                {% endif %}
+                                {% if c.course %}
+                                    <span class="text-[10px] text-slate-400 truncate max-w-[120px]" title="{{ c.course.title }}">
+                                        • {{ c.course.title }}
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <p class="text-xs text-slate-500 dark:text-slate-400 truncate pr-2">
+                                    {% if c.latest_message %}
+                                        {% if c.latest_message.sender == user %}<span class="font-medium text-slate-400">You: </span>{% endif %}
+                                        {{ c.latest_message.content }}
+                                    {% else %}
+                                        <span class="italic text-slate-400">No messages yet</span>
+                                    {% endif %}
+                                </p>
+                                {% if c.unread_count > 0 %}
+                                    <span class="unread-pill shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220]">
+                                        {{ c.unread_count }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="p-8 text-center text-slate-400">
+                        <div class="text-3xl mb-2">📭</div>
+                        <p class="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
+                            <span class="lang-en">No conversations yet</span>
+                            <span class="lang-my">မက်ဆေ့ခ်ျများ မရှိသေးပါ</span>
+                        </p>
+                        <p class="text-[11px] text-slate-400 mb-4">
+                            <span class="lang-en">Connect directly with your course instructors.</span>
+                            <span class="lang-my">သင့်သင်ရိုး ဆရာများနှင့် တိုက်ရိုက် မေးမြန်း ဆွေးနွေးပါ။</span>
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Active Conversation Message Thread -->
+        <div id="messagesPanel" class="flex-1 flex flex-col bg-slate-50/50 dark:bg-[#0B1220] {% if not active_conversation %}hidden md:flex{% else %}flex{% endif %}">
+            {% if active_conversation and active_recipient %}
+                <!-- Active Conversation Header -->
+                <div class="px-4 py-3 bg-white dark:bg-[#111C2E] border-b border-slate-200 dark:border-[#26364B] flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-3">
+                        <!-- Mobile Back Button -->
+                        <a href="{% url 'chat:inbox' %}" class="md:hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        </a>
+
+                        <div class="relative shrink-0">
+                            {% if active_recipient.avatar %}
+                                <img src="{{ active_recipient.avatar.url }}" alt="{{ active_recipient.username }}" class="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700">
+                            {% else %}
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs uppercase shadow-xs">
+                                    {{ active_recipient.username|slice:":2" }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h2 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white leading-tight flex items-center gap-1">
+                                    {{ active_recipient.get_full_name|default:active_recipient.username }}
+                                    {% if active_recipient.is_verified %}
+                                        <svg class="w-4 h-4 text-[#0284C7] dark:text-[#38BDF8] shrink-0" viewBox="0 0 24 24" fill="currentColor" title="Verified Member">
+                                            <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                                        </svg>
+                                    {% endif %}
+                                </h2>
+                                <span class="text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider
+                                    {% if active_recipient.role == 'teacher' or active_recipient.role == 'instructor' %}bg-sky-100 text-sky-800 dark:bg-sky-950/70 dark:text-sky-300
+                                    {% elif active_recipient.role == 'admin' %}bg-purple-100 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300
+                                    {% elif active_recipient.role == 'partner' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300
+                                    {% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300{% endif %}">
+                                    {{ active_recipient.member_level_display }}
+                                </span>
+                                {% if active_recipient.account_id %}
+                                    <span class="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                                        ID: {{ active_recipient.account_id }}
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                                {% if active_conversation.course %}
+                                    <span class="font-medium text-sky-600 dark:text-sky-400">🎓 {{ active_conversation.course.title }}</span>
+                                {% else %}
+                                    <span>Direct Academic Consultation</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Actions Overflow Dropdown -->
+                    <div class="relative group">
+                        <button type="button" class="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                        </button>
+                        <div class="absolute right-0 mt-1 w-48 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-xl p-1.5 hidden group-hover:block z-20 text-xs">
+                            <button type="button" id="toggleBlockBtn" class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium transition"
+                                    data-user-id="{{ active_recipient.id }}"
+                                    data-is-blocked="{% if is_blocked_by_me %}true{% else %}false{% endif %}">
+                                <span>🚫</span>
+                                <span id="toggleBlockText">{% if is_blocked_by_me %}Unblock User{% else %}Block User{% endif %}</span>
+                            </button>
+                            <a href="{% url 'portfolio-detail' active_recipient.username %}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                                <span>👤</span>
+                                <span>View Profile</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages Stream Viewport -->
+                <div id="messagesViewport" class="flex-1 overflow-y-auto p-4 space-y-3">
+                    {% if active_messages %}
+                        {% for msg in active_messages %}
+                            <div class="message-row flex flex-col {% if msg.is_outgoing %}items-end{% else %}items-start{% endif %}" id="msg-{{ msg.id }}">
+                                <div class="max-w-[85%] sm:max-w-[70%]">
+                                    <div class="{% if msg.is_outgoing %}
+                                            bg-[#0284C7] dark:bg-[#0284C7] text-white rounded-2xl rounded-tr-xs shadow-sm
+                                        {% else %}
+                                            bg-white dark:bg-[#111C2E] text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-[#26364B] rounded-2xl rounded-tl-xs shadow-xs
+                                        {% endif %} p-3">
+                                        <p class="text-xs sm:text-[13px] leading-relaxed whitespace-pre-wrap break-words">{{ msg.content }}</p>
+                                    </div>
+
+                                    <div class="flex items-center gap-1.5 mt-1 px-1 text-[10px] text-slate-400 {% if msg.is_outgoing %}justify-end{% else %}justify-start{% endif %}">
+                                        <span>{{ msg.timestamp_display }}</span>
+                                        {% if msg.is_outgoing %}
+                                            <span class="read-receipt" data-msg-id="{{ msg.id }}">
+                                                {% if msg.is_read %}
+                                                    <span class="text-sky-500 font-bold" title="Read at {{ msg.read_at }}">✓✓</span>
+                                                {% else %}
+                                                    <span class="text-slate-400" title="Delivered">✓</span>
+                                                {% endif %}
+                                            </span>
+                                        {% else %}
+                                            <button type="button" class="report-btn hover:text-rose-500 transition ml-1" data-msg-id="{{ msg.id }}" title="Report inappropriate message">
+                                                🚩
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div id="emptyThreadNotice" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                            <div class="w-12 h-12 rounded-2xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xl mb-3">
+                                💬
+                            </div>
+                            <h3 class="text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
+                                <span class="lang-en">Direct Academic Consultation</span>
+                                <span class="lang-my">တိုက်ရိုက် သင်ရိုး ဆွေးနွေးမှု စတင်ပါ</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-400 max-w-xs">
+                                <span class="lang-en">Send a respectful inquiry regarding assignments, coursework, or curriculum guidance.</span>
+                                <span class="lang-my">သင်ခန်းစာများနှင့် ပတ်သက်၍ သိရှိလိုသည်များကို လွတ်လပ်စွာ စာပို့ မေးမြန်းနိုင်ပါသည်။</span>
+                            </p>
+                        </div>
+                    {% endif %}
+
+                    <!-- Live Typing Indicator -->
+                    <div id="typingIndicator" class="hidden flex items-center gap-2 text-xs text-slate-400 italic px-2 py-1">
+                        <span class="inline-flex gap-1 items-center">
+                            <span class="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce"></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:0.2s]"></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:0.4s]"></span>
+                        </span>
+                        <span id="typingUserText">Typing...</span>
+                    </div>
+                </div>
+
+                <!-- Input Footer / Block Banner -->
+                <div class="p-3 bg-white dark:bg-[#111C2E] border-t border-slate-200 dark:border-[#26364B] shrink-0">
+                    {% if is_blocked_by_me %}
+                        <div class="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between gap-3 text-xs text-amber-800 dark:text-amber-200">
+                            <div class="flex items-center gap-2">
+                                <span>🚫</span>
+                                <span>You have blocked <strong>{{ active_recipient.get_full_name|default:active_recipient.username }}</strong>. Unblock them to resume messaging.</span>
+                            </div>
+                            <button type="button" onclick="document.getElementById('toggleBlockBtn').click()" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold transition text-xs shrink-0 cursor-pointer shadow-xs">
+                                Unblock User
+                            </button>
+                        </div>
+                    {% elif is_blocked_by_other %}
+                        <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-center text-xs text-slate-500">
+                            This recipient is currently not accepting direct messages.
+                        </div>
+                    {% else %}
+                        <form id="chatMessageForm" class="flex items-end gap-2">
+                            {% csrf_token %}
+                            <div class="flex-1 relative">
+                                <textarea id="messageInput" rows="1" placeholder="Type your message... (Enter to send, Shift+Enter for newline)"
+                                          class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] text-xs sm:text-[13px] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 resize-none max-h-32 transition"></textarea>
+                            </div>
+                            <button type="submit" id="sendBtn" class="p-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] transition shadow-sm shrink-0 disabled:opacity-50">
+                                <svg class="w-4 h-4 transform rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"/></svg>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% else %}
+                <!-- Empty State (No conversation active) -->
+                <div class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400">
+                    <div class="w-16 h-16 rounded-3xl bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center text-3xl mb-4 shadow-sm">
+                        💬
+                    </div>
+                    <h2 class="text-sm sm:text-base font-bold text-slate-800 dark:text-white mb-1">
+                        <span class="lang-en">Welcome to THUTA Messenger</span>
+                        <span class="lang-my">THUTA မက်ဆင်ဂျာမှ ကြိုဆိုပါသည်</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mb-6 leading-relaxed">
+                        <span class="lang-en">Select a conversation from the sidebar or reach out directly to your course instructors for verified guidance.</span>
+                        <span class="lang-my">ဘယ်ဘက်ရှိ ဆွေးနွေးမှုတစ်ခုကို ရွေးချယ်ပါ သို့မဟုတ် သင့်ဆရာများထံသို့ မက်ဆေ့ခ်ျအသစ် ပေးပို့ပါ။</span>
+                    </p>
+                    <button type="button" onclick="document.getElementById('openNewChatModalBtn').click()" class="px-4 py-2 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] font-semibold text-xs transition shadow-sm">
+                        <span class="lang-en">Start a Consultation</span>
+                        <span class="lang-my">ဆွေးနွေးမှု စတင်ရန်</span>
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Start New Chat with Allowed Recipients -->
+<div id="newChatModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs hidden p-4">
+    <div class="bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="p-4 border-b border-slate-200 dark:border-[#26364B] flex items-center justify-between">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>💬</span>
+                <span class="lang-en">Start New Conversation</span>
+                <span class="lang-my">စကားပြောခန်း အသစ်</span>
+            </h3>
+            <button type="button" id="closeNewChatModalBtn" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="p-3 border-b border-slate-200 dark:border-[#26364B]">
+            <input type="text" id="recipientFilterInput" placeholder="Search by name, ID (MEL-...), username, or role..."
+                   class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-sky-500">
+        </div>
+
+        <div id="recipientsModalList" class="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-[#1E293B] p-2">
+            {% if recipients %}
+                {% for r in recipients %}
+                <form action="{% url 'chat:start-conversation' recipient_id=r.id %}" method="POST" class="recipient-form"
+                      data-search="{{ r.get_full_name|default:''|lower }} {{ r.username|lower }} {{ r.account_id|default:''|lower }} {{ r.member_level_display|lower }} {{ r.get_role_display|lower }}">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full flex items-center gap-3 p-2.5 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-[#162235] transition">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                            {{ r.username|slice:":2"|upper }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-xs text-slate-900 dark:text-white truncate flex items-center gap-1">
+                                <span>{{ r.get_full_name|default:r.username }}</span>
+                                {% if r.is_verified %}
+                                    <svg class="w-3.5 h-3.5 text-[#0284C7] dark:text-[#38BDF8] shrink-0" viewBox="0 0 24 24" fill="currentColor" title="Verified Member">
+                                        <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                                    </svg>
+                                {% endif %}
+                            </div>
+                            <div class="text-[10px] text-slate-400 flex items-center gap-1.5 flex-wrap">
+                                <span class="font-medium text-sky-600 dark:text-sky-400">{{ r.member_level_display }}</span>
+                                {% if r.account_id %}
+                                <span class="font-mono text-slate-500">ID: {{ r.account_id }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <span class="text-xs text-sky-600 dark:text-sky-400 font-semibold shrink-0">Chat &rarr;</span>
+                    </button>
+                </form>
+                {% endfor %}
+            {% else %}
+                <div class="p-6 text-center text-slate-400 text-xs">
+                    <p class="font-medium text-slate-600 dark:text-slate-300 mb-1">No contactable contacts found.</p>
+                    <p class="text-[11px] text-slate-400">Search by Name or Account ID (e.g. MEL-...) to connect.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Abuse Report Message -->
+<div id="reportModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs hidden p-4">
+    <div class="bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] rounded-2xl w-full max-w-sm shadow-2xl p-4">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
+            <span>🚩</span>
+            <span>Report Inappropriate Content</span>
+        </h3>
+        <p class="text-xs text-slate-500 mb-4">
+            Reports are reviewed by platform administrators under strict privacy protocols.
+        </p>
+
+        <form id="reportForm">
+            {% csrf_token %}
+            <input type="hidden" id="reportMessageId" name="message_id" value="">
+            <div class="mb-3">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Reason</label>
+                <select id="reportReason" class="w-full text-xs p-2 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] text-slate-900 dark:text-white">
+                    <option value="harassment">Harassment / Bullying</option>
+                    <option value="spam">Spam / Commercial advertising</option>
+                    <option value="inappropriate">Inappropriate / Harmful content</option>
+                    <option value="other">Other violation</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Details (Optional)</label>
+                <textarea id="reportDetails" rows="2" class="w-full text-xs p-2 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] text-slate-900 dark:text-white resize-none" placeholder="Explain what happened..."></textarea>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" id="cancelReportBtn" class="px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-[#26364B] text-slate-600 dark:text-slate-300">Cancel</button>
+                <button type="submit" class="px-3 py-1.5 text-xs rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold">Submit Report</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const activeConversationId = "{{ active_conversation.id|default:'' }}";
+    const currentUserId = "{{ user.id }}";
+    let chatSocket = null;
+    let typingTimeout = null;
+
+    // Viewport auto-scroll
+    const messagesViewport = document.getElementById('messagesViewport');
+    function scrollToBottom() {
+        if (messagesViewport) {
+            messagesViewport.scrollTop = messagesViewport.scrollHeight;
+        }
+    }
+    scrollToBottom();
+
+    // WebSocket Initialization
+    function setupWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        let wsUrl = protocol + window.location.host + '/ws/chat/';
+        if (activeConversationId) {
+            wsUrl += activeConversationId + '/';
+        }
+
+        try {
+            chatSocket = new WebSocket(wsUrl);
+
+            chatSocket.onopen = function() {
+                const badge = document.getElementById('connectionBadge');
+                const text = document.getElementById('connectionText');
+                if (badge && text) {
+                    badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400";
+                    text.innerText = "Live";
+                }
+            };
+
+            chatSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                handleSocketMessage(data);
+            };
+
+            chatSocket.onclose = function() {
+                const badge = document.getElementById('connectionBadge');
+                const text = document.getElementById('connectionText');
+                if (badge && text) {
+                    badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400";
+                    text.innerText = "Reconnecting...";
+                }
+                // Backoff retry after 3 seconds
+                setTimeout(setupWebSocket, 3000);
+            };
+
+            chatSocket.onerror = function() {
+                chatSocket.close();
+            };
+        } catch (err) {
+            console.warn("WebSocket could not be established. HTTP REST fallback will be used.", err);
+        }
+    }
+
+    setupWebSocket();
+
+    function handleSocketMessage(data) {
+        if (data.type === 'new_message') {
+            const msg = data.message;
+            if (activeConversationId && msg.conversation_id === activeConversationId) {
+                appendMessageToUI(msg);
+                scrollToBottom();
+
+                // If message is incoming, automatically mark read
+                if (!msg.is_outgoing && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                    chatSocket.send(JSON.stringify({
+                        action: 'mark_read',
+                        conversation_id: activeConversationId
+                    }));
+                }
+            }
+            updateConversationPreview(msg.conversation_id, msg.content, msg.is_outgoing);
+        } else if (data.type === 'read_receipt') {
+            if (data.conversation_id === activeConversationId) {
+                document.querySelectorAll('.read-receipt').forEach(el => {
+                    el.innerHTML = '<span class="text-sky-500 font-bold" title="Read">✓✓</span>';
+                });
+            }
+        } else if (data.type === 'typing_status') {
+            const indicator = document.getElementById('typingIndicator');
+            const textEl = document.getElementById('typingUserText');
+            if (indicator && textEl && data.conversation_id === activeConversationId) {
+                if (data.is_typing) {
+                    textEl.innerText = `${data.username} is typing...`;
+                    indicator.classList.remove('hidden');
+                    scrollToBottom();
+                } else {
+                    indicator.classList.add('hidden');
+                }
+            }
+        } else if (data.type === 'notification') {
+            // Update conversation badge in list
+            const convItem = document.querySelector(`[data-conversation-id="${data.conversation_id}"]`);
+            if (convItem) {
+                let badge = convItem.querySelector('.unread-pill');
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = "unread-pill shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0284C7] dark:bg-[#38BDF8] text-white dark:text-[#0B1220]";
+                    convItem.querySelector('.flex.items-center.justify-between:last-child').appendChild(badge);
+                }
+                badge.innerText = data.unread_count;
+            }
+            updateGlobalHeaderBadge(data.unread_count);
+        }
+    }
+
+    function appendMessageToUI(msg) {
+        const emptyNotice = document.getElementById('emptyThreadNotice');
+        if (emptyNotice) emptyNotice.remove();
+
+        // Check if message with this id already rendered (optimistic deduplication)
+        if (document.getElementById(`msg-${msg.id}`) || (msg.client_message_id && document.querySelector(`[data-client-id="${msg.client_message_id}"]`))) {
+            return;
+        }
+
+        const row = document.createElement('div');
+        row.className = `message-row flex flex-col ${msg.is_outgoing ? 'items-end' : 'items-start'}`;
+        row.id = `msg-${msg.id}`;
+
+        const bubbleClass = msg.is_outgoing
+            ? 'bg-[#0284C7] dark:bg-[#0284C7] text-white rounded-2xl rounded-tr-xs shadow-sm'
+            : 'bg-white dark:bg-[#111C2E] text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-[#26364B] rounded-2xl rounded-tl-xs shadow-xs';
+
+        const readReceipt = msg.is_outgoing
+            ? `<span class="read-receipt" data-msg-id="${msg.id}">${msg.is_read ? '<span class="text-sky-500 font-bold">✓✓</span>' : '<span class="text-slate-400">✓</span>'}</span>`
+            : `<button type="button" class="report-btn hover:text-rose-500 transition ml-1" data-msg-id="${msg.id}" title="Report">🚩</button>`;
+
+        row.innerHTML = `
+            <div class="max-w-[85%] sm:max-w-[70%]">
+                <div class="${bubbleClass} p-3">
+                    <p class="text-xs sm:text-[13px] leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(msg.content)}</p>
+                </div>
+                <div class="flex items-center gap-1.5 mt-1 px-1 text-[10px] text-slate-400 ${msg.is_outgoing ? 'justify-end' : 'justify-start'}">
+                    <span>${msg.timestamp_display || 'Just now'}</span>
+                    ${readReceipt}
+                </div>
+            </div>
+        `;
+
+        const indicator = document.getElementById('typingIndicator');
+        messagesViewport.insertBefore(row, indicator);
+    }
+
+    function updateConversationPreview(convId, content, isOutgoing) {
+        const item = document.querySelector(`[data-conversation-id="${convId}"]`);
+        if (item) {
+            const preview = item.querySelector('p.text-xs.truncate');
+            if (preview) {
+                preview.innerHTML = `${isOutgoing ? '<span class="font-medium text-slate-400">You: </span>' : ''}${escapeHtml(content)}`;
+            }
+        }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.innerText = text;
+        return div.innerHTML;
+    }
+
+    // Message Form Submission
+    const chatForm = document.getElementById('chatMessageForm');
+    const messageInput = document.getElementById('messageInput');
+
+    if (chatForm && messageInput) {
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                chatForm.dispatchEvent(new Event('submit', { cancelable: true }));
+            }
+        });
+
+        // Typing event emitter
+        messageInput.addEventListener('input', function() {
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN && activeConversationId) {
+                chatSocket.send(JSON.stringify({
+                    action: 'typing',
+                    conversation_id: activeConversationId,
+                    is_typing: true
+                }));
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(function() {
+                    chatSocket.send(JSON.stringify({
+                        action: 'typing',
+                        conversation_id: activeConversationId,
+                        is_typing: false
+                    }));
+                }, 1500);
+            }
+        });
+
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (!text || !activeConversationId) return;
+
+            const clientId = 'c_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            messageInput.value = '';
+
+            // Send via WebSocket if open
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({
+                    action: 'send_message',
+                    conversation_id: activeConversationId,
+                    content: text,
+                    client_message_id: clientId
+                }));
+            } else {
+                // Fallback to HTTP REST endpoint
+                fetch(`/messages/api/${activeConversationId}/send/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        content: text,
+                        client_message_id: clientId
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        appendMessageToUI(data.message);
+                        scrollToBottom();
+                    } else {
+                        alert(data.message || 'Delivery error.');
+                    }
+                })
+                .catch(() => alert('Network error delivering message.'));
+            }
+        });
+    }
+
+    // Block/Unblock Action
+    const toggleBlockBtn = document.getElementById('toggleBlockBtn');
+    if (toggleBlockBtn) {
+        toggleBlockBtn.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const isBlocked = this.getAttribute('data-is-blocked') === 'true';
+            if (confirm(isBlocked ? "Unblock this user to resume direct messaging?" : "Block this user from messaging you?")) {
+                fetch(`/messages/block/${userId}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        location.reload();
+                    }
+                });
+            }
+        });
+    }
+
+    // Report Message Modal & Form
+    const reportModal = document.getElementById('reportModal');
+    const reportForm = document.getElementById('reportForm');
+    const reportMessageIdInput = document.getElementById('reportMessageId');
+
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.report-btn');
+        if (btn) {
+            const msgId = btn.getAttribute('data-msg-id');
+            reportMessageIdInput.value = msgId;
+            reportModal.classList.remove('hidden');
+        }
+    });
+
+    document.getElementById('cancelReportBtn').addEventListener('click', function() {
+        reportModal.classList.add('hidden');
+    });
+
+    reportForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const msgId = reportMessageIdInput.value;
+        const reason = document.getElementById('reportReason').value;
+        const details = document.getElementById('reportDetails').value;
+
+        fetch(`/messages/report/${msgId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: new URLSearchParams({ reason: reason, details: details })
+        })
+        .then(res => res.json())
+        .then(data => {
+            reportModal.classList.add('hidden');
+            alert(data.message || 'Report submitted.');
+        });
+    });
+
+    // New Chat Modal & Filtering
+    const newChatModal = document.getElementById('newChatModal');
+    const openNewChatModalBtn = document.getElementById('openNewChatModalBtn');
+    const closeNewChatModalBtn = document.getElementById('closeNewChatModalBtn');
+    const recipientFilterInput = document.getElementById('recipientFilterInput');
+    const recipientsModalList = document.getElementById('recipientsModalList');
+    let initialRecipientsHtml = '';
+    let searchDebounceTimer = null;
+
+    if (recipientsModalList) {
+        initialRecipientsHtml = recipientsModalList.innerHTML;
+    }
+
+    if (openNewChatModalBtn && newChatModal) {
+        openNewChatModalBtn.addEventListener('click', () => {
+            newChatModal.classList.remove('hidden');
+            if (recipientFilterInput) {
+                recipientFilterInput.value = '';
+                if (recipientsModalList && initialRecipientsHtml) {
+                    recipientsModalList.innerHTML = initialRecipientsHtml;
+                }
+                recipientFilterInput.focus();
+            }
+        });
+        closeNewChatModalBtn.addEventListener('click', () => newChatModal.classList.add('hidden'));
+
+        recipientFilterInput.addEventListener('input', function() {
+            const q = this.value.trim().toLowerCase();
+            clearTimeout(searchDebounceTimer);
+
+            // Fast local DOM filtering on initial cards
+            document.querySelectorAll('#recipientsModalList .recipient-form').forEach(form => {
+                const searchData = (form.getAttribute('data-search') || form.innerText || '').toLowerCase();
+                form.style.display = searchData.includes(q) ? 'block' : 'none';
+            });
+
+            // Live backend lookup to find ANY contactable user by name, ID (MEL-...), email, or role
+            if (q.length >= 1) {
+                searchDebounceTimer = setTimeout(function() {
+                    fetch('/messages/api/recipients/?q=' + encodeURIComponent(q))
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success' && data.results) {
+                                renderRecipientsModal(data.results);
+                            }
+                        })
+                        .catch(err => console.warn('Recipient search failed:', err));
+                }, 250);
+            } else if (q.length === 0 && initialRecipientsHtml) {
+                recipientsModalList.innerHTML = initialRecipientsHtml;
+            }
+        });
+    }
+
+    function renderRecipientsModal(users) {
+        if (!recipientsModalList) return;
+        if (!users || users.length === 0) {
+            recipientsModalList.innerHTML = `
+                <div class="p-6 text-center text-slate-400 text-xs">
+                    <p class="font-medium text-slate-600 dark:text-slate-300 mb-1">No matching users found.</p>
+                    <p class="text-[11px] text-slate-400">Search with a name, username, or Account ID (e.g. MEL-...).</p>
+                </div>
+            `;
+            return;
+        }
+
+        const csrf = getCookie('csrftoken') || '';
+        let html = '';
+        users.forEach(u => {
+            const verifiedBadge = u.is_verified ? `
+                <svg class="w-3.5 h-3.5 text-[#0284C7] dark:text-[#38BDF8] shrink-0" viewBox="0 0 24 24" fill="currentColor" title="Verified Member">
+                    <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                </svg>
+            ` : '';
+
+            const idBadge = u.account_id ? `<span class="font-mono text-slate-500">ID: ${escapeHtml(u.account_id)}</span>` : '';
+
+            html += `
+                <form action="${escapeHtml(u.start_url)}" method="POST" class="recipient-form"
+                      data-search="${escapeHtml(u.name.toLowerCase())} ${escapeHtml(u.username.toLowerCase())} ${escapeHtml((u.account_id || '').toLowerCase())}">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="${csrf}">
+                    <button type="submit" class="w-full flex items-center gap-3 p-2.5 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-[#162235] transition">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-sky-400 to-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                            ${escapeHtml(u.initials || 'U')}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-xs text-slate-900 dark:text-white truncate flex items-center gap-1">
+                                <span>${escapeHtml(u.name)}</span>
+                                ${verifiedBadge}
+                            </div>
+                            <div class="text-[10px] text-slate-400 flex items-center gap-1.5 flex-wrap">
+                                <span class="font-medium text-sky-600 dark:text-sky-400">${escapeHtml(u.member_level || u.role_display)}</span>
+                                ${idBadge}
+                            </div>
+                        </div>
+                        <span class="text-xs text-sky-600 dark:text-sky-400 font-semibold shrink-0">Chat &rarr;</span>
+                    </button>
+                </form>
+            `;
+        });
+        recipientsModalList.innerHTML = html;
+    }
+
+    // Conversation Search in Left Panel
+    const convSearch = document.getElementById('conversationSearchInput');
+    if (convSearch) {
+        convSearch.addEventListener('input', function() {
+            const q = this.value.toLowerCase().trim();
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                const search = (item.getAttribute('data-search') || item.getAttribute('data-name') || '').toLowerCase();
+                item.style.display = search.includes(q) ? 'flex' : 'none';
+            });
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function updateGlobalHeaderBadge(count) {
+        const badge = document.getElementById('headerChatBadge');
+        if (badge) {
+            if (count > 0) {
+                badge.innerText = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
+

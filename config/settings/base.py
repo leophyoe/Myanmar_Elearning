@@ -3,6 +3,12 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / '.env', override=True)
+except ImportError:
+    pass
+
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     'ftcr-insecure-dev-secret-key-change-in-production-cyber-range-2026!#'
@@ -12,9 +18,43 @@ DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = [
     h.strip()
-    for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,web,0.0.0.0').split(',')
+    for h in os.environ.get(
+        'ALLOWED_HOSTS',
+        'localhost,127.0.0.1,web,0.0.0.0,192.168.100.7'
+    ).split(',')
     if h.strip()
 ]
+
+# Ensure local testing from other devices on LAN (192.168.100.7) works smoothly
+if DEBUG:
+    for host_ip in ['192.168.100.7', '0.0.0.0', '127.0.0.1', 'localhost', '*']:
+        if host_ip not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(host_ip)
+
+# CSRF Trusted Origins for local network and multi-device testing
+CSRF_TRUSTED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get(
+        'CSRF_TRUSTED_ORIGINS',
+        'http://localhost:8000,http://127.0.0.1:8000,http://localhost:8080,http://127.0.0.1:8080,http://192.168.100.7:8000,http://192.168.100.7:8080,http://0.0.0.0:8000,http://0.0.0.0:8080'
+    ).split(',')
+    if o.strip()
+]
+
+if DEBUG:
+    for origin in [
+        'http://192.168.100.7:8000',
+        'http://192.168.100.7:8080',
+        'http://192.168.100.7:3000',
+        'http://192.168.100.7',
+        'http://localhost:8000',
+        'http://localhost:8080',
+        'http://127.0.0.1:8000',
+        'http://127.0.0.1:8080',
+    ]:
+        if origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
+
 
 # Core Django Applications
 DJANGO_APPS = [
@@ -62,6 +102,7 @@ LOCAL_APPS = [
     'apps.partner',
     'apps.api',
     'apps.blog',
+    'apps.chat',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -208,8 +249,28 @@ FLAG_SALT = os.environ.get('FLAG_SALT', 'ftcr_dynamic_salt_2026_secure')
 FLAG_PREFIX = os.environ.get('FLAG_PREFIX', 'FTCR{')
 FLAG_SUFFIX = os.environ.get('FLAG_SUFFIX', '}')
 
-# Virtual Classroom & Jitsi Meet Configuration
+# Virtual Classroom & Live Teaching Providers
+LIVE_TEACHING_DEFAULT_PROVIDER = os.environ.get('LIVE_TEACHING_DEFAULT_PROVIDER', 'bigbluebutton')
+
+# BigBlueButton (THUTA Primary Open-Source Classroom)
+BBB_API_URL = os.environ.get(
+    'BBB_API_URL',
+    'https://test-install.blindsidenetworks.com/bigbluebutton/api/'
+)
+BBB_SHARED_SECRET = os.environ.get(
+    'BBB_SHARED_SECRET',
+    '8cd8ef52e8e101574e400365b55e11a6'
+)
+BBB_LOGOUT_URL = os.environ.get('BBB_LOGOUT_URL', '')
+BBB_AUTO_RECORD = os.environ.get('BBB_AUTO_RECORD', 'true').lower() in ('true', '1')
+
+# Legacy / external fallbacks
 JITSI_DOMAIN = os.environ.get('JITSI_DOMAIN', 'meet.jit.si')
 JITSI_APP_ID = os.environ.get('JITSI_APP_ID', '')
 JITSI_APP_SECRET = os.environ.get('JITSI_APP_SECRET', '')
+
+# Video & Large Media Upload Settings (Supports up to 1 GB Video Tutorials)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024  # 1 GB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 25 * 1024 * 1024    # 25 MB in RAM, larger files stream safely to disk
+
 

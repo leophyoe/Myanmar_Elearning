@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+
+{% block title %}Rubric Evaluation - {{ attempt.student.username }} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <!-- Header Navigation -->
+    <div class="mb-6 flex items-center justify-between">
+        <a href="{% url 'exam-grading-queue' %}" class="inline-flex items-center gap-2 text-xs font-semibold text-cyan-400 hover:underline">
+            &larr; Back to Grading Queue
+        </a>
+        <span class="text-xs font-mono text-slate-400">Attempt ID: {{ attempt.id }}</span>
+    </div>
+
+    <!-- Candidate & Assessment Overview Card (Modeled after Reference Image 2) -->
+    <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm mb-8 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+            <div>
+                <span class="text-xs uppercase tracking-wider font-bold text-cyan-400 font-mono">Examination Rubric Evaluation</span>
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white mt-1">{{ exam.title }}</h1>
+            </div>
+            <div class="text-right">
+                <span class="text-xs text-slate-400 block font-mono">Passing Threshold</span>
+                <span class="text-lg font-bold font-mono text-cyan-400">{{ exam.passing_percentage }}% required</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
+            <div>
+                <span class="text-slate-400 block text-[11px]">Candidate:</span>
+                <span class="font-bold text-slate-900 dark:text-white font-sans">{{ attempt.student.get_full_name|default:attempt.student.username }}</span>
+            </div>
+            <div>
+                <span class="text-slate-400 block text-[11px]">Attempt #:</span>
+                <span class="font-bold text-slate-900 dark:text-white">Attempt {{ attempt.attempt_number }}</span>
+            </div>
+            <div>
+                <span class="text-slate-400 block text-[11px]">Submitted Time:</span>
+                <span class="font-bold text-slate-900 dark:text-white">{{ attempt.created_at|date:"M d, Y • H:i" }}</span>
+            </div>
+            <div>
+                <span class="text-slate-400 block text-[11px]">Duration Used:</span>
+                <span class="font-bold text-slate-900 dark:text-white">{{ attempt.time_taken_seconds }} seconds</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grading Form -->
+    <form method="POST" class="space-y-8">
+        {% csrf_token %}
+
+        <!-- Questions & Rubric Items -->
+        {% for item in questions_for_grading %}
+        <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-6">
+
+            <!-- Question Prompt Banner -->
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 rounded-md text-xs font-bold font-mono bg-cyan-950 text-cyan-400 border border-cyan-800">
+                        Q{{ item.question.order }}
+                    </span>
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        {{ item.question.get_question_type_display }}
+                    </span>
+                </div>
+                <span class="text-xs font-mono font-bold text-slate-400">
+                    Max: {{ item.question.points }} Points
+                </span>
+            </div>
+
+            <!-- Prompt Text -->
+            <div class="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
+                {{ item.question.prompt }}
+            </div>
+
+            <!-- Candidate Submission Display Box -->
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1.5">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Student Submission:</span>
+                <div class="font-mono text-xs sm:text-sm text-slate-900 dark:text-cyan-300 whitespace-pre-wrap">
+                    {{ item.submitted_answer }}
+                </div>
+            </div>
+
+            <!-- Rubric Criteria & Grading Table (Inspired by Reference Image 2) -->
+            <div class="space-y-3">
+                <span class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider block">
+                    Standardized Rubric Evaluation Table
+                </span>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-400 font-mono">
+                            <tr>
+                                <th class="p-3 w-1/4">Criteria Description</th>
+                                <th class="p-3 w-2/4">Rating Scales</th>
+                                <th class="p-3 w-1/4 text-right">Points &amp; Feedback</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            <tr>
+                                <td class="p-4 align-top text-xs text-slate-600 dark:text-slate-300">
+                                    <p class="font-semibold text-slate-900 dark:text-white mb-1">
+                                        {{ item.question.rubric_criteria|default:"Accuracy, completeness, clarity and technical depth." }}
+                                    </p>
+                                    <span class="text-[10px] text-slate-400">Evaluate theoretical validity and depth.</span>
+                                </td>
+
+                                <!-- 4 Rating Scales (3, 2, 1, 0) -->
+                                <td class="p-4 align-top">
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[11px]">
+                                        <!-- Level 3 -->
+                                        <button type="button"
+                                                onclick="applyRating('{{ item.question.id }}', {{ item.question.points }}, '3')"
+                                                class="p-2.5 rounded-lg border border-slate-700 bg-slate-900 hover:border-emerald-500 hover:bg-emerald-950/30 transition text-left">
+                                            <div class="font-bold text-emerald-400 font-mono">Level 3 (100%)</div>
+                                            <div class="text-[10px] text-slate-400 mt-0.5">Exemplary</div>
+                                        </button>
+                                        <!-- Level 2 -->
+                                        <button type="button"
+                                                onclick="applyRating('{{ item.question.id }}', Math.round({{ item.question.points }} * 0.7), '2')"
+                                                class="p-2.5 rounded-lg border border-slate-700 bg-slate-900 hover:border-cyan-500 hover:bg-cyan-950/30 transition text-left">
+                                            <div class="font-bold text-cyan-400 font-mono">Level 2 (70%)</div>
+                                            <div class="text-[10px] text-slate-400 mt-0.5">Proficient</div>
+                                        </button>
+                                        <!-- Level 1 -->
+                                        <button type="button"
+                                                onclick="applyRating('{{ item.question.id }}', Math.round({{ item.question.points }} * 0.4), '1')"
+                                                class="p-2.5 rounded-lg border border-slate-700 bg-slate-900 hover:border-amber-500 hover:bg-amber-950/30 transition text-left">
+                                            <div class="font-bold text-amber-400 font-mono">Level 1 (40%)</div>
+                                            <div class="text-[10px] text-slate-400 mt-0.5">Developing</div>
+                                        </button>
+                                        <!-- Level 0 -->
+                                        <button type="button"
+                                                onclick="applyRating('{{ item.question.id }}', 0, '0')"
+                                                class="p-2.5 rounded-lg border border-slate-700 bg-slate-900 hover:border-red-500 hover:bg-red-950/30 transition text-left">
+                                            <div class="font-bold text-red-400 font-mono">Level 0 (0%)</div>
+                                            <div class="text-[10px] text-slate-400 mt-0.5">Unsatisfactory</div>
+                                        </button>
+                                    </div>
+                                    <input type="hidden" name="rating_{{ item.question.id }}" id="rating_input_{{ item.question.id }}" value="3">
+                                </td>
+
+                                <!-- Points & Feedback Inputs -->
+                                <td class="p-4 align-top text-right space-y-2">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <label class="text-[11px] font-bold text-slate-400 font-mono">Awarded:</label>
+                                        <input type="number"
+                                               name="points_{{ item.question.id }}"
+                                               id="pts_input_{{ item.question.id }}"
+                                               value="{{ item.points_earned }}"
+                                               min="0"
+                                               max="{{ item.question.points }}"
+                                               class="w-20 px-3 py-1.5 rounded-lg text-right font-mono font-bold text-cyan-400 bg-slate-950 border border-slate-700 focus:outline-none focus:ring-1 focus:ring-cyan-500">
+                                        <span class="text-[11px] text-slate-500 font-mono">/ {{ item.question.points }}</span>
+                                    </div>
+
+                                    <input type="text"
+                                           name="feedback_{{ item.question.id }}"
+                                           placeholder="Criterion specific feedback..."
+                                           value="{{ item.feedback }}"
+                                           class="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-950 border border-slate-700 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500">
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+
+        <!-- Overall Feedback Card -->
+        <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-4">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                Overall Evaluation Comments &amp; Recommendations
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                These comprehensive comments will be included in the candidate's academic record and score report.
+            </p>
+            {{ form.overall_feedback }}
+
+            <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <span class="text-xs text-slate-400">
+                    Finalizing this evaluation locks the attempt and generates the certificate if the candidate meets the {{ exam.passing_percentage }}% passing threshold.
+                </span>
+
+                <button type="submit"
+                        class="px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-950 transition flex items-center gap-2">
+                    <span>Finalize Grade &amp; Award Certificate</span>
+                    <span>✓</span>
+                </button>
+            </div>
+        </div>
+
+    </form>
+
+</div>
+
+<script>
+    function applyRating(qId, pts, ratingLevel) {
+        const ptsInput = document.getElementById(`pts_input_${qId}`);
+        const ratingInput = document.getElementById(`rating_input_${qId}`);
+        if (ptsInput) ptsInput.value = pts;
+        if (ratingInput) ratingInput.value = ratingLevel;
+    }
+</script>
+{% endblock %}
+

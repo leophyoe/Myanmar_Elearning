@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Certificate Template - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-16">
+    <div class="bg-slate-900 border border-red-900/60 rounded-2xl p-6 sm:p-8 shadow-2xl text-center">
+        <div class="w-12 h-12 rounded-full bg-red-950 border border-red-800 text-red-400 text-2xl flex items-center justify-center mx-auto mb-4">
+            ⚠️
+        </div>
+        <h2 class="text-xl font-bold text-white mb-2">Delete Certificate Template?</h2>
+        <p class="text-xs text-slate-400 mb-6 leading-relaxed">
+            Are you sure you want to delete <strong class="text-white">"{{ cert_template.title }}"</strong>?
+            Any courses currently using this template will automatically fall back to the platform default template.
+        </p>
+
+        <form method="post" class="flex items-center justify-center gap-3">
+            {% csrf_token %}
+            <a href="{% url 'certificate-template-list' %}" class="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 transition">
+                Cancel
+            </a>
+            <button type="submit" class="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-red-600 hover:bg-red-500 shadow-lg shadow-red-600/30 transition">
+                Confirm Delete
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

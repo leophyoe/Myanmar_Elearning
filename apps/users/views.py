@@ -290,6 +290,20 @@ class InstructorApplyView(LoginRequiredMixin, CreateView):
         form.instance.status = InstructorApplication.Status.PENDING
         response = super().form_valid(form)
 
+        from apps.users.models import TermAgreement
+        from apps.users.terms import record_term_agreement
+        record_term_agreement(
+            user=self.request.user,
+            terms_type=TermAgreement.TermsType.TEACHER_APPLICATION,
+            ip_address=self.request.META.get('REMOTE_ADDR'),
+            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+            metadata={
+                'application_id': str(form.instance.id),
+                'free_tutorial_title': form.instance.free_tutorial_title,
+                'free_tutorial_url': form.instance.free_tutorial_url,
+            }
+        )
+
         Notification.objects.create(
             user=self.request.user,
             title="Instructor Application Submitted",

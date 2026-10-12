@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="thutaCyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="50%" stop-color="#0EA5E9"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+    <linearGradient id="thutaNavyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="thutaBlueMid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#0284C7" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <!-- Glowing/Drop Shadow Container -->
+  <g filter="url(#subtleGlow)">
+    <!-- Top Collaborator Head -->
+    <circle cx="256" cy="108" r="34" fill="url(#thutaCyanGrad)"/>
+
+    <!-- Bottom-Left Collaborator Head -->
+    <circle cx="172" cy="296" r="30" fill="url(#thutaCyanGrad)"/>
+
+    <!-- Bottom-Right Collaborator Head -->
+    <circle cx="340" cy="296" r="30" fill="url(#thutaNavyGrad)"/>
+
+    <!-- Outer Circular Embracing Arcs -->
+    <!-- Top-Left Arc -->
+    <path d="M 224 138 C 170 155 140 205 138 260 C 137 274 141 288 147 298 C 153 285 166 270 180 262 C 174 230 190 190 224 165 Z" fill="url(#thutaCyanGrad)"/>
+
+    <!-- Bottom Arc (Connecting Left to Right) -->
+    <path d="M 186 322 C 205 348 234 360 256 360 C 278 360 307 348 326 322 C 314 340 288 352 256 352 C 224 352 198 340 186 322 Z" fill="url(#thutaBlueMid)"/>
+
+    <!-- Bottom-Right Arc (Dark Navy Portion) -->
+    <path d="M 365 298 C 371 288 375 274 374 260 C 372 205 342 155 288 138 L 288 165 C 322 190 338 230 332 262 C 346 270 359 285 365 298 Z" fill="url(#thutaNavyGrad)"/>
+
+    <!-- Central Stylized "T" (Dynamic Winged & Slit Stem) -->
+    <!-- Left Wing & Stem Half -->
+    <path d="M 250 178 C 210 178 160 192 144 212 C 160 238 200 248 228 250 C 230 270 230 305 240 338 C 248 340 250 335 250 330 L 250 178 Z" fill="url(#thutaCyanGrad)"/>
+
+    <!-- Right Wing & Stem Half -->
+    <path d="M 262 178 L 262 330 C 262 335 264 340 272 338 C 282 305 282 270 284 250 C 312 248 352 238 368 212 C 352 192 302 178 262 178 Z" fill="url(#thutaBlueMid)"/>
+  </g>
+</svg>

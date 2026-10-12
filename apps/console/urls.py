@@ -3,12 +3,15 @@ from .views import (
     ConsoleHomeView,
     UserListView, UserCreateView, UserDetailView, UserUpdateView,
     UserPasswordResetView, UserToggleActiveView, UserApproveInstructorView,
+    UserDeleteView, UserCancelDeletionView, UserPurgeExpiredView,
     AdminCourseListView, FeeOverviewView, PaymentRefundView,
     CredentialReviewView, CredentialActionView,
     AdminLogListView,
     InstructorApplicationListView, InstructorApplicationDetailView, InstructorApplicationActionView,
     PartnerApplicationListView, PartnerApplicationActionView,
+    AdminLiveTeachingSettingsView, AdminLiveTeachingPingView,
 )
+from apps.billing.views import MMQRPaymentSettingsView
 
 urlpatterns = [
     path('', ConsoleHomeView.as_view(), name='console-home'),
@@ -18,6 +21,9 @@ urlpatterns = [
     path('users/<uuid:user_id>/edit/', UserUpdateView.as_view(), name='console-user-edit'),
     path('users/<uuid:user_id>/password/', UserPasswordResetView.as_view(), name='console-user-password'),
     path('users/<uuid:user_id>/toggle/', UserToggleActiveView.as_view(), name='console-user-toggle'),
+    path('users/<uuid:user_id>/delete/', UserDeleteView.as_view(), name='console-user-delete'),
+    path('users/<uuid:user_id>/cancel-deletion/', UserCancelDeletionView.as_view(), name='console-user-cancel-deletion'),
+    path('users/<uuid:user_id>/purge/', UserPurgeExpiredView.as_view(), name='console-user-purge'),
     path('users/<uuid:user_id>/approve-instructor/', UserApproveInstructorView.as_view(), name='console-user-approve-instructor'),
     path('instructor-applications/', InstructorApplicationListView.as_view(), name='console-instructor-application-list'),
     path('instructor-applications/<uuid:app_id>/', InstructorApplicationDetailView.as_view(), name='console-instructor-application-detail'),
@@ -26,6 +32,9 @@ urlpatterns = [
     path('partner-applications/<uuid:app_id>/<str:action>/', PartnerApplicationActionView.as_view(), name='console-partner-application-action'),
     path('courses/', AdminCourseListView.as_view(), name='console-course-list'),
     path('fees/', FeeOverviewView.as_view(), name='console-fee-overview'),
+    path('payment-settings/', MMQRPaymentSettingsView.as_view(), name='console-payment-settings'),
+    path('live-settings/', AdminLiveTeachingSettingsView.as_view(), name='console-live-settings'),
+    path('live-settings/ping/', AdminLiveTeachingPingView.as_view(), name='console-live-settings-ping'),
     path('payments/<uuid:payment_id>/refund/', PaymentRefundView.as_view(), name='console-payment-refund'),
     path('credentials/', CredentialReviewView.as_view(), name='console-credential-list'),
     path('credentials/<uuid:cert_id>/<str:action>/', CredentialActionView.as_view(), name='console-credential-action'),

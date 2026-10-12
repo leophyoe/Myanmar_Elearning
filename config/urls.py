@@ -27,6 +27,7 @@ urlpatterns = [
     path('', LandingPageView.as_view(), name='landing-page'),
     path('auth/', include('apps.users.urls')),
     path('courses/', include('apps.courses.urls')),
+    path('exams/', include('apps.courses.exam_urls')),
     path('vpn/', include('apps.vpn.urls')),
     path('labs/vpn/', RedirectView.as_view(pattern_name='vpn-dashboard', permanent=False)),
     path('labs/', include('apps.labs.urls')),
@@ -38,13 +39,15 @@ urlpatterns = [
     path('projects/', include('apps.projects.urls')),
     path('analytics/', include('apps.analytics.urls')),
     path('billing/', include(('apps.billing.urls', 'billing'), namespace='billing')),
-    path('billing/', include('apps.billing.urls')),
+    # Backward-compatible unnamespaced route aliases for legacy templates and tests
+    path('billing-legacy/', include('apps.billing.legacy_urls')),
     path('pricing/', RedirectView.as_view(pattern_name='billing:pricing', permanent=False), name='pricing-redirect'),
     path('partner/', include('apps.partner.urls')),
     path('console/', include('apps.console.urls')),
     path('portfolio/', include('apps.portfolio.urls')),
     path('hub/', RedirectView.as_view(pattern_name='blog:article-list', permanent=False), name='hub-redirect'),
     path('articles/', include('apps.blog.urls')),
+    path('messages/', include('apps.chat.urls')),
 ]
 
 if settings.DEBUG:

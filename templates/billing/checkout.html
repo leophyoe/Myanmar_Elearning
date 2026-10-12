@@ -175,38 +175,323 @@
                     </button>
                 </form>
             </div>
-            {% else %}
-            <!-- Normal Paid / Discounted Checkout with Payment Proof -->
+            {% elif not payment_methods %}
+            <!-- No Payment Methods Active State -->
             <div class="p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-6">
-                <div class="pb-4 border-b border-slate-200 dark:border-[#26364B] flex items-center justify-between">
-                    <div>
-                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">
-                            <span class="lang-en">Submit Payment Proof</span>
-                            <span class="lang-my">ငွေလွှဲပြေစာ တင်သွင်းရန်</span>
-                        </h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            <span class="lang-en">Transfer via MMQR, Mobile Wallet or Bank and submit your transaction slip.</span>
-                            <span class="lang-my">MMQR၊ မိုဘိုင်းပိုက်ဆံအိတ် သို့မဟုတ် ဘဏ်ဖြင့် လွှဲပြောင်းပြီး ပြေစာတင်ပါ။</span>
+                <div class="p-6 rounded-2xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] text-center space-y-4 py-12">
+                    <div class="w-16 h-16 mx-auto rounded-2xl bg-sky-50 dark:bg-sky-950/80 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-[#0284C7] dark:text-[#38BDF8]">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+
+                    <div class="max-w-md mx-auto space-y-2">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            <span class="lang-en">Payment Integration Notice</span>
+                            <span class="lang-my">ငွေပေးချေမှု အသိပေးချက်</span>
+                        </span>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">
+                            <span class="lang-en">MMQR payment is coming soon. Please try again later.</span>
+                            <span class="lang-my">MMQR ဖြင့် ငွေပေးချေမှုစနစ် မကြာမီ အသုံးပြုနိုင်ပါမည်</span>
+                        </h3>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            <span class="lang-en">Payment channels are currently undergoing setup. Please check back later.</span>
+                            <span class="lang-my">လက်ရှိတွင် ငွေပေးချေမှု လမ်းကြောင်းများ ပြင်ဆင်နေဆဲဖြစ်ပါသည်။</span>
                         </p>
                     </div>
-                    <span class="text-[11px] px-2.5 py-1 rounded-full bg-slate-100 dark:bg-[#162235] border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 uppercase font-mono font-semibold">
-                        <span class="lang-en">Manual Verification</span>
-                        <span class="lang-my">စိစစ်အတည်ပြုစနစ်</span>
+
+                    {% if request.user.is_admin or request.user.is_staff %}
+                    <!-- Admin Quick Configuration Box -->
+                    <div class="mt-6 p-4 max-w-lg mx-auto rounded-xl bg-[#FFFBEB] dark:bg-[#302719] border border-[#FDE68A] dark:border-[#423522] text-left space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-[#92400E] dark:text-[#FCD34D] uppercase tracking-wider">
+                                Administrator Checklist
+                            </span>
+                            <a href="{% url 'billing:payment-settings' %}"
+                               class="text-xs px-2.5 py-1 rounded-lg bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] font-bold transition shadow-sm">
+                                Open Settings &rarr;
+                            </a>
+                        </div>
+                        <p class="text-[11px] text-[#92400E]/90 dark:text-[#FCD34D]/90">
+                            No payment channels are enabled. Activate MMQR, Visa, MPU, or Wallets in Payment Settings:
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <div class="pt-4">
+                        <a href="{% url 'course-detail' slug=course.slug %}"
+                           class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl border border-slate-300 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#111C2E] text-xs font-semibold transition">
+                            &larr; <span class="lang-en">Back to Course</span><span class="lang-my">သင်တန်းစာမျက်နှာသို့ ပြန်သွားမည်</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Multi-Channel Checkout with MMQR, Cards, Wallets, and Bank Transfer -->
+            <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm space-y-6">
+                <div class="pb-4 border-b border-slate-200 dark:border-[#26364B] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">
+                            <span class="lang-en">Select Payment Channel</span>
+                            <span class="lang-my">ငွေပေးချေမည့် နည်းလမ်းကို ရွေးချယ်ပါ</span>
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span class="lang-en">Choose your preferred payment method and submit your transaction slip for verification.</span>
+                            <span class="lang-my">သင်အဆင်ပြေရာ နည်းလမ်းဖြင့် ပေးချေပြီးနောက် ငွေလွှဲပြေစာကို အောက်တွင် တင်သွင်းပါ။</span>
+                        </p>
+                    </div>
+                    <span class="text-[11px] px-2.5 py-1 rounded-full bg-sky-50 dark:bg-sky-950/80 border border-sky-200 dark:border-sky-800 text-[#0284C7] dark:text-[#38BDF8] uppercase font-mono font-semibold self-start sm:self-auto">
+                        Phase A: Manual Review
                     </span>
                 </div>
 
-                <!-- Myanmar Payment Channels -->
+                {% if not is_mmqr_ready %}
+                <div class="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2.5">
+                    <span class="text-base shrink-0">ℹ️</span>
+                    <div>
+                        <div class="font-bold">
+                            <span class="lang-en">MMQR payment is coming soon. Please try again later.</span>
+                            <span class="lang-my">MMQR ဖြင့် ငွေပေးချေမှုစနစ် မကြာမီ အသုံးပြုနိုင်ပါမည်</span>
+                        </div>
+                        <div class="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-0.5">
+                            <span class="lang-en">You can pay with KBZPay, WavePay, Cards, or Bank Transfer below while National MMQR gateway is being finalized.</span>
+                            <span class="lang-my">National MMQR ချိတ်ဆက်နေစဉ်အတွင်း KBZPay၊ WavePay၊ ဘဏ်အကောင့်တို့ဖြင့် ပေးချေနိုင်ပါသည်။</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Payment Method Selector Tabs -->
                 <div>
-                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-3">
-                        <span class="lang-en">Accepted Payment Methods</span>
-                        <span class="lang-my">လက်ခံသော ငွေပေးချေမှု နည်းလမ်းများ</span>
-                    </h3>
-                    {% include 'billing/components/_payment_methods.html' %}
+                    <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-2 font-semibold">
+                        <span class="lang-en">Payment Options:</span><span class="lang-my">ငွေပေးချေမှု နည်းလမ်းများ:</span>
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5" id="methodSelectorGrid">
+                        {% for method in payment_methods %}
+                        <button type="button"
+                                onclick="selectPaymentMethod('{{ method.code }}')"
+                                data-method-code="{{ method.code }}"
+                                class="method-select-btn p-3 rounded-xl border text-left transition flex items-center gap-2.5
+                                {% if forloop.first %}bg-sky-50 dark:bg-sky-950/50 border-[#0284C7] dark:border-[#38BDF8] text-[#0284C7] dark:text-[#38BDF8] ring-1 ring-[#0284C7] dark:ring-[#38BDF8]
+                                {% else %}bg-slate-50 dark:bg-[#162235] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
+                            <span class="text-base shrink-0">
+                                {% if method.is_card %}💳
+                                {% elif method.is_wallet %}📱
+                                {% elif method.is_bank %}🏦
+                                {% else %}🔳{% endif %}
+                            </span>
+                            <div class="min-w-0">
+                                <div class="text-xs font-bold truncate leading-tight">{{ method.name }}</div>
+                                <div class="text-[10px] text-slate-400 dark:text-slate-500 uppercase">{{ method.get_method_type_display|slice:":15" }}</div>
+                            </div>
+                        </button>
+                        {% endfor %}
+                    </div>
                 </div>
 
-                <!-- Payment Proof Submission Form -->
-                <form method="POST" enctype="multipart/form-data" class="space-y-5 text-sm pt-4 border-t border-slate-200 dark:border-[#26364B]">
+                <!-- Dynamic Method Display Cards -->
+                {% for method in payment_methods %}
+                <div id="methodCard_{{ method.code }}" class="method-detail-card p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] space-y-4 {% if not forloop.first %}hidden{% endif %}">
+                    {% if method.is_mmqr %}
+                        <!-- MMQR Detailed View -->
+                        {% if not is_mmqr_ready %}
+                        <div class="text-center py-6 space-y-2">
+                            <div class="w-12 h-12 mx-auto rounded-xl bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                            </div>
+                            <h4 class="text-sm font-bold text-slate-900 dark:text-white">
+                                <span class="lang-en">MMQR payment is coming soon. Please try again later.</span>
+                                <span class="lang-my">MMQR ဖြင့် ငွေပေးချေမှုစနစ် မကြာမီ အသုံးပြုနိုင်ပါမည်</span>
+                            </h4>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                                The official MMQR code asset has not been uploaded yet. Please select another payment method (Visa, MPU, Wallets, or Bank Transfer) above.
+                            </p>
+                        </div>
+                        {% else %}
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#26364B]">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">🔳</span>
+                                <h3 class="text-sm font-bold text-slate-900 dark:text-white">Official MMQR Payment</h3>
+                            </div>
+                            <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-sky-50 dark:bg-sky-950 text-[#0284C7] dark:text-[#38BDF8] font-bold border border-sky-200 dark:border-sky-800">
+                                Phase A: Manual Review
+                            </span>
+                        </div>
+                        <div class="flex flex-col md:flex-row items-center gap-6">
+                            <!-- Real QR Code Image Box -->
+                            <div class="shrink-0 text-center">
+                                <div class="relative inline-block p-3 bg-white rounded-2xl shadow-md border border-slate-200">
+                                    <div class="absolute top-1.5 left-1.5 w-3.5 h-3.5 border-t-2 border-l-2 border-[#0284C7]"></div>
+                                    <div class="absolute top-1.5 right-1.5 w-3.5 h-3.5 border-t-2 border-r-2 border-[#0284C7]"></div>
+                                    <div class="absolute bottom-1.5 left-1.5 w-3.5 h-3.5 border-b-2 border-l-2 border-[#0284C7]"></div>
+                                    <div class="absolute bottom-1.5 right-1.5 w-3.5 h-3.5 border-b-2 border-r-2 border-[#0284C7]"></div>
+                                    <img src="{{ method.qr_image.url }}" alt="Official MMQR Code" class="w-40 h-40 object-contain mx-auto rounded">
+                                </div>
+                                <div class="mt-2 text-[10px] uppercase font-mono tracking-wider text-slate-500 dark:text-slate-400">
+                                    National MMQR Standard
+                                </div>
+                            </div>
+
+                            <!-- MMQR Info -->
+                            <div class="space-y-3 flex-1 text-left">
+                                <div class="p-3 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B]">
+                                    <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Exact Amount to Pay:</div>
+                                    <div class="text-lg font-bold font-mono text-[#0284C7] dark:text-[#38BDF8]">
+                                        {{ effective_price|floatformat:0 }} {{ currency }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Merchant Name</div>
+                                    <div class="text-base font-bold text-slate-900 dark:text-white">{{ method.account_name|default:"THUTA E-Learning Platform" }}</div>
+                                    {% if method.account_number %}
+                                    <div class="text-xs font-mono text-[#0284C7] dark:text-[#38BDF8] mt-0.5">Ref / Terminal: {{ method.account_number }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="text-[11px] text-slate-600 dark:text-slate-400 space-y-1 leading-relaxed">
+                                    {% if method.instructions %}<p class="lang-en">{{ method.instructions }}</p>{% endif %}
+                                    {% if method.instructions_my %}<p class="lang-my">{{ method.instructions_my }}</p>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                    {% elif method.is_card %}
+                        <!-- Card Payment (Visa, Mastercard, MPU) -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-[#26364B]">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl">💳</span>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">{{ method.name }}</h4>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Local &amp; International Debit/Credit Cards</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-800">
+                                    Card Gateway
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div class="p-3 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B]">
+                                    <span class="text-slate-500 dark:text-slate-400 text-[11px]">Merchant / Account Holder:</span>
+                                    <div class="font-bold text-slate-900 dark:text-white mt-0.5">{{ method.account_name|default:"THUTA E-Learning Platform" }}</div>
+                                </div>
+                                <div class="p-3 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B]">
+                                    <span class="text-slate-500 dark:text-slate-400 text-[11px]">Card Terminal / Merchant Ref:</span>
+                                    <div class="font-mono font-bold text-[#0284C7] dark:text-[#38BDF8] mt-0.5 select-all">{{ method.account_number|default:"THUTA-MERCHANT-01" }}</div>
+                                </div>
+                            </div>
+
+                            <div class="p-3.5 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-xs text-slate-600 dark:text-slate-400 space-y-1">
+                                {% if method.instructions %}<p class="lang-en">{{ method.instructions }}</p>{% endif %}
+                                {% if method.instructions_my %}<p class="lang-my">{{ method.instructions_my }}</p>{% endif %}
+                            </div>
+                        </div>
+
+                    {% elif method.is_wallet %}
+                        <!-- Mobile Wallet (KBZPay / WavePay) -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-[#26364B]">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl">📱</span>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">{{ method.name }}</h4>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Instant Mobile Wallet Transfer</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-800">
+                                    Wallet
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div class="p-3 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B]">
+                                    <span class="text-slate-500 dark:text-slate-400 text-[11px]">Wallet Phone Number:</span>
+                                    <div class="font-mono text-base font-bold text-[#0284C7] dark:text-[#38BDF8] mt-0.5 select-all flex items-center justify-between">
+                                        <span>{{ method.account_number }}</span>
+                                        <button type="button" onclick="navigator.clipboard.writeText('{{ method.account_number }}'); alert('Phone number copied!');"
+                                                class="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 underline font-normal">Copy</button>
+                                    </div>
+                                </div>
+                                <div class="p-3 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B]">
+                                    <span class="text-slate-500 dark:text-slate-400 text-[11px]">Account Name:</span>
+                                    <div class="font-bold text-slate-900 dark:text-white mt-0.5">{{ method.account_name }}</div>
+                                </div>
+                            </div>
+
+                            {% if method.qr_image %}
+                            <div class="p-3 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] flex items-center gap-4">
+                                <img src="{{ method.qr_image.url }}" alt="{{ method.name }} QR" class="w-24 h-24 object-contain rounded border">
+                                <div class="text-xs text-slate-600 dark:text-slate-400">
+                                    <div class="font-bold text-slate-900 dark:text-white">Scan to Pay via {{ method.name }}</div>
+                                    <p class="text-[11px] mt-1">Open your wallet app, scan this QR code, and pay the exact course amount.</p>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="p-3.5 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-xs text-slate-600 dark:text-slate-400 space-y-1">
+                                {% if method.instructions %}<p class="lang-en">{{ method.instructions }}</p>{% endif %}
+                                {% if method.instructions_my %}<p class="lang-my">{{ method.instructions_my }}</p>{% endif %}
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <!-- Bank Transfer & Other Channels -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-[#26364B]">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl">🏦</span>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">{{ method.name }}</h4>
+                                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Direct Bank Account Transfer</p>
+                                    </div>
+                                </div>
+                                <span class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800">
+                                    Bank Transfer
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                <div class="p-3 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B]">
+                                    <span class="text-slate-500 dark:text-slate-400 text-[11px]">Bank Account Number:</span>
+                                    <div class="font-mono text-sm font-bold text-[#0284C7] dark:text-[#38BDF8] mt-0.5 select-all flex items-center justify-between">
+                                        <span>{{ method.account_number }}</span>
+                                        <button type="button" onclick="navigator.clipboard.writeText('{{ method.account_number }}'); alert('Account number copied!');"
+                                                class="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 underline font-normal">Copy</button>
+                                    </div>
+                                </div>
+                                <div class="p-3 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B]">
+                                    <span class="text-slate-500 dark:text-slate-400 text-[11px]">Account Holder Name:</span>
+                                    <div class="font-bold text-slate-900 dark:text-white mt-0.5">{{ method.account_name }}</div>
+                                </div>
+                            </div>
+
+                            <div class="p-3.5 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-xs text-slate-600 dark:text-slate-400 space-y-1">
+                                {% if method.instructions %}<p class="lang-en">{{ method.instructions }}</p>{% endif %}
+                                {% if method.instructions_my %}<p class="lang-my">{{ method.instructions_my }}</p>{% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Authoritative Payable Amount Display inside the Card -->
+                    <div class="p-3.5 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+                        <div class="flex items-baseline justify-between">
+                            <span class="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                <span class="lang-en">Exact Amount to Pay:</span>
+                                <span class="lang-my">ပေးသွင်းရမည့် ငွေပမာဏ အတိအကျ:</span>
+                            </span>
+                            <span class="text-xl font-bold font-mono text-[#0284C7] dark:text-[#38BDF8]">
+                                {{ effective_price|floatformat:0 }} <span class="text-xs font-normal text-slate-500">{{ course.currency }}</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Unified Payment Proof Submission Form -->
+                <form method="POST" enctype="multipart/form-data" class="space-y-4 pt-4 border-t border-slate-200 dark:border-[#26364B]">
                     {% csrf_token %}
+                    <input type="hidden" name="method" id="selectedMethodInput" value="{% if payment_methods %}{{ payment_methods.0.code }}{% else %}mmqr{% endif %}">
                     {% if promotion %}
                     <input type="hidden" name="coupon_code" value="{{ promotion.code }}">
                     {% endif %}
@@ -217,32 +502,73 @@
                     </div>
                     {% endif %}
 
-                    {% for field in form %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-medium">
+                                <span class="lang-en">Transaction ID / Reference Number</span><span class="lang-my">ငွေလွှဲ အမှတ်စဉ် / နံပါတ်</span>
+                            </label>
+                            {{ form.reference }}
+                            {% if form.reference.errors %}{% for error in form.reference.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{{ error }}</p>{% endfor %}{% endif %}
+                        </div>
+
+                        <div>
+                            <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-medium">
+                                <span class="lang-en">Upload Slip / Screenshot Receipt</span><span class="lang-my">ငွေလွှဲပြေစာ / စလစ် တင်သွင်းရန်</span>
+                            </label>
+                            {{ form.receipt }}
+                            {% if form.receipt.errors %}{% for error in form.receipt.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{{ error }}</p>{% endfor %}{% endif %}
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-medium">
-                            {{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}
+                            <span class="lang-en">Notes for Administrator (Optional)</span><span class="lang-my">စီမံခန့်ခွဲသူထံ မှတ်ချက် (ရွေးချယ်ရန်)</span>
                         </label>
-                        {{ field }}
-                        {% if field.help_text %}<p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{{ field.help_text }}</p>{% endif %}
-                        {% for error in field.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{{ error }}</p>{% endfor %}
+                        {{ form.note }}
+                        {% if form.note.errors %}{% for error in form.note.errors %}<p class="text-[11px] text-rose-600 dark:text-rose-400 mt-1">{{ error }}</p>{% endfor %}{% endif %}
                     </div>
-                    {% endfor %}
 
-                    <div class="flex items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-[#26364B]">
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-[#26364B]">
                         <span class="text-xs text-slate-600 dark:text-slate-400">
                             <span class="lang-en">Payable Amount:</span><span class="lang-my">ပေးသွင်းရမည့်ငွေ:</span>
                             <strong class="text-[#0284C7] dark:text-[#38BDF8] font-bold text-base font-mono ml-1">{{ effective_price|floatformat:0 }} {{ course.currency }}</strong>
                         </span>
                         <button type="submit"
-                                class="px-6 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] text-sm font-bold shadow-sm transition">
-                            <span class="lang-en">Submit for Review &rarr;</span>
-                            <span class="lang-my">စိစစ်ရန် တင်သွင်းမည် &rarr;</span>
+                                class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] text-sm font-bold shadow-sm transition">
+                            <span class="lang-en">Submit Payment Proof &rarr;</span>
+                            <span class="lang-my">ငွေလွှဲပြေစာ တင်သွင်းမည် &rarr;</span>
                         </button>
                     </div>
                 </form>
             </div>
+
+            <script>
+            function selectPaymentMethod(code) {
+                // Update hidden input
+                document.getElementById('selectedMethodInput').value = code;
+
+                // Toggle active style on selector buttons
+                document.querySelectorAll('.method-select-btn').forEach(btn => {
+                    if (btn.dataset.methodCode === code) {
+                        btn.className = 'method-select-btn p-3 rounded-xl border text-left transition flex items-center gap-2.5 bg-sky-50 dark:bg-sky-950/50 border-[#0284C7] dark:border-[#38BDF8] text-[#0284C7] dark:text-[#38BDF8] ring-1 ring-[#0284C7] dark:ring-[#38BDF8]';
+                    } else {
+                        btn.className = 'method-select-btn p-3 rounded-xl border text-left transition flex items-center gap-2.5 bg-slate-50 dark:bg-[#162235] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600';
+                    }
+                });
+
+                // Toggle visibility of detail cards
+                document.querySelectorAll('.method-detail-card').forEach(card => {
+                    card.classList.add('hidden');
+                });
+                const targetCard = document.getElementById('methodCard_' + code);
+                if (targetCard) {
+                    targetCard.classList.remove('hidden');
+                }
+            }
+            </script>
             {% endif %}
         </div>
     </div>
 </div>
 {% endblock %}
+

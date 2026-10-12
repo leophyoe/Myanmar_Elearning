@@ -23,11 +23,11 @@ def evaluate_course_completion(user, course: Course) -> dict:
     # 1. Lesson Lectures Check
     total_lessons = Lesson.objects.filter(module__course=course).count()
     completed_lessons = UserProgress.objects.filter(
+        Q(course=course) | Q(lesson__module__course=course),
         user=user,
-        course=course,
         is_completed=True,
         lesson__isnull=False,
-    ).count()
+    ).distinct().count()
 
     if total_lessons > 0 and completed_lessons < total_lessons:
         pending.append(f"Complete remaining {total_lessons - completed_lessons} lecture lesson(s)")
@@ -95,11 +95,11 @@ def evaluate_course_completion(user, course: Course) -> dict:
 
     if total_labs > 0:
         completed_labs = UserProgress.objects.filter(
+            Q(course=course) | Q(lesson__module__course=course),
             user=user,
-            course=course,
             is_completed=True,
             lab__isnull=False,
-        ).count()
+        ).distinct().count()
         if completed_labs < total_labs:
             pending.append(f"Solve all {total_labs} hands-on practical lab exercise(s)")
 

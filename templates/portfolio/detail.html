@@ -15,11 +15,26 @@
             <span>/</span>
             <span class="text-slate-300 truncate max-w-xs sm:max-w-md">{{ portfolio_user.get_full_name|default:portfolio_user.username }}</span>
         </nav>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-950/70 text-emerald-300 border border-emerald-800">
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>Public Verified Portfolio</span>
             </span>
+            {% if user.is_authenticated and user.id != portfolio_user.id %}
+            <a href="{% url 'chat:start-conversation' recipient_id=portfolio_user.id %}"
+               class="px-3 py-1 rounded-lg bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+                <span>💬</span>
+                <span class="lang-en">Direct Message</span>
+                <span class="lang-my">မက်ဆေ့ခ်ျ ပို့ရန်</span>
+            </a>
+            {% elif not user.is_authenticated %}
+            <a href="{% url 'login' %}?next={% url 'chat:start-conversation' recipient_id=portfolio_user.id %}"
+               class="px-3 py-1 rounded-lg bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+                <span>💬</span>
+                <span class="lang-en">Message Talent</span>
+                <span class="lang-my">မက်ဆေ့ခ်ျ ပို့ရန်</span>
+            </a>
+            {% endif %}
             <button type="button" onclick="navigator.clipboard.writeText(window.location.href); alert('Public Portfolio link copied to clipboard!');"
                     class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 transition font-mono flex items-center gap-1.5">
                 <span>📋</span>
@@ -44,8 +59,13 @@
                 </div>
                 {% endif %}
 
-                <h1 class="text-lg font-bold text-white mt-4 leading-tight">
-                    {{ portfolio_user.get_full_name|default:portfolio_user.username }}
+                <h1 class="text-lg font-bold text-white mt-4 leading-tight flex items-center justify-center gap-1.5">
+                    <span>{{ portfolio_user.get_full_name|default:portfolio_user.username }}</span>
+                    {% if portfolio_user.is_verified %}
+                    <svg class="w-4 h-4 text-[#0284C7] dark:text-[#38BDF8] shrink-0" viewBox="0 0 24 24" fill="currentColor" title="Verified Member (Faculty / Credentialed)">
+                        <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                    </svg>
+                    {% endif %}
                 </h1>
                 <p class="text-xs text-cyan-400 font-mono mt-1">@{{ portfolio_user.username }}</p>
 
@@ -115,19 +135,34 @@
                 </div>
                 {% endif %}
 
-                <!-- Share -->
+                <!-- Direct Messenger & Actions -->
                 <div class="mt-4 pt-4 border-t border-slate-800 space-y-2">
+                    {% if user.is_authenticated and user.id != portfolio_user.id %}
+                    <a href="{% url 'chat:start-conversation' recipient_id=portfolio_user.id %}"
+                       class="w-full text-xs px-3 py-2.5 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold transition flex items-center justify-center gap-2 shadow-md shadow-sky-600/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        <span class="lang-en">Send Direct Message</span>
+                        <span class="lang-my">မက်ဆေ့ခ်ျ ပေးပို့မည်</span>
+                    </a>
+                    {% elif not user.is_authenticated %}
+                    <a href="{% url 'login' %}?next={% url 'chat:start-conversation' recipient_id=portfolio_user.id %}"
+                       class="w-full text-xs px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold transition flex items-center justify-center gap-2 border border-slate-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        <span class="lang-en">Sign in to Message</span>
+                        <span class="lang-my">မက်ဆေ့ခ်ျပို့ရန် ဝင်ရောက်ပါ</span>
+                    </a>
+                    {% endif %}
                     <a href="{{ qr_url }}" target="_blank" rel="noopener"
-                       class="block w-full text-xs px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition">
+                       class="block w-full text-xs px-3 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold transition text-center">
                         QR code
                     </a>
                     <a href="{{ nfc_url }}" download
-                       class="block w-full text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition">
+                       class="block w-full text-xs px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 transition text-center">
                         NFC payload
                     </a>
                     {% if is_owner %}
                     <a href="{% url 'portfolio-edit' %}"
-                       class="block w-full text-xs px-3 py-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-cyan-300 transition">
+                       class="block w-full text-xs px-3 py-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-cyan-300 transition text-center">
                         Edit portfolio
                     </a>
                     {% endif %}

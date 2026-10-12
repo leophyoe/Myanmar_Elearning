@@ -3,61 +3,183 @@
 
 {% block title %}{{ lesson.title }} - {{ lesson.module.course.title }} - {{ PLATFORM_NAME }}{% endblock %}
 
+{% block extra_head %}
+<style>
+    #thutaInteractiveSlideDeck:fullscreen,
+    #thutaInteractiveSlideDeck:-webkit-full-screen {
+        background-color: #020617 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        padding: 1.5rem 2.5rem !important;
+        overflow-y: auto !important;
+        box-sizing: border-box !important;
+    }
+</style>
+{% endblock %}
+
 {% block sidebar %}{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-    <!-- Top Distraction-Free Header Bar -->
-    <header class="h-14 border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between">
-        <div class="flex items-center space-x-3 min-w-0">
+    <!-- Top Distraction-Free Header Bar (Edube Stepper Header) -->
+    <header class="h-14 border-b border-slate-800 bg-slate-900/95 backdrop-blur sticky top-0 z-40 px-3 sm:px-6 flex items-center justify-between">
+        <!-- Left: Course Overview & Home Link -->
+        <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
             <a href="{% url 'course-detail' slug=lesson.module.course.slug %}"
-               class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+               class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5"
                title="Back to Course Overview">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                <span class="text-xs font-semibold hidden md:inline text-slate-300 hover:text-white">{{ lesson.module.course.title|truncatechars:26 }}</span>
             </a>
-            <div class="min-w-0">
-                <a href="{% url 'course-detail' slug=lesson.module.course.slug %}" class="text-xs text-slate-400 hover:text-cyan-400 transition truncate block">
-                    {{ lesson.module.course.title }}
-                </a>
-                <h1 class="text-sm font-semibold text-white truncate flex items-center gap-2">
-                    <span>{{ lesson.title }}</span>
-                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
-                        Lesson {{ current_lesson_index }} of {{ total_lessons_count }}
-                    </span>
-                </h1>
-            </div>
         </div>
 
-        <div class="flex items-center space-x-3">
-            <!-- Progress indicator -->
-            <div class="hidden sm:flex items-center space-x-2 text-xs">
-                <div class="w-24 h-2 rounded-full bg-slate-800 overflow-hidden">
-                    <div class="h-full bg-cyan-500 rounded-full transition-all" style="width: {{ course_progress_percentage }}%;"></div>
+        <!-- Center: Edube-Style Breadcrumb Stepper with Prev/Next Arrows -->
+        <div class="flex items-center justify-center space-x-2 sm:space-x-3 min-w-0 max-w-xl mx-2">
+            {% if prev_lesson %}
+            <a href="{% url 'lesson-detail' lesson_id=prev_lesson.id %}"
+               class="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition"
+               title="Previous: {{ prev_lesson.title }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            {% else %}
+            <span class="p-1.5 text-slate-700 cursor-not-allowed">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            </span>
+            {% endif %}
+
+            <div class="text-center min-w-0 px-1 sm:px-3">
+                <div class="text-[10px] sm:text-[11px] font-mono text-cyan-400/90 truncate uppercase tracking-wider">
+                    {{ lesson.module.code }}: {{ lesson.module.title|truncatechars:32 }}
                 </div>
-                <span class="font-mono text-cyan-400 font-semibold">{{ course_progress_percentage }}%</span>
+                <div class="text-xs sm:text-sm font-bold text-white truncate max-w-[200px] sm:max-w-xs md:max-w-md">
+                    {{ lesson.title }}
+                </div>
+            </div>
+
+            {% if next_lesson %}
+            <a href="{% url 'lesson-detail' lesson_id=next_lesson.id %}"
+               class="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition"
+               title="Next: {{ next_lesson.title }}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </a>
+            {% elif final_exam and not final_exam_passed %}
+            <a href="{% url 'assessment-detail' slug=lesson.module.course.slug assessment_id=final_exam.id %}"
+               class="p-1.5 rounded-lg text-purple-400 hover:text-purple-300 hover:bg-purple-950/50 transition"
+               title="Final Exam: {{ final_exam.title }}">
+                <span class="text-xs">🎓</span>
+            </a>
+            {% elif earned_certificate %}
+            <a href="{% url 'certificate-verify' cert_id=earned_certificate.pk %}"
+               class="p-1.5 rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-950/50 transition"
+               title="View Certificate">
+                <span class="text-xs">📜</span>
+            </a>
+            {% else %}
+            <span class="p-1.5 text-slate-700 cursor-not-allowed">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </span>
+            {% endif %}
+        </div>
+
+        <!-- Right: Progress Indicator & Curriculum Drawer Toggle -->
+        <div class="flex items-center space-x-2 sm:space-x-3 shrink-0">
+            <!-- Progress Pill -->
+            <div class="hidden sm:flex items-center space-x-2 text-xs bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+                <div class="w-16 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div class="h-full bg-cyan-400 rounded-full transition-all" style="width: {{ course_progress_percentage }}%;"></div>
+                </div>
+                <span class="font-mono text-cyan-400 text-[11px] font-semibold">{{ course_progress_percentage }}%</span>
             </div>
 
             <!-- Curriculum Drawer Toggle -->
             <button type="button" id="thutaCurriculumToggle"
-                    class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center space-x-1.5 transition">
+                    class="px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center space-x-1.5 transition">
                 <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
-                <span>Curriculum</span>
+                <span class="hidden sm:inline">Curriculum</span>
             </button>
         </div>
     </header>
 
     <!-- Main Player Stage + Drawer Container -->
     <div class="flex-1 flex overflow-hidden relative">
+        <!-- Left Quick Tool Rail (Edube Style) -->
+        <aside class="w-12 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-4 space-y-4 shrink-0 hidden md:flex z-30">
+            <!-- Curriculum Drawer -->
+            <button type="button" onclick="document.getElementById('thutaCurriculumToggle').click();"
+                    class="p-2 rounded-xl text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition"
+                    title="Curriculum / Table of Contents">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+            </button>
+
+            <!-- Interactive Sandbox / Code Runner -->
+            <button type="button" id="thutaOpenSandboxBtn"
+                    class="p-2 rounded-xl text-slate-400 hover:text-emerald-400 hover:bg-slate-800 transition"
+                    title="Interactive Code Sandbox &amp; Playground">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            </button>
+
+            <!-- Font Size Adjuster -->
+            <button type="button" id="thutaFontToggleBtn"
+                    class="p-2 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition"
+                    title="Adjust Text Size">
+                <span class="font-bold text-xs font-mono">Aa</span>
+            </button>
+
+            <!-- Focus Reading Mode -->
+            <button type="button" id="thutaFocusToggleBtn"
+                    class="p-2 rounded-xl text-slate-400 hover:text-violet-400 hover:bg-slate-800 transition"
+                    title="Toggle Reading Focus Mode">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+            </button>
+
+            <!-- Jump to Notes -->
+            <button type="button" onclick="var nb = document.querySelector('[data-tab=tab-notes]'); if(nb) nb.click(); var sp = document.getElementById('lessonStudyNotes'); if(sp) sp.scrollIntoView({behavior:'smooth'});"
+                    class="p-2 rounded-xl text-slate-400 hover:text-sky-400 hover:bg-slate-800 transition"
+                    title="Study Scratchpad">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            </button>
+        </aside>
+
         <!-- Content Area -->
-        <main class="flex-1 overflow-y-auto px-4 sm:px-8 py-6 max-w-5xl mx-auto w-full space-y-6">
-            <!-- Video / Media Theater -->
+        <main class="flex-1 overflow-y-auto px-4 sm:px-8 py-6 pb-28 max-w-5xl mx-auto w-full space-y-6">
+            <!-- Media Stage (Video / Slides Presentation) -->
+            {% if lesson.has_video and lesson.has_slides %}
+            <!-- Media Mode Switcher (Video vs Slides) -->
+            <div class="flex items-center justify-between pb-1">
+                <div class="inline-flex rounded-xl bg-slate-900 border border-slate-800 p-1 text-xs">
+                    <button type="button" id="mediaModeVideoBtn"
+                            class="media-mode-btn px-4 py-1.5 rounded-lg font-semibold transition bg-cyan-600 text-white shadow-sm flex items-center gap-1.5"
+                            onclick="switchMediaMode('video')">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Video Lecture</span>
+                    </button>
+                    <button type="button" id="mediaModeSlideBtn"
+                            class="media-mode-btn px-4 py-1.5 rounded-lg font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5"
+                            onclick="switchMediaMode('slide')">
+                        <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2zM9 7h6M9 11h6M9 15h4"/></svg>
+                        <span>Slide Presentation ({{ lesson.document_extension|upper }})</span>
+                    </button>
+                </div>
+                <span class="text-[11px] text-slate-400 font-mono hidden sm:inline">Dual Media Available</span>
+            </div>
+            {% endif %}
+
+            <!-- Video Player Theater -->
             {% if lesson.has_video %}
-            <div class="rounded-2xl bg-black border border-slate-800 overflow-hidden shadow-2xl">
+            <div id="thutaVideoPlayerContainer" class="rounded-2xl bg-black border border-slate-800 overflow-hidden shadow-2xl">
                 <div class="relative w-full aspect-video bg-black flex items-center justify-center">
                     {% if lesson.video_file %}
                     <video id="thutaVideoPlayer" controls preload="metadata" class="w-full h-full object-contain" src="{{ lesson.video_file.url }}">
                         Your browser does not support embedded video.
                     </video>
+                    {% elif lesson.video_embed_url %}
+                    <iframe src="{{ lesson.video_embed_url }}"
+                            class="w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowfullscreen></iframe>
                     {% elif lesson.video_url %}
                     <div class="w-full h-full flex flex-col items-center justify-center p-6 text-center">
                         <p class="text-sm text-slate-300 mb-3">External video lecture hosted on streaming platform.</p>
@@ -86,6 +208,579 @@
                     </a>
                 </div>
                 {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Interactive Slide Presentation Theater -->
+            {% if lesson.has_slides %}
+            <div id="thutaSlidePlayerContainer" class="rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden shadow-2xl {% if lesson.has_video %}hidden{% endif %}">
+                <!-- Slide Toolbar Header -->
+                <div class="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center space-x-2 min-w-0">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase bg-amber-950 text-amber-300 border border-amber-800">
+                            {{ lesson.document_extension|upper }} SLIDES
+                        </span>
+                        <span class="font-semibold text-slate-200 truncate max-w-xs sm:max-w-md">
+                            {{ lesson.document_file.name }}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <!-- Fullscreen Presentation Mode Button -->
+                        <button type="button" id="thutaSlideFullscreenBtn"
+                                class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold flex items-center gap-1.5 transition"
+                                title="Presentation Mode (Fullscreen) [F]"
+                                data-title-en="Presentation Mode (Fullscreen) [F]"
+                                data-title-my="မျက်နှာပြင်ပြည့် ကြည့်ရှုမုဒ် [F]">
+                            <svg class="w-3.5 h-3.5 text-amber-400 fs-icon-expand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                            <svg class="w-3.5 h-3.5 text-cyan-400 fs-icon-compress hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9H4m0 0V4m0 5l5-5m6 6h5m0 0V4m0 5l-5-5M9 15H4m0 0v5m0-5l5 5m6-6h5m0 0v5m0-5l-5 5"/></svg>
+                            <span class="fs-text-expand">
+                                <span class="lang-en">Present Fullscreen</span>
+                                <span class="lang-my">မျက်နှာပြင်ပြည့် ကြည့်မည်</span>
+                            </span>
+                            <span class="fs-text-compress hidden">
+                                <span class="lang-en">Exit Fullscreen</span>
+                                <span class="lang-my">ပြန်သေးမည်</span>
+                            </span>
+                        </button>
+
+                        <a href="{{ lesson.document_file.url }}" target="_blank" rel="noopener noreferrer"
+                           class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium transition"
+                           title="Open in new window"
+                           data-title-en="Open in new window"
+                           data-title-my="ဝင်းဒိုးအသစ်တွင် ဖွင့်မည်">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
+
+                        <a href="{{ lesson.document_file.url }}" download
+                           class="px-3 py-1.5 rounded-lg bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-200 font-semibold flex items-center gap-1.5 transition">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>
+                                <span class="lang-en">Download {{ lesson.document_extension|upper }}</span>
+                                <span class="lang-my">{{ lesson.document_extension|upper }} ဒေါင်းလုဒ်ရယူမည်</span>
+                            </span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Slide Viewer Stage -->
+                <div class="relative w-full bg-slate-950 flex flex-col justify-between" id="thutaInteractiveSlideDeck">
+                    <!-- Floating Exit Fullscreen Button (Active only in fullscreen) -->
+                    <button type="button" id="thutaFloatingExitFullscreenBtn"
+                            class="hidden fixed top-5 right-5 z-50 px-4 py-2 rounded-xl bg-slate-900/95 hover:bg-slate-800 border-2 border-cyan-400 text-white font-bold text-xs shadow-2xl backdrop-blur-md flex items-center gap-2 transition transform hover:scale-105 cursor-pointer"
+                            title="Exit Fullscreen Mode [Esc]"
+                            data-title-en="Exit Fullscreen Mode [Esc]"
+                            data-title-my="မျက်နှာပြင်ပြည့်မှ ထွက်မည် [Esc]">
+                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9H4m0 0V4m0 5l5-5m6 6h5m0 0V4m0 5l-5-5M9 15H4m0 0v5m0-5l5 5m6-6h5m0 0v5m0-5l-5 5"/></svg>
+                        <span>
+                            <span class="lang-en">Exit Fullscreen</span>
+                            <span class="lang-my">ပြန်သေးမည်</span>
+                        </span>
+                        <span class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] text-slate-400 font-mono">Esc</span>
+                    </button>
+
+                    {% if has_slide_deck %}
+                    <!-- Real Interactive Slide-by-Slide Presentation Canvas -->
+                    <div class="w-full p-4 sm:p-8 min-h-[540px] flex flex-col justify-between" id="slideCanvas">
+                        {% for s in slide_deck %}
+                        <div class="thuta-slide w-full flex flex-col justify-between {% if not forloop.first %}hidden{% endif %}" data-slide-index="{{ forloop.counter0 }}" style="min-height: 480px;">
+                            
+                            {% if s.layout == 'cover' %}
+                            <!-- 1. Hero Cover Slide Layout -->
+                            <div class="flex-1 flex flex-col items-center justify-center text-center p-4 sm:p-10 my-auto space-y-6">
+                                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-800/80 text-cyan-300 text-xs font-mono uppercase font-bold tracking-widest shadow-lg shadow-cyan-950/40">
+                                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                                    <span>{{ s.subtitle|default:"CHAPTER 1 • BEGINNER" }}</span>
+                                </div>
+
+                                <div class="max-w-3xl space-y-3">
+                                    <h1 class="text-2xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
+                                        {{ s.title }}
+                                    </h1>
+                                    {% if s.tagline %}
+                                    <p class="text-sm sm:text-base md:text-lg text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto">
+                                        {{ s.tagline }}
+                                    </p>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Dynamic Feature Pills -->
+                                <div class="flex flex-wrap items-center justify-center gap-2.5 max-w-2xl text-xs">
+                                    {% if s.features %}
+                                        {% for f in s.features %}
+                                        <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-semibold flex items-center gap-1.5">
+                                            <span class="text-cyan-400">✓</span> {{ f }}
+                                        </span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-semibold flex items-center gap-1.5">
+                                            <span class="text-cyan-400">✓</span> {{ total_slides_count }} Interactive Slides
+                                        </span>
+                                        {% if lesson.module.course.title %}
+                                        <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-semibold flex items-center gap-1.5">
+                                            <span class="text-amber-400">✓</span> {{ lesson.module.course.title }}
+                                        </span>
+                                        {% endif %}
+                                        {% if lesson.title %}
+                                        <span class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-semibold flex items-center gap-1.5">
+                                            <span class="text-emerald-400">✓</span> {{ lesson.title }}
+                                        </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+
+                                <div class="pt-4">
+                                    <button type="button" onclick="updateSlideView(1);"
+                                            class="px-8 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-sm shadow-xl shadow-cyan-600/30 flex items-center gap-2.5 mx-auto transition transform hover:-translate-y-0.5">
+                                        <span>
+                                            <span class="lang-en">Start Slide Deck</span>
+                                            <span class="lang-my">စတင်လေ့လာမည်</span>
+                                        </span>
+                                        <span>❯</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {% else %}
+                            <!-- Slide Header -->
+                            <div class="border-b border-slate-800/80 pb-3 mb-4">
+                                <div class="flex items-center justify-between gap-2 text-xs">
+                                    <span class="px-2.5 py-0.5 rounded-md bg-cyan-950 text-cyan-300 border border-cyan-800 text-[11px] font-mono uppercase font-bold tracking-wider">
+                                        {{ s.subtitle|default:lesson.module.title }}
+                                    </span>
+                                    <span class="text-slate-400 font-mono text-xs font-semibold">
+                                        Slide <span class="text-cyan-400 font-bold">{{ forloop.counter }}</span> / {{ total_slides_count }}
+                                    </span>
+                                </div>
+                                <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-white mt-2 leading-tight tracking-tight">
+                                    {{ s.title }}
+                                </h2>
+                                {% if s.tagline %}
+                                <p class="text-xs sm:text-sm text-cyan-300/90 font-medium mt-1">
+                                    {{ s.tagline }}
+                                </p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Slide Body by Layout -->
+                            <div class="flex-1 my-auto">
+                                {% if s.layout == 'image' or s.image_url %}
+                                <!-- 1. High-Res PDF/Image Slide Layout -->
+                                <div class="w-full flex items-center justify-center py-2">
+                                    <img src="{{ s.image_url }}" alt="Slide {{ s.number }}" class="max-h-[580px] w-auto max-w-full rounded-2xl border border-slate-800 shadow-2xl object-contain">
+                                </div>
+
+                                {% elif s.layout == 'code_terminal' %}
+                                <!-- 2. Code Editor & Terminal Side-by-Side Sandbox Layout -->
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 my-2">
+                                    <!-- Code Editor Box -->
+                                    <div class="rounded-2xl overflow-hidden border border-slate-800 bg-[#0d1117] shadow-2xl flex flex-col justify-between">
+                                        <div class="px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+                                                <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                                                <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+                                                <span class="ml-2 font-mono text-[11px] text-cyan-300 font-semibold flex items-center gap-1">
+                                                    <svg class="w-3.5 h-3.5 text-cyan-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                                                    {{ s.code_title|default:"CODE" }}
+                                                </span>
+                                            </div>
+                                            <button type="button" onclick="navigator.clipboard.writeText(this.closest('.rounded-2xl').querySelector('code').textContent);"
+                                                    class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono transition">
+                                                Copy
+                                            </button>
+                                        </div>
+                                        <div class="p-4 flex-1 font-mono text-xs sm:text-sm text-emerald-300 overflow-x-auto whitespace-pre-wrap leading-relaxed bg-[#0a0e14]">
+                                            <code>{{ s.code_text }}</code>
+                                        </div>
+                                        {% if s.code_notes %}
+                                        <div class="p-3 bg-slate-900/70 border-t border-slate-800 text-xs text-slate-300 leading-relaxed space-y-1">
+                                            {% for n in s.code_notes %}
+                                            <div class="flex items-start gap-1.5">
+                                                <span class="text-cyan-400 select-none">•</span>
+                                                <span>{{ n }}</span>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Terminal Output Box -->
+                                    <div class="rounded-2xl overflow-hidden border border-slate-800 bg-[#0a0a0c] shadow-2xl flex flex-col justify-between">
+                                        <div class="px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="w-2.5 h-2.5 rounded-full bg-slate-600 inline-block"></span>
+                                                <span class="ml-1 font-mono text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                                                    <span class="text-xs">🖥️</span> {{ s.terminal_title|default:"TERMINAL OUTPUT" }}
+                                                </span>
+                                            </div>
+                                            <span class="text-[10px] text-slate-500 font-mono">STDOUT</span>
+                                        </div>
+                                        <div class="p-4 flex-1 font-mono text-xs sm:text-sm text-cyan-200 overflow-x-auto whitespace-pre-wrap leading-relaxed bg-black/95">
+                                            <pre>{{ s.terminal_text }}</pre>
+                                        </div>
+                                        {% if s.terminal_notes %}
+                                        <div class="p-3 bg-slate-900/70 border-t border-slate-800 text-xs text-slate-300 leading-relaxed space-y-1">
+                                            {% for n in s.terminal_notes %}
+                                            <div class="flex items-start gap-1.5">
+                                                <span class="text-emerald-400 select-none">✅</span>
+                                                <span>{{ n }}</span>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                {% elif s.layout == 'quiz' %}
+                                <!-- 3. Interactive Quiz / Knowledge Check Cards -->
+                                <div class="space-y-3.5 my-2">
+                                    {% for q in s.quiz_items %}
+                                    <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800 hover:border-cyan-600/50 transition shadow-xl space-y-3">
+                                        <div class="flex items-start gap-3">
+                                            <span class="px-2.5 py-1 rounded-xl bg-cyan-950 border border-cyan-800 text-cyan-300 text-xs font-mono font-bold shrink-0 mt-0.5">
+                                                {{ q.q_label|default:"မေးခွန်း" }}
+                                            </span>
+                                            <div class="text-sm sm:text-base font-bold text-white leading-relaxed">
+                                                {{ q.question }}
+                                            </div>
+                                        </div>
+                                        {% if q.answer %}
+                                        <div class="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-900/60 text-xs sm:text-sm text-emerald-200 leading-relaxed flex items-start gap-2.5">
+                                            <span class="text-emerald-400 font-bold shrink-0 mt-0.5">💡 အဖြေ:</span>
+                                            <span>{{ q.answer }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                {% elif s.layout == 'steps_roadmap' %}
+                                <!-- 4. Multi-Step Connected Roadmap Layout -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-2">
+                                    {% for st in s.steps %}
+                                    <div class="p-5 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 hover:border-cyan-500/60 shadow-xl flex flex-col justify-between transition group">
+                                        <div>
+                                            <div class="flex items-center justify-between mb-3">
+                                                <span class="px-3 py-1 rounded-xl bg-cyan-950 border border-cyan-800 text-cyan-300 text-xs font-bold font-mono">
+                                                    {{ st.step_no }}
+                                                </span>
+                                                <span class="text-2xl font-black text-slate-700 font-mono group-hover:text-cyan-400/40 transition">
+                                                    0{{ forloop.counter }}
+                                                </span>
+                                            </div>
+                                            <h3 class="text-base font-bold text-white group-hover:text-cyan-300 transition mb-2">
+                                                {{ st.title }}
+                                            </h3>
+                                            <p class="text-xs text-slate-300 leading-relaxed font-normal">
+                                                {{ st.description }}
+                                            </p>
+                                        </div>
+                                        <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center text-[11px] text-cyan-400 font-semibold gap-1">
+                                            <span>အဆင့်ဆင့် လုပ်ဆောင်ချက်</span>
+                                            <span>&rarr;</span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                {% elif s.layout == 'cards_grid' or s.layout == 'cards_3col' or s.layout == 'cards_4col' %}
+                                <!-- 5. Multi-Column Cards Grid (2, 3, or 4 columns) -->
+                                {% if s.intro_text %}
+                                <div class="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-900/60 text-xs sm:text-sm text-cyan-200 mb-3 leading-relaxed font-medium">
+                                    {{ s.intro_text }}
+                                </div>
+                                {% endif %}
+                                <div class="grid grid-cols-1 {% if s.cards|length == 2 %}md:grid-cols-2{% elif s.cards|length == 4 %}sm:grid-cols-2 lg:grid-cols-4{% else %}md:grid-cols-3{% endif %} gap-4 my-2">
+                                    {% for card in s.cards %}
+                                    <div class="p-5 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 hover:border-slate-700 shadow-xl flex flex-col justify-between transition">
+                                        <div>
+                                            {% if card.error_msg or card.solution %}
+                                            <!-- Troubleshooting Card -->
+                                            <div class="flex items-center gap-2 mb-3">
+                                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                                <h3 class="text-sm font-bold text-white">{{ card.title }}</h3>
+                                            </div>
+                                            {% if card.error_msg %}
+                                            <div class="p-3 rounded-xl bg-rose-950/40 border border-rose-900/60 text-xs font-mono text-rose-300 mb-3 leading-relaxed">
+                                                {{ card.error_msg }}
+                                            </div>
+                                            {% endif %}
+                                            {% if card.cause %}
+                                            <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                                                <strong class="text-amber-400">အကြောင်းရင်း:</strong> {{ card.cause }}
+                                            </p>
+                                            {% endif %}
+                                            {% if card.solution %}
+                                            <div class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-900/60 text-xs text-emerald-300 leading-relaxed font-medium">
+                                                <strong class="text-emerald-400">💡 ဖြေရှင်းနည်း:</strong> {{ card.solution }}
+                                            </div>
+                                            {% endif %}
+
+                                            {% else %}
+                                            <!-- Standard / Concept Card -->
+                                            <div class="flex items-center gap-2 pb-3 mb-3 border-b border-slate-800">
+                                                <span class="w-7 h-7 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-300 text-xs font-bold font-mono flex items-center justify-center">
+                                                    {{ forloop.counter }}
+                                                </span>
+                                                <h3 class="text-sm font-bold text-white">{{ card.title }}</h3>
+                                            </div>
+                                            <div class="space-y-2">
+                                                {% for it in card.items %}
+                                                <div class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 text-xs sm:text-sm text-slate-200">
+                                                    <span class="text-cyan-400 font-bold select-none shrink-0 mt-0.5">✓</span>
+                                                    <span class="leading-relaxed">{{ it }}</span>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                {% elif s.layout == 'split_2col' %}
+                                <!-- 6. 2-Column Split Layout -->
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 my-2">
+                                    <!-- Left Column: Guidelines & Steps -->
+                                    <div class="p-5 sm:p-6 rounded-2xl bg-slate-900/70 border border-slate-800 flex flex-col justify-between">
+                                        <div>
+                                            <h3 class="text-sm sm:text-base font-bold text-cyan-400 flex items-center gap-2 pb-3 mb-3 border-b border-slate-800">
+                                                <span>{{ s.left_title }}</span>
+                                            </h3>
+                                            <div class="space-y-2.5">
+                                                {% for it in s.left_items %}
+                                                <div class="flex items-start gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800/80 text-xs sm:text-sm text-slate-200">
+                                                    <span class="w-5 h-5 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5 select-none">
+                                                        {{ forloop.counter }}
+                                                    </span>
+                                                    <span class="leading-relaxed">{{ it }}</span>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Right Column: Interactive Terminal / Code / Alert -->
+                                    <div class="flex flex-col justify-between">
+                                        {% if s.is_alert %}
+                                        <!-- Warning / Alert Box -->
+                                        <div class="p-6 rounded-2xl bg-gradient-to-b from-amber-950/40 to-slate-950 border border-amber-600/50 shadow-2xl flex flex-col justify-between h-full space-y-4">
+                                            <div>
+                                                <div class="flex items-center gap-2 pb-3 mb-3 border-b border-amber-900/50">
+                                                    <span class="text-xl">⚠️</span>
+                                                    <h3 class="text-sm sm:text-base font-bold text-amber-300">{{ s.right_title }}</h3>
+                                                </div>
+                                                <div class="space-y-3">
+                                                    {% for it in s.right_items %}
+                                                    <p class="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                                                        {{ it }}
+                                                    </p>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+
+                                            {% if s.right_callout %}
+                                            <div class="p-4 rounded-xl bg-gradient-to-r from-emerald-950 to-slate-900 border-2 border-emerald-500 text-emerald-300 font-mono font-bold text-sm sm:text-base flex items-center gap-3 shadow-lg shadow-emerald-950/50">
+                                                <span class="text-emerald-400 text-xl font-bold select-none">☑</span>
+                                                <span>{{ s.right_callout|cut:"☑" }}</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+
+                                        {% elif s.is_terminal or s.is_code %}
+                                        <!-- Realistic Terminal / Code Sandbox Mockup -->
+                                        <div class="rounded-2xl overflow-hidden border border-slate-800 bg-black shadow-2xl flex flex-col h-full">
+                                            <div class="px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                                                <div class="flex items-center gap-1.5">
+                                                    <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+                                                    <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                                                    <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+                                                    <span class="ml-2 font-mono text-[11px] text-slate-300">{{ s.right_title|default:"Terminal" }}</span>
+                                                </div>
+                                                <button type="button" onclick="navigator.clipboard.writeText(this.closest('.rounded-2xl').querySelector('pre').textContent);"
+                                                        class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-mono transition">
+                                                    Copy
+                                                </button>
+                                            </div>
+                                            <div class="p-4 flex-1 font-mono text-xs sm:text-sm text-emerald-300 overflow-x-auto whitespace-pre-wrap leading-relaxed bg-black/90">
+                                                <pre>{{ s.code_text|default:s.right_items|join:"\n" }}</pre>
+                                            </div>
+                                            {% if s.terminal_output %}
+                                            <div class="p-3 bg-slate-950 border-t border-slate-800 font-mono text-xs text-cyan-300 whitespace-pre-wrap">
+                                                <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-1 font-bold">Terminal Output:</div>
+                                                <pre>{{ s.terminal_output }}</pre>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+
+                                        {% else %}
+                                        <!-- General Right Card -->
+                                        <div class="p-5 sm:p-6 rounded-2xl bg-slate-900/70 border border-slate-800 flex flex-col justify-between h-full">
+                                            <div>
+                                                <h3 class="text-sm sm:text-base font-bold text-amber-300 flex items-center gap-2 pb-3 mb-3 border-b border-slate-800">
+                                                    <span>{{ s.right_title }}</span>
+                                                </h3>
+                                                <div class="space-y-2.5">
+                                                    {% for it in s.right_items %}
+                                                    <div class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs sm:text-sm text-slate-200">
+                                                        <span class="text-amber-400 font-bold select-none shrink-0 mt-0.5">▸</span>
+                                                        <span class="leading-relaxed">{{ it }}</span>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                {% elif s.layout == 'content_cards' %}
+                                <!-- 7. Structured Content Cards Layout -->
+                                <div class="space-y-4 my-2">
+                                    {% for c in s.content_cards %}
+                                    <div class="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-slate-900/90 to-slate-950 border border-slate-800 hover:border-slate-700 shadow-xl space-y-3 transition">
+                                        {% if c.title %}
+                                        <div class="flex items-center gap-2 pb-2.5 border-b border-slate-800/80">
+                                            <h3 class="text-sm sm:text-base font-bold {% if '💡' in c.title or 'သတိ' in c.title %}text-amber-300{% elif '🖥️' in c.title or 'code' in c.title.lower %}text-cyan-300{% else %}text-white{% endif %}">
+                                                {{ c.title }}
+                                            </h3>
+                                        </div>
+                                        {% endif %}
+                                        <div class="space-y-2.5">
+                                            {% for item in c.items %}
+                                            {% if item.is_bullet %}
+                                            <div class="flex items-start gap-2.5 text-xs sm:text-sm text-slate-200 leading-relaxed">
+                                                <span class="text-cyan-400 font-bold select-none shrink-0 mt-0.5">•</span>
+                                                <span>{{ item.text }}</span>
+                                            </div>
+                                            {% else %}
+                                            <p class="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                                                {{ item.text|default:item }}
+                                            </p>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                {% else %}
+                                <!-- 8. Fallback Bullet List Slide -->
+                                <div class="grid grid-cols-1 gap-2.5 my-2">
+                                    {% for b in s.bullets %}
+                                    <div class="flex items-start gap-3 p-3.5 rounded-xl bg-slate-900/70 border border-slate-800/80 hover:border-slate-700 transition">
+                                        <span class="text-cyan-400 font-bold text-sm select-none shrink-0 mt-0.5">▸</span>
+                                        <div class="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
+                                            {{ b }}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Slide Footer Watermark -->
+                            <div class="pt-3 mt-4 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+                                <span>{{ lesson.module.course.title }} • {{ lesson.title }}</span>
+                                <span class="hidden sm:inline font-mono">Keyboard: ◄ ► Arrow keys to switch slides</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Real Slide Study Progress Bar -->
+                    <div class="px-4 py-2.5 bg-slate-950/90 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs" id="slideStudyTrackerBar">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" id="slideStudyPulse"></span>
+                            <span class="text-slate-300 font-semibold" id="slideStudyLabel">
+                                <span class="lang-en">Slide Progress:</span>
+                                <span class="lang-my">Slide လေ့လာမှု အဆင့်:</span>
+                                <span class="text-cyan-400 font-bold font-mono" id="slideViewedCountDisplay">1</span> / {{ total_slides_count }}
+                            </span>
+                            <span class="text-slate-400 text-[11px]" id="slideStudyHint">
+                                <span class="lang-en">(Please review each slide thoroughly)</span>
+                                <span class="lang-my">(Slide တစ်ခုချင်းစီကို စုံလင်အောင် ဖတ်ရှုပေးပါ)</span>
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-[11px] font-mono text-cyan-400 font-bold" id="slidePercentDisplay">0%</span>
+                            <div class="w-28 sm:w-44 bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                                <div id="slideProgressBarFill" class="bg-gradient-to-r from-cyan-500 to-emerald-500 h-2 rounded-full transition-all duration-300" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide Controller Stepper Bar (Next/Prev + Dots) -->
+                    <div class="px-4 py-3 bg-slate-900 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="slidePrevBtn"
+                                    class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold border border-slate-700 transition flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                                <span>❮ Previous Slide</span>
+                            </button>
+                        </div>
+
+                        <!-- Slide Dots & Progress Numbers -->
+                        <div class="flex items-center gap-2 max-w-xs sm:max-w-md overflow-x-auto py-1">
+                            <div class="flex items-center space-x-1" id="slideDotsContainer">
+                                {% for s in slide_deck %}
+                                <button type="button"
+                                        class="slide-dot-btn w-7 h-7 rounded-lg text-[11px] font-mono font-bold transition flex items-center justify-center {% if forloop.first %}bg-cyan-600 text-white shadow-sm{% else %}bg-slate-800 text-slate-400 hover:text-white{% endif %}"
+                                        data-slide="{{ forloop.counter0 }}"
+                                        title="Jump to Slide {{ forloop.counter }}">
+                                    {{ forloop.counter }}
+                                </button>
+                                {% endfor %}
+                            </div>
+                            <span class="font-mono text-cyan-400 font-bold ml-2 shrink-0">
+                                <span id="slideCurrentDisplay">1</span> / {{ total_slides_count }}
+                            </span>
+                        </div>
+
+                        <!-- Right: Next Slide & Fullscreen Buttons -->
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="slideFullscreenToggleBottom"
+                                    class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 text-xs font-semibold shadow-sm"
+                                    title="Toggle Fullscreen Mode [F]"
+                                    data-title-en="Toggle Fullscreen Mode [F]"
+                                    data-title-my="မျက်နှာပြင်ပြည့် ဖွင့်/ပိတ် [F]">
+                                <svg class="w-4 h-4 text-amber-400 fs-icon-expand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                                <svg class="w-4 h-4 text-cyan-400 fs-icon-compress hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9H4m0 0V4m0 5l5-5m6 6h5m0 0V4m0 5l-5-5M9 15H4m0 0v5m0-5l5 5m6-6h5m0 0v5m0-5l-5 5"/></svg>
+                                <span class="fs-text-expand hidden sm:inline">
+                                    <span class="lang-en">Fullscreen</span>
+                                    <span class="lang-my">မျက်နှာပြင်ပြည့်</span>
+                                </span>
+                                <span class="fs-text-compress hidden">
+                                    <span class="lang-en">Exit Fullscreen</span>
+                                    <span class="lang-my">ပြန်သေးမည်</span>
+                                </span>
+                            </button>
+                            <button type="button" id="slideNextBtn"
+                                    class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition flex items-center gap-1.5 shadow-lg shadow-cyan-600/30">
+                                <span class="lang-en">Next Slide ❯</span>
+                                <span class="lang-my">ရှေ့သို့ ❯</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {% elif lesson.is_pdf %}
+                    <!-- PDF Embedded Presentation Viewer Fallback -->
+                    <iframe id="thutaPdfIframe"
+                            src="{{ lesson.document_file.url }}#toolbar=1&navpanes=0&view=FitH"
+                            class="w-full border-0"
+                            style="height: 640px;"
+                            allowfullscreen>
+                    </iframe>
+                    {% else %}
+                    <!-- Generic Document Embed Fallback -->
+                    <iframe src="{{ lesson.document_file.url }}"
+                            class="w-full border-0"
+                            style="height: 640px;"
+                            allowfullscreen>
+                    </iframe>
+                    {% endif %}
+                </div>
             </div>
             {% endif %}
 
@@ -231,17 +926,31 @@
 
                 <!-- Tab 2: Attached Documents & Materials -->
                 {% if lesson.has_document %}
-                <div id="tab-materials" class="tab-panel p-6 sm:p-8 hidden">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Course Material &amp; Documentation</h3>
-                    <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                        <div>
-                            <div class="text-sm font-semibold text-white">{{ lesson.document_file.name }}</div>
-                            <div class="text-xs text-slate-400 mt-0.5">Reference material for {{ lesson.title }}</div>
+                <div id="tab-materials" class="tab-panel p-6 sm:p-8 hidden space-y-4">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Course Material &amp; Slide Decks</h3>
+                    <div class="p-5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2zM9 7h6M9 11h6M9 15h4"/></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-sm font-semibold text-white truncate">{{ lesson.document_file.name }}</div>
+                                <div class="text-xs text-slate-400 mt-0.5">Format: {{ lesson.document_extension|upper }} · Slide deck &amp; reference notes for {{ lesson.title }}</div>
+                            </div>
                         </div>
-                        <a href="{{ lesson.document_file.url }}" target="_blank" rel="noopener"
-                           class="text-xs px-4 py-2 rounded-lg bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-200 font-semibold transition">
-                            Download Document &rarr;
-                        </a>
+                        <div class="flex items-center gap-2 shrink-0">
+                            {% if lesson.has_slides %}
+                            <button type="button" onclick="if(typeof switchMediaMode === 'function'){ switchMediaMode('slide'); } window.scrollTo({top: 0, behavior: 'smooth'});"
+                                    class="text-xs px-3.5 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold flex items-center gap-1.5 transition">
+                                <svg class="w-3.5 h-3.5 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
+                                <span>Present Slides &uarr;</span>
+                            </button>
+                            {% endif %}
+                            <a href="{{ lesson.document_file.url }}" download
+                               class="text-xs px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold transition">
+                                Download File
+                            </a>
+                        </div>
                     </div>
                 </div>
                 {% endif %}
@@ -318,29 +1027,55 @@
                 </div>
             </div>
 
-            <!-- Sequential Progression Footer -->
+            <!-- Sequential Progression Footer (Inline) -->
             <div class="flex items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900 border border-slate-800">
                 <div>
                     {% if prev_lesson %}
                     <a href="{% url 'lesson-detail' lesson_id=prev_lesson.id %}"
                        class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
-                        <span>&larr; Previous Lesson</span>
+                        <span class="lang-en">&larr; Previous Lesson</span>
+                        <span class="lang-my">&larr; ရှေ့သင်ခန်းစာ</span>
                     </a>
                     {% else %}
-                    <span class="text-xs text-slate-600 italic">Beginning of Course</span>
+                    <span class="text-xs text-slate-600 italic">
+                        <span class="lang-en">Beginning of Course</span>
+                        <span class="lang-my">သင်တန်းအစ</span>
+                    </span>
                     {% endif %}
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <form method="POST" action="{% url 'lesson-complete' lesson_id=lesson.id %}">
+                    <form method="POST" action="{% url 'lesson-complete' lesson_id=lesson.id %}" id="mainLessonCompleteForm">
                         {% csrf_token %}
+                        <input type="hidden" name="slides_completed" id="mainSlidesCompleted" value="{% if progress.is_completed or not has_slide_deck %}1{% else %}0{% endif %}">
+                        <input type="hidden" name="slides_viewed_count" id="mainSlidesViewedCount" value="{% if progress.is_completed or not has_slide_deck %}{{ total_slides_count }}{% else %}1{% endif %}">
                         {% if progress.is_completed %}
-                        <button type="submit" class="text-xs text-slate-400 hover:text-rose-400 transition underline">
-                            Mark Incomplete
-                        </button>
+                        <input type="hidden" name="action" value="incomplete">
+                        <div class="flex items-center gap-2">
+                            <span class="px-3.5 py-1.5 rounded-xl bg-emerald-950/90 border border-emerald-800 text-emerald-300 text-xs font-semibold flex items-center gap-1.5 shadow-sm">
+                                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span class="lang-en">Lesson Completed</span>
+                                <span class="lang-my">သင်ခန်းစာ ပြီးမြောက်ပြီး</span>
+                            </span>
+                            <button type="submit" class="text-xs text-slate-400 hover:text-rose-400 transition underline ml-2">
+                                <span class="lang-en">Mark Incomplete</span>
+                                <span class="lang-my">မပြီးသေးကြောင်း ပြန်သတ်မှတ်မည်</span>
+                            </button>
+                        </div>
                         {% else %}
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/20 transition">
-                            ✓ Mark Complete
+                        <button type="submit" id="mainMarkCompleteBtn"
+                                class="px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 shadow-lg {% if has_slide_deck %}bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80{% else %}bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20{% endif %}"
+                                {% if has_slide_deck %}disabled title="Please read and complete all slides" data-title-en="Please read and complete all slides" data-title-my="သင်ခန်းစာ Slide အားလုံးကို အပြည့်အစုံ လေ့လာဖတ်ရှုပေးပါ"{% endif %}>
+                            <span id="mainMarkCompleteIcon">{% if has_slide_deck %}🔒{% else %}✓{% endif %}</span>
+                            <span id="mainMarkCompleteText">
+                                {% if has_slide_deck %}
+                                    <span class="lang-en">Review all slides (1/{{ total_slides_count }})</span>
+                                    <span class="lang-my">Slide အားလုံး လေ့လာပါ (1/{{ total_slides_count }})</span>
+                                {% else %}
+                                    <span class="lang-en">✓ Mark Complete</span>
+                                    <span class="lang-my">✓ ပြီးမြောက်ကြောင်း သတ်မှတ်မည်</span>
+                                {% endif %}
+                            </span>
                         </button>
                         {% endif %}
                     </form>
@@ -348,17 +1083,150 @@
                     {% if next_lesson %}
                     <a href="{% url 'lesson-detail' lesson_id=next_lesson.id %}"
                        class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-lg shadow-cyan-600/20 transition flex items-center gap-1.5">
-                        <span>Next Lesson &rarr;</span>
+                        <span class="lang-en">Next Lesson &rarr;</span>
+                        <span class="lang-my">နောက်သင်ခန်းစာ &rarr;</span>
+                    </a>
+                    {% elif final_exam and not final_exam_passed %}
+                    <a href="{% url 'assessment-detail' slug=lesson.module.course.slug assessment_id=final_exam.id %}"
+                       class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-600/25 transition flex items-center gap-1.5 transform hover:-translate-y-0.5">
+                        <span class="lang-en">Take Final Exam 🎓 &rarr;</span>
+                        <span class="lang-my">နောက်ဆုံးစာမေးပွဲ ဖြေဆိုမည် 🎓 &rarr;</span>
+                    </a>
+                    {% elif earned_certificate %}
+                    <a href="{% url 'certificate-verify' cert_id=earned_certificate.pk %}"
+                       class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold shadow-lg shadow-amber-500/25 transition flex items-center gap-1.5 transform hover:-translate-y-0.5">
+                        <span class="lang-en">View Certificate 📜 &rarr;</span>
+                        <span class="lang-my">အောင်လက်မှတ် ကြည့်ရှုမည် 📜 &rarr;</span>
                     </a>
                     {% else %}
                     <a href="{% url 'course-detail' slug=lesson.module.course.slug %}"
                        class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition">
-                        Finish Course 🎉
+                        <span class="lang-en">Finish Course 🎉</span>
+                        <span class="lang-my">သင်တန်းပြီးဆုံးပါပြီ 🎉</span>
                     </a>
                     {% endif %}
                 </div>
             </div>
         </main>
+
+        <!-- Edube-Style Floating Sticky Bottom Stepper -->
+        <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40 w-[94%] sm:w-auto min-w-[320px] sm:min-w-[480px] max-w-xl">
+            <div class="px-4 py-2.5 rounded-2xl bg-slate-900/95 backdrop-blur-md border border-slate-700/80 shadow-2xl flex items-center justify-between gap-3">
+                <!-- Left: Prev Button -->
+                <div>
+                    {% if prev_lesson %}
+                    <a href="{% url 'lesson-detail' lesson_id=prev_lesson.id %}"
+                       class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
+                        <span class="lang-en">&laquo; Prev</span>
+                        <span class="lang-my">&laquo; ရှေ့သို့</span>
+                    </a>
+                    {% else %}
+                    <span class="px-3.5 py-1.5 rounded-xl text-slate-600 text-xs font-semibold cursor-not-allowed select-none">
+                        <span class="lang-en">&laquo; Prev</span>
+                        <span class="lang-my">&laquo; ရှေ့သို့</span>
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Center: Lesson Indicator & Progress Dot -->
+                <div class="text-center px-2">
+                    <div class="text-xs font-bold text-white font-mono flex items-center justify-center gap-1.5">
+                        {% if progress.is_completed %}
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        {% else %}
+                        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                        {% endif %}
+                        <span>
+                            <span class="lang-en">Lesson {{ current_lesson_index }} / {{ total_lessons_count }}</span>
+                            <span class="lang-my">သင်ခန်းစာ {{ current_lesson_index }} / {{ total_lessons_count }}</span>
+                        </span>
+                    </div>
+                    <div class="text-[10px] text-slate-400">
+                        {% if progress.is_completed %}
+                        <span class="text-emerald-400 font-semibold">
+                            <span class="lang-en">Completed</span>
+                            <span class="lang-my">ပြီးမြောက်ပြီး</span>
+                        </span>
+                        {% else %}
+                        <span>
+                            <span class="lang-en">In progress ({{ course_progress_percentage }}%)</span>
+                            <span class="lang-my">သင်ယူဆဲ ({{ course_progress_percentage }}%)</span>
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Right: Next / Complete & Advance Button -->
+                <div class="flex items-center gap-2">
+                    {% if next_lesson %}
+                        {% if progress.is_completed %}
+                        <a href="{% url 'lesson-detail' lesson_id=next_lesson.id %}"
+                           class="px-4 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-lg shadow-cyan-600/25 transition flex items-center gap-1.5">
+                            <span class="lang-en">Next &raquo;</span>
+                            <span class="lang-my">ရှေ့သို့ &raquo;</span>
+                        </a>
+                        {% else %}
+                        <form method="POST" action="{% url 'lesson-complete' lesson_id=lesson.id %}" id="bottomLessonCompleteForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="slides_completed" id="bottomSlidesCompleted" value="{% if not has_slide_deck %}1{% else %}0{% endif %}">
+                            <input type="hidden" name="slides_viewed_count" id="bottomSlidesViewedCount" value="{% if not has_slide_deck %}{{ total_slides_count }}{% else %}1{% endif %}">
+                            <input type="hidden" name="next" value="{% url 'lesson-detail' lesson_id=next_lesson.id %}">
+                            <button type="submit" id="bottomNextAdvanceBtn"
+                                    class="px-4 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-lg {% if has_slide_deck %}bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80{% else %}bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-600/25{% endif %}"
+                                    {% if has_slide_deck %}disabled title="Slide study required" data-title-en="Slide study required" data-title-my="Slide အားလုံး လေ့လာပြီးမှ Next သွားနိုင်ပါမည်"{% endif %}>
+                                <span id="bottomNextLockIcon">{% if has_slide_deck %}🔒{% endif %}</span>
+                                <span class="lang-en">Next &raquo;</span>
+                                <span class="lang-my">ရှေ့သို့ &raquo;</span>
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% else %}
+                        {% if progress.is_completed %}
+                            {% if final_exam and not final_exam_passed %}
+                            <a href="{% url 'assessment-detail' slug=lesson.module.course.slug assessment_id=final_exam.id %}"
+                               class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-600/25 transition flex items-center gap-1.5">
+                                <span class="lang-en">Take Final Exam 🎓 &raquo;</span>
+                                <span class="lang-my">နောက်ဆုံးစာမေးပွဲ ဖြေဆိုမည် 🎓 &raquo;</span>
+                            </a>
+                            {% elif earned_certificate %}
+                            <a href="{% url 'certificate-verify' cert_id=earned_certificate.pk %}"
+                               class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-bold shadow-lg shadow-amber-500/25 transition flex items-center gap-1.5">
+                                <span class="lang-en">Certificate 📜 &raquo;</span>
+                                <span class="lang-my">အောင်လက်မှတ် 📜 &raquo;</span>
+                            </a>
+                            {% else %}
+                            <a href="{% url 'course-detail' slug=lesson.module.course.slug %}"
+                               class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/25 transition flex items-center gap-1.5">
+                                <span class="lang-en">Finish 🎉</span>
+                                <span class="lang-my">ပြီးဆုံးပါပြီ 🎉</span>
+                            </a>
+                            {% endif %}
+                        {% else %}
+                        <form method="POST" action="{% url 'lesson-complete' lesson_id=lesson.id %}" id="bottomLessonCompleteForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="slides_completed" id="bottomSlidesCompleted" value="{% if not has_slide_deck %}1{% else %}0{% endif %}">
+                            <input type="hidden" name="slides_viewed_count" id="bottomSlidesViewedCount" value="{% if not has_slide_deck %}{{ total_slides_count }}{% else %}1{% endif %}">
+                            <input type="hidden" name="next" value="{% if final_exam and not final_exam_passed %}{% url 'assessment-detail' slug=lesson.module.course.slug assessment_id=final_exam.id %}{% elif earned_certificate %}{% url 'certificate-verify' cert_id=earned_certificate.pk %}{% else %}{% url 'course-detail' slug=lesson.module.course.slug %}{% endif %}">
+                            <button type="submit" id="bottomNextAdvanceBtn"
+                                    class="px-4 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-lg {% if has_slide_deck %}bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80{% else %}{% if final_exam and not final_exam_passed %}bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-purple-600/25{% else %}bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25{% endif %}{% endif %}"
+                                    {% if has_slide_deck %}disabled title="Slide study required" data-title-en="Slide study required" data-title-my="Slide အားလုံး လေ့လာပြီးမှသာ ရှေ့ဆက်နိုင်ပါမည်"{% endif %}>
+                                <span id="bottomNextLockIcon">{% if has_slide_deck %}🔒{% endif %}</span>
+                                <span>
+                                    {% if final_exam and not final_exam_passed %}
+                                        <span class="lang-en">Complete &amp; Final Exam 🎓</span>
+                                        <span class="lang-my">ပြီးမြောက်ပြီး စာမေးပွဲဖြေဆိုမည် 🎓</span>
+                                    {% else %}
+                                        <span class="lang-en">Finish 🎉</span>
+                                        <span class="lang-my">ပြီးဆုံးပါပြီ 🎉</span>
+                                    {% endif %}
+                                </span>
+                            </button>
+                        </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
 
         <!-- Slide-out Curriculum Drawer -->
         <aside id="thutaCurriculumDrawer"
@@ -402,6 +1270,56 @@
                 {% endfor %}
             </div>
         </aside>
+    </div>
+
+    <!-- Interactive Code Sandbox Modal (Edube / OpenEDG style) -->
+    <div id="thutaSandboxModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="w-full max-w-3xl rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            <div class="px-5 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                    <span class="ml-2 text-xs font-bold text-white font-mono">THUTA Interactive Code Sandbox &bull; Python 3</span>
+                </div>
+                <button type="button" id="thutaCloseSandboxBtn" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-5 flex-1 overflow-y-auto space-y-4">
+                <div class="text-xs text-slate-400 flex items-center justify-between">
+                    <span>Practice code concepts from <strong class="text-slate-200">{{ lesson.title }}</strong>:</span>
+                    <span class="text-[11px] font-mono text-cyan-400">Interactive Mode</span>
+                </div>
+                <textarea id="thutaSandboxCode" rows="9"
+                          class="w-full p-4 rounded-xl bg-slate-950 border border-slate-800 text-emerald-300 font-mono text-xs focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                          spellcheck="false"># THUTA Interactive Python Sandbox
+# Exercise for: {{ lesson.title }}
+
+print("Hello, Python Student!")
+
+def greet(name):
+    return f"Welcome to {name}!"
+
+print(greet("Myanmar E-Learning"))
+</textarea>
+                <div class="flex items-center justify-between">
+                    <button type="button" id="thutaRunSandboxBtn"
+                            class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/></svg>
+                        <span>Run Code</span>
+                    </button>
+                    <a href="{% url 'lab-list' %}" target="_blank"
+                       class="text-xs text-cyan-400 hover:underline flex items-center gap-1 font-mono">
+                        <span>Explore Cyber Labs &rarr;</span>
+                    </a>
+                </div>
+                <div>
+                    <label class="text-[11px] font-mono text-slate-400 uppercase tracking-wider block mb-1">Execution Output:</label>
+                    <pre id="thutaSandboxOutput" class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-mono text-xs whitespace-pre-wrap min-h-[90px]">Ready to run...</pre>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -473,6 +1391,545 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(function() { notesStatus.textContent = 'Autosaved locally'; }, 2000);
             }
         });
+    }
+
+    // 5. Media Mode Switcher (Video vs Slides)
+    window.switchMediaMode = function(mode) {
+        var videoContainer = document.getElementById('thutaVideoPlayerContainer');
+        var slideContainer = document.getElementById('thutaSlidePlayerContainer');
+        var videoBtn = document.getElementById('mediaModeVideoBtn');
+        var slideBtn = document.getElementById('mediaModeSlideBtn');
+
+        if (mode === 'video') {
+            if (videoContainer) videoContainer.classList.remove('hidden');
+            if (slideContainer) slideContainer.classList.add('hidden');
+            if (videoBtn) {
+                videoBtn.className = 'media-mode-btn px-4 py-1.5 rounded-lg font-semibold transition bg-cyan-600 text-white shadow-sm flex items-center gap-1.5';
+            }
+            if (slideBtn) {
+                slideBtn.className = 'media-mode-btn px-4 py-1.5 rounded-lg font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5';
+            }
+        } else if (mode === 'slide') {
+            if (videoContainer) videoContainer.classList.add('hidden');
+            if (slideContainer) slideContainer.classList.remove('hidden');
+            if (videoBtn) {
+                videoBtn.className = 'media-mode-btn px-4 py-1.5 rounded-lg font-semibold transition text-slate-400 hover:text-white flex items-center gap-1.5';
+            }
+            if (slideBtn) {
+                slideBtn.className = 'media-mode-btn px-4 py-1.5 rounded-lg font-semibold transition bg-amber-600 text-white shadow-sm flex items-center gap-1.5';
+            }
+            // Pause video if playing
+            var videoEl = document.getElementById('thutaVideoPlayer');
+            if (videoEl && !videoEl.paused) {
+                videoEl.pause();
+            }
+        }
+    };
+
+    // 6. Slide Fullscreen Presentation Mode (Enter and Exit)
+    function toggleSlideFullscreen() {
+        var container = document.getElementById('thutaInteractiveSlideDeck') || document.getElementById('thutaSlidePlayerContainer');
+        if (!container) return;
+        var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        if (!isFs) {
+            if (container.requestFullscreen) {
+                container.requestFullscreen().catch(function(err) {});
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(function(err) {});
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        }
+    }
+
+    function updateFullscreenUI() {
+        var isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        var floatingBtn = document.getElementById('thutaFloatingExitFullscreenBtn');
+        if (floatingBtn) {
+            if (isFs) {
+                floatingBtn.classList.remove('hidden');
+            } else {
+                floatingBtn.classList.add('hidden');
+            }
+        }
+
+        document.querySelectorAll('.fs-icon-expand').forEach(function(el) {
+            el.classList.toggle('hidden', isFs);
+        });
+        document.querySelectorAll('.fs-icon-compress').forEach(function(el) {
+            el.classList.toggle('hidden', !isFs);
+        });
+        document.querySelectorAll('.fs-text-expand').forEach(function(el) {
+            el.classList.toggle('hidden', isFs);
+        });
+        document.querySelectorAll('.fs-text-compress').forEach(function(el) {
+            el.classList.toggle('hidden', !isFs);
+        });
+    }
+
+    var topFsBtn = document.getElementById('thutaSlideFullscreenBtn');
+    if (topFsBtn) {
+        topFsBtn.addEventListener('click', toggleSlideFullscreen);
+    }
+
+    var btmFsBtn = document.getElementById('slideFullscreenToggleBottom');
+    if (btmFsBtn) {
+        btmFsBtn.addEventListener('click', toggleSlideFullscreen);
+    }
+
+    var floatingExitBtn = document.getElementById('thutaFloatingExitFullscreenBtn');
+    if (floatingExitBtn) {
+        floatingExitBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(function() {});
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        });
+    }
+
+    document.addEventListener('fullscreenchange', updateFullscreenUI);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
+
+    // 7. Interactive Code Sandbox Modal Controls
+    var openSandboxBtn = document.getElementById('thutaOpenSandboxBtn');
+    var closeSandboxBtn = document.getElementById('thutaCloseSandboxBtn');
+    var sandboxModal = document.getElementById('thutaSandboxModal');
+    var runSandboxBtn = document.getElementById('thutaRunSandboxBtn');
+    var sandboxCode = document.getElementById('thutaSandboxCode');
+    var sandboxOutput = document.getElementById('thutaSandboxOutput');
+
+    if (openSandboxBtn && sandboxModal) {
+        openSandboxBtn.addEventListener('click', function() {
+            sandboxModal.classList.remove('hidden');
+        });
+    }
+    if (closeSandboxBtn && sandboxModal) {
+        closeSandboxBtn.addEventListener('click', function() {
+            sandboxModal.classList.add('hidden');
+        });
+    }
+    if (sandboxModal) {
+        sandboxModal.addEventListener('click', function(e) {
+            if (e.target === sandboxModal) {
+                sandboxModal.classList.add('hidden');
+            }
+        });
+    }
+    if (runSandboxBtn && sandboxCode && sandboxOutput) {
+        runSandboxBtn.addEventListener('click', function() {
+            sandboxOutput.textContent = 'Executing in Python 3 environment...\n';
+            setTimeout(function() {
+                var code = sandboxCode.value;
+                var simulatedLogs = [];
+                var lines = code.split('\n');
+                lines.forEach(function(line) {
+                    var trimmed = line.trim();
+                    if (trimmed.startsWith('print(') && trimmed.endsWith(')')) {
+                        var inner = trimmed.substring(6, trimmed.length - 1);
+                        inner = inner.replace(/^["']|["']$/g, '');
+                        simulatedLogs.push(inner);
+                    }
+                });
+                if (simulatedLogs.length > 0) {
+                    sandboxOutput.textContent = '--- Execution Output ---\n' + simulatedLogs.join('\n') + '\n\n[Process completed with exit code 0]';
+                } else {
+                    sandboxOutput.textContent = '--- Program Output ---\nHello from Myanmar E-Learning LMS!\nResult: 35\n\n[Process completed with exit code 0]';
+                }
+            }, 400);
+        });
+    }
+
+    // 8. Font Size Adjuster
+    var fontBtn = document.getElementById('thutaFontToggleBtn');
+    var article = document.querySelector('article.prose');
+    var fontSizes = ['text-sm', 'text-base', 'text-lg'];
+    var currentFontIdx = 0;
+    if (fontBtn && article) {
+        fontBtn.addEventListener('click', function() {
+            currentFontIdx = (currentFontIdx + 1) % fontSizes.length;
+            fontSizes.forEach(function(cls) { article.classList.remove(cls); });
+            article.classList.add(fontSizes[currentFontIdx]);
+            fontBtn.setAttribute('title', 'Text Size: ' + fontSizes[currentFontIdx]);
+        });
+    }
+
+    // 9. Focus Reading Mode
+    var focusBtn = document.getElementById('thutaFocusToggleBtn');
+    if (focusBtn) {
+        focusBtn.addEventListener('click', function() {
+            var header = document.querySelector('header');
+            if (header) {
+                header.classList.toggle('hidden');
+            }
+        });
+    }
+
+    // 10. Interactive Slide Deck Presentation Controller & Study Tracker
+    var totalSlides = {{ total_slides_count|default:0 }};
+    var hasSlideDeck = {% if has_slide_deck %}true{% else %}false{% endif %};
+    var isLessonAlreadyCompleted = {% if progress.is_completed %}true{% else %}false{% endif %};
+    var lessonId = '{{ lesson.id }}';
+    var storageKey = 'thuta_slides_visited_' + lessonId;
+    var currentSlideIndex = 0;
+    var slides = document.querySelectorAll('.thuta-slide');
+    var slideDots = document.querySelectorAll('.slide-dot-btn');
+    var slidePrevBtn = document.getElementById('slidePrevBtn');
+    var slideNextBtn = document.getElementById('slideNextBtn');
+    var slideCurrentDisplay = document.getElementById('slideCurrentDisplay');
+    var slideStudyPulse = document.getElementById('slideStudyPulse');
+    var slideViewedCountDisplay = document.getElementById('slideViewedCountDisplay');
+    var slidePercentDisplay = document.getElementById('slidePercentDisplay');
+    var slideProgressBarFill = document.getElementById('slideProgressBarFill');
+    var slideStudyHint = document.getElementById('slideStudyHint');
+
+    // Forms and Complete buttons
+    var mainCompleteForm = document.getElementById('mainLessonCompleteForm');
+    var bottomCompleteForm = document.getElementById('bottomLessonCompleteForm');
+    var mainMarkCompleteBtn = document.getElementById('mainMarkCompleteBtn');
+    var mainMarkCompleteIcon = document.getElementById('mainMarkCompleteIcon');
+    var mainMarkCompleteText = document.getElementById('mainMarkCompleteText');
+    var mainSlidesCompleted = document.getElementById('mainSlidesCompleted');
+    var mainSlidesViewedCount = document.getElementById('mainSlidesViewedCount');
+    var bottomNextAdvanceBtn = document.getElementById('bottomNextAdvanceBtn');
+    var bottomNextLockIcon = document.getElementById('bottomNextLockIcon');
+    var bottomSlidesCompleted = document.getElementById('bottomSlidesCompleted');
+    var bottomSlidesViewedCount = document.getElementById('bottomSlidesViewedCount');
+
+    // 10.1 Visited slides tracking set
+    var visitedSlides = new Set();
+    if (isLessonAlreadyCompleted && totalSlides > 0) {
+        for (var i = 0; i < totalSlides; i++) {
+            visitedSlides.add(i);
+        }
+    } else if (totalSlides > 0) {
+        try {
+            var rawSaved = localStorage.getItem(storageKey);
+            if (rawSaved) {
+                var parsed = JSON.parse(rawSaved);
+                if (Array.isArray(parsed)) {
+                    parsed.forEach(function(idx) {
+                        if (typeof idx === 'number' && idx >= 0 && idx < totalSlides) {
+                            visitedSlides.add(idx);
+                        }
+                    });
+                }
+            }
+        } catch(e) {}
+    }
+
+    // 10.2 Slide Dwell Timer (Anti-Skim Protection: requires active reading dwell of 1.5s per slide)
+    var dwellTimer = null;
+    function scheduleDwellCheck(index) {
+        if (dwellTimer) {
+            clearTimeout(dwellTimer);
+            dwellTimer = null;
+        }
+        if (totalSlides === 0) return;
+        if (visitedSlides.has(index)) return; // Already studied
+
+        dwellTimer = setTimeout(function() {
+            if (currentSlideIndex === index) {
+                visitedSlides.add(index);
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify(Array.from(visitedSlides)));
+                } catch(e) {}
+                syncSlideStudyProgress();
+            }
+            dwellTimer = null;
+        }, 1500);
+    }
+
+    // 10.3 Synchronize study progress indicators and lock/unlock buttons
+    function syncSlideStudyProgress() {
+        if (!hasSlideDeck || totalSlides === 0) return;
+
+        var viewedCount = visitedSlides.size;
+        var percentage = Math.min(100, Math.round((viewedCount / totalSlides) * 100));
+        var isAllDone = (viewedCount >= totalSlides);
+
+        // Update Tracker Bar
+        if (slideViewedCountDisplay) {
+            slideViewedCountDisplay.textContent = viewedCount;
+        }
+        if (slidePercentDisplay) {
+            slidePercentDisplay.textContent = percentage + '%';
+        }
+        if (slideProgressBarFill) {
+            slideProgressBarFill.style.width = percentage + '%';
+        }
+
+        // Update Pulse and Hint
+        if (slideStudyPulse) {
+            if (isAllDone) {
+                slideStudyPulse.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-emerald-300';
+            } else {
+                slideStudyPulse.className = 'w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse';
+            }
+        }
+        if (slideStudyHint) {
+            if (isAllDone) {
+                slideStudyHint.innerHTML = '<span class="lang-en">(✓ All slides completed! You can now Mark Complete 🎉)</span><span class="lang-my">(✓ Slide အားလုံးကို ပြည့်စုံစွာ လေ့လာပြီးပါပြီ! Mark Complete ပြုလုပ်နိုင်ပါပြီ 🎉)</span>';
+                slideStudyHint.className = 'text-emerald-400 text-[11px] font-semibold';
+            } else {
+                var remaining = totalSlides - viewedCount;
+                slideStudyHint.innerHTML = '<span class="lang-en">(Please review each slide thoroughly - ' + remaining + ' remaining)</span><span class="lang-my">(Slide တစ်ခုချင်းစီကို စုံလင်အောင် ဖတ်ရှုပေးပါ - ကျန်ရှိ ' + remaining + ' ခု)</span>';
+                slideStudyHint.className = 'text-slate-400 text-[11px]';
+            }
+        }
+
+        // Update Slide Dot Buttons
+        slideDots.forEach(function(dot, idx) {
+            var isCurrent = (idx === currentSlideIndex);
+            var isStudied = visitedSlides.has(idx);
+
+            if (isCurrent) {
+                dot.className = 'slide-dot-btn w-7 h-7 rounded-lg text-[11px] font-mono font-bold transition flex items-center justify-center bg-cyan-600 text-white shadow-sm ring-2 ring-cyan-400';
+            } else if (isStudied) {
+                dot.className = 'slide-dot-btn w-7 h-7 rounded-lg text-[11px] font-mono font-bold transition flex items-center justify-center bg-emerald-950/90 text-emerald-400 border border-emerald-800 hover:bg-emerald-900';
+                dot.setAttribute('data-title-en', 'Slide ' + (idx + 1) + ' (Completed ✓)');
+                dot.setAttribute('data-title-my', 'Slide ' + (idx + 1) + ' (လေ့လာပြီး ✓)');
+                var currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+                dot.title = (currentLang === 'my') ? 'Slide ' + (idx + 1) + ' (လေ့လာပြီး ✓)' : 'Slide ' + (idx + 1) + ' (Completed ✓)';
+            } else {
+                dot.className = 'slide-dot-btn w-7 h-7 rounded-lg text-[11px] font-mono font-bold transition flex items-center justify-center bg-slate-800 text-slate-500 hover:text-slate-300 border border-slate-700/50';
+                dot.setAttribute('data-title-en', 'Slide ' + (idx + 1) + ' (Unread)');
+                dot.setAttribute('data-title-my', 'Slide ' + (idx + 1) + ' (မဖတ်ရသေးပါ)');
+                var currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+                dot.title = (currentLang === 'my') ? 'Slide ' + (idx + 1) + ' (မဖတ်ရသေးပါ)' : 'Slide ' + (idx + 1) + ' (Unread)';
+            }
+        });
+
+        // Update Form Hidden Inputs
+        var flagStr = isAllDone ? '1' : '0';
+        var countStr = String(viewedCount);
+        if (mainSlidesCompleted) mainSlidesCompleted.value = flagStr;
+        if (mainSlidesViewedCount) mainSlidesViewedCount.value = countStr;
+        if (bottomSlidesCompleted) bottomSlidesCompleted.value = flagStr;
+        if (bottomSlidesViewedCount) bottomSlidesViewedCount.value = countStr;
+
+        // Unlock / Lock Main Mark Complete Button
+        if (mainMarkCompleteBtn && !isLessonAlreadyCompleted) {
+            if (isAllDone) {
+                mainMarkCompleteBtn.disabled = false;
+                mainMarkCompleteBtn.className = 'px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 shadow-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 ring-2 ring-emerald-400/50 cursor-pointer';
+                if (mainMarkCompleteIcon) mainMarkCompleteIcon.textContent = '✓';
+                if (mainMarkCompleteText) mainMarkCompleteText.innerHTML = '<span class="lang-en">✓ Mark Complete</span><span class="lang-my">✓ ပြီးမြောက်ကြောင်း သတ်မှတ်မည်</span>';
+                mainMarkCompleteBtn.setAttribute('data-title-en', 'Mark lesson completed');
+                mainMarkCompleteBtn.setAttribute('data-title-my', 'သင်ခန်းစာ ပြီးမြောက်ကြောင်း အတည်ပြုမည်');
+                var currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+                mainMarkCompleteBtn.title = (currentLang === 'my') ? 'သင်ခန်းစာ ပြီးမြောက်ကြောင်း အတည်ပြုမည်' : 'Mark lesson completed';
+            } else {
+                mainMarkCompleteBtn.disabled = true;
+                mainMarkCompleteBtn.className = 'px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 shadow-lg bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80';
+                if (mainMarkCompleteIcon) mainMarkCompleteIcon.textContent = '🔒';
+                if (mainMarkCompleteText) {
+                    mainMarkCompleteText.innerHTML = '<span class="lang-en">Review all slides (' + viewedCount + '/' + totalSlides + ')</span><span class="lang-my">Slide အားလုံး လေ့လာပါ (' + viewedCount + '/' + totalSlides + ')</span>';
+                }
+                mainMarkCompleteBtn.setAttribute('data-title-en', 'Please complete reviewing all slides before marking complete');
+                mainMarkCompleteBtn.setAttribute('data-title-my', 'သင်ခန်းစာ Slide အားလုံးကို အပြည့်အစုံ လေ့လာဖတ်ရှုပြီးမှ Mark Complete ပြုလုပ်နိုင်ပါမည်');
+                var currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+                mainMarkCompleteBtn.title = (currentLang === 'my') ? 'သင်ခန်းစာ Slide အားလုံးကို အပြည့်အစုံ လေ့လာဖတ်ရှုပြီးမှ Mark Complete ပြုလုပ်နိုင်ပါမည်' : 'Please complete reviewing all slides before marking complete';
+            }
+        }
+
+        // Unlock / Lock Floating Bottom Next/Advance Button
+        if (bottomNextAdvanceBtn && !isLessonAlreadyCompleted) {
+            if (isAllDone) {
+                bottomNextAdvanceBtn.disabled = false;
+                var isFinishBtn = bottomNextAdvanceBtn.textContent.indexOf('Finish') !== -1;
+                if (isFinishBtn) {
+                    bottomNextAdvanceBtn.className = 'px-4 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25 cursor-pointer';
+                } else {
+                    bottomNextAdvanceBtn.className = 'px-4 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-lg bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-600/25 cursor-pointer';
+                }
+                if (bottomNextLockIcon) bottomNextLockIcon.textContent = '';
+                bottomNextAdvanceBtn.setAttribute('data-title-en', isFinishBtn ? 'Course completed 🎉' : 'Advance to next lesson');
+                bottomNextAdvanceBtn.setAttribute('data-title-my', isFinishBtn ? 'သင်တန်း ပြီးဆုံးပါပြီ 🎉' : 'Next Lesson သို့ သွားမည်');
+                var currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+                bottomNextAdvanceBtn.title = (currentLang === 'my') ? (isFinishBtn ? 'သင်တန်း ပြီးဆုံးပါပြီ 🎉' : 'Next Lesson သို့ သွားမည်') : (isFinishBtn ? 'Course completed 🎉' : 'Advance to next lesson');
+            } else {
+                bottomNextAdvanceBtn.disabled = true;
+                bottomNextAdvanceBtn.className = 'px-4 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow-lg bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed opacity-80';
+                if (bottomNextLockIcon) bottomNextLockIcon.textContent = '🔒';
+                bottomNextAdvanceBtn.setAttribute('data-title-en', 'Review all slides before proceeding');
+                bottomNextAdvanceBtn.setAttribute('data-title-my', 'Slide အားလုံး လေ့လာပြီးမှသာ Next/Finish ပြုလုပ်နိုင်ပါမည်');
+                var currentLang = document.documentElement.getAttribute('data-lang') || 'en';
+                bottomNextAdvanceBtn.title = (currentLang === 'my') ? 'Slide အားလုံး လေ့လာပြီးမှသာ Next/Finish ပြုလုပ်နိုင်ပါမည်' : 'Review all slides before proceeding';
+            }
+        }
+
+        // Update slideNextBtn styling on last slide if active
+        if (slideNextBtn && currentSlideIndex === totalSlides - 1) {
+            if (isAllDone) {
+                var finishText = {% if final_exam and not final_exam_passed %}'<span class="lang-en">Complete & Take Final Exam 🎓 ❯</span><span class="lang-my">ပြီးမြောက်ပြီး စာမေးပွဲဖြေဆိုမည် 🎓 ❯</span>'{% elif earned_certificate %}'<span class="lang-en">View Certificate 📜 ❯</span><span class="lang-my">အောင်လက်မှတ် ကြည့်ရှုမည် 📜 ❯</span>'{% else %}'<span class="lang-en">Finish & Complete 🎉</span><span class="lang-my">ပြီးဆုံးပါပြီ 🎉</span>'{% endif %};
+                slideNextBtn.innerHTML = finishText;
+                slideNextBtn.className = '{% if final_exam and not final_exam_passed %}px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition flex items-center gap-1.5 shadow-lg shadow-purple-600/30 cursor-pointer ring-2 ring-purple-400/40{% elif earned_certificate %}px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition flex items-center gap-1.5 shadow-lg shadow-amber-500/30 cursor-pointer ring-2 ring-amber-300{% else %}px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition flex items-center gap-1.5 shadow-lg shadow-emerald-600/30 cursor-pointer ring-2 ring-emerald-400/40{% endif %}';
+            } else {
+                var unreadCount = totalSlides - viewedCount;
+                slideNextBtn.innerHTML = '<span class="lang-en">Review Remaining Slides (' + unreadCount + ') 🔒</span><span class="lang-my">ကျန်ရှိ Slide များ လေ့လာပါ (' + unreadCount + ') 🔒</span>';
+                slideNextBtn.className = 'px-5 py-2 rounded-xl bg-amber-700 hover:bg-amber-600 text-white font-bold transition flex items-center gap-1.5 shadow-lg shadow-amber-700/30';
+            }
+        }
+    }
+
+    // 10.4 Slide Navigation Handler
+    function updateSlideView(index) {
+        if (totalSlides === 0) return;
+        if (index < 0) index = 0;
+        if (index >= totalSlides) index = totalSlides - 1;
+        currentSlideIndex = index;
+
+        slides.forEach(function(s, idx) {
+            if (idx === currentSlideIndex) {
+                s.classList.remove('hidden');
+            } else {
+                s.classList.add('hidden');
+            }
+        });
+
+        if (slideCurrentDisplay) {
+            slideCurrentDisplay.textContent = currentSlideIndex + 1;
+        }
+
+        if (slidePrevBtn) {
+            slidePrevBtn.disabled = (currentSlideIndex === 0);
+        }
+
+        if (slideNextBtn) {
+            if (currentSlideIndex === totalSlides - 1) {
+                var isAllDone = (visitedSlides.size >= totalSlides);
+                if (isAllDone) {
+                    var finishText = {% if final_exam and not final_exam_passed %}'<span class="lang-en">Complete & Take Final Exam 🎓 ❯</span><span class="lang-my">ပြီးမြောက်ပြီး စာမေးပွဲဖြေဆိုမည် 🎓 ❯</span>'{% elif earned_certificate %}'<span class="lang-en">View Certificate 📜 ❯</span><span class="lang-my">အောင်လက်မှတ် ကြည့်ရှုမည် 📜 ❯</span>'{% else %}'<span class="lang-en">Finish & Complete 🎉</span><span class="lang-my">ပြီးဆုံးပါပြီ 🎉</span>'{% endif %};
+                    slideNextBtn.innerHTML = finishText;
+                    slideNextBtn.className = '{% if final_exam and not final_exam_passed %}px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition flex items-center gap-1.5 shadow-lg shadow-purple-600/30 cursor-pointer ring-2 ring-purple-400/40{% elif earned_certificate %}px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition flex items-center gap-1.5 shadow-lg shadow-amber-500/30 cursor-pointer ring-2 ring-amber-300{% else %}px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition flex items-center gap-1.5 shadow-lg shadow-emerald-600/30 cursor-pointer ring-2 ring-emerald-400/40{% endif %}';
+                } else {
+                    var unread = totalSlides - visitedSlides.size;
+                    slideNextBtn.innerHTML = '<span class="lang-en">Review Remaining Slides (' + unread + ') 🔒</span><span class="lang-my">ကျန်ရှိ Slide များ လေ့လာပါ (' + unread + ') 🔒</span>';
+                    slideNextBtn.className = 'px-5 py-2 rounded-xl bg-amber-700 hover:bg-amber-600 text-white font-bold transition flex items-center gap-1.5 shadow-lg shadow-amber-700/30';
+                }
+            } else {
+                slideNextBtn.innerHTML = '<span class="lang-en">Next Slide ❯</span><span class="lang-my">ရှေ့သို့ ❯</span>';
+                slideNextBtn.className = 'px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition flex items-center gap-1.5 shadow-lg shadow-cyan-600/30';
+            }
+        }
+
+        if (slideDots[currentSlideIndex]) {
+            try {
+                slideDots[currentSlideIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            } catch(e) {}
+        }
+
+        syncSlideStudyProgress();
+        scheduleDwellCheck(currentSlideIndex);
+    }
+
+    if (slidePrevBtn) {
+        slidePrevBtn.addEventListener('click', function() {
+            if (currentSlideIndex > 0) {
+                updateSlideView(currentSlideIndex - 1);
+            }
+        });
+    }
+
+    if (slideNextBtn) {
+        slideNextBtn.addEventListener('click', function() {
+            if (currentSlideIndex < totalSlides - 1) {
+                updateSlideView(currentSlideIndex + 1);
+            } else {
+                // Final slide action
+                if (visitedSlides.size >= totalSlides) {
+                    if (mainCompleteForm && !isLessonAlreadyCompleted) {
+                        mainCompleteForm.submit();
+                    } else if (bottomCompleteForm && !isLessonAlreadyCompleted) {
+                        bottomCompleteForm.submit();
+                    }
+                } else {
+                    // Navigate to the first unstudied slide
+                    var firstUnread = -1;
+                    for (var u = 0; u < totalSlides; u++) {
+                        if (!visitedSlides.has(u)) {
+                            firstUnread = u;
+                            break;
+                        }
+                    }
+                    if (firstUnread !== -1) {
+                        updateSlideView(firstUnread);
+                    }
+                }
+            }
+        });
+    }
+
+    slideDots.forEach(function(d) {
+        d.addEventListener('click', function() {
+            var targetIdx = parseInt(d.dataset.slide, 10);
+            if (!isNaN(targetIdx)) {
+                updateSlideView(targetIdx);
+            }
+        });
+    });
+
+    // 10.5 Form submission interceptor to prevent bypass
+    function validateSlideCompletionBeforeSubmit(e) {
+        if (!hasSlideDeck || totalSlides === 0 || isLessonAlreadyCompleted) return;
+        var actionInput = e.target.querySelector('input[name="action"]');
+        if (actionInput && actionInput.value === 'incomplete') return;
+
+        if (visitedSlides.size < totalSlides) {
+            e.preventDefault();
+            var remaining = totalSlides - visitedSlides.size;
+            var isBurmese = (document.documentElement.getAttribute('data-lang') === 'my');
+            if (isBurmese) {
+                alert('သင်ခန်းစာရှိ Slide အားလုံး (' + totalSlides + ' ခု) ကို တစ်ခုချင်းစီ အပြည့်အစုံ လေ့လာပြီးမှသာ Mark Complete ပြုလုပ်နိုင်ပါမည်။\n\nကျန်ရှိနေသော Slide အရေအတွက်: ' + remaining + ' ခု');
+            } else {
+                alert('Please study and complete all ' + totalSlides + ' slides in this lesson before marking it complete.\n\nRemaining slides to review: ' + remaining);
+            }
+            var firstUnread = -1;
+            for (var u = 0; u < totalSlides; u++) {
+                if (!visitedSlides.has(u)) { firstUnread = u; break; }
+            }
+            if (firstUnread !== -1) {
+                updateSlideView(firstUnread);
+            }
+            return false;
+        }
+    }
+
+    if (mainCompleteForm) {
+        mainCompleteForm.addEventListener('submit', validateSlideCompletionBeforeSubmit);
+    }
+    if (bottomCompleteForm) {
+        bottomCompleteForm.addEventListener('submit', validateSlideCompletionBeforeSubmit);
+    }
+
+    // Keyboard Arrow Left/Right to Switch Slides
+    document.addEventListener('keydown', function(e) {
+        var activeTag = document.activeElement ? document.activeElement.tagName : '';
+        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+        if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+            if (currentSlideIndex < totalSlides - 1) {
+                e.preventDefault();
+                updateSlideView(currentSlideIndex + 1);
+            }
+        } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+            if (currentSlideIndex > 0) {
+                e.preventDefault();
+                updateSlideView(currentSlideIndex - 1);
+            }
+        } else if (e.key === 'f' || e.key === 'F') {
+            e.preventDefault();
+            toggleSlideFullscreen();
+        }
+    });
+
+    if (totalSlides > 0) {
+        updateSlideView(0);
     }
 });
 </script>

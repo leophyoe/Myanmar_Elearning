@@ -16,7 +16,9 @@ from .views import (
     SubmissionListView, SubmissionGradeView,
     LiveSessionListView, LiveSessionCreateView,
     LiveSessionUpdateView, LiveSessionDeleteView, LiveSessionDetailView,
-    LiveSessionAttendanceView,
+    LiveSessionJoinView, LiveSessionAttendanceView,
+    LiveSessionSyncAttendanceView, LiveSessionRecordingSyncView,
+    LiveSessionWebhookView,
     CategoryListAPIView, CourseListAPIView, CourseDetailAPIView,
 )
 from apps.billing.views import CheckoutView
@@ -68,7 +70,12 @@ urlpatterns = [
 
     # Live sessions
     path('live/<uuid:session_id>/', LiveSessionDetailView.as_view(), name='live-session-detail'),
+    path('live/<uuid:session_id>/join/', LiveSessionJoinView.as_view(), name='live-session-join'),
     path('live/<uuid:session_id>/attendance/', LiveSessionAttendanceView.as_view(), name='live-session-attendance'),
+    path('live/<uuid:session_id>/sync-attendance/', LiveSessionSyncAttendanceView.as_view(), name='live-session-sync-attendance'),
+    path('live/<uuid:session_id>/recording-sync/', LiveSessionRecordingSyncView.as_view(), name='live-session-recording-sync'),
+    path('live/webhook/<str:provider>/', LiveSessionWebhookView.as_view(), name='live-session-webhook'),
+    path('live/webhook/', LiveSessionWebhookView.as_view(), {'provider': 'bigbluebutton'}, name='live-session-webhook-default'),
     path('manage/live/', LiveSessionListView.as_view(), name='live-session-list'),
     path('manage/live/new/', LiveSessionCreateView.as_view(), name='live-session-create'),
     path('manage/live/<uuid:session_id>/edit/', LiveSessionUpdateView.as_view(), name='live-session-edit'),

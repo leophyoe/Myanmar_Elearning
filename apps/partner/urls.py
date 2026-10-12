@@ -10,8 +10,8 @@ from .views import (
     PartnerCohortExportCSVView, PartnerCohortEnrollStudentView, PartnerEnrollmentExportCSVView,
     PartnerInstitutionSettingsView, PartnerCohortListView, PartnerCohortCreateView,
     PartnerCohortEditView, PartnerLearnerListView, PartnerLearnerRemoveView,
-    PartnerInstructorRemoveView, PartnerCertificateListView, PartnerReportsView,
-    PartnerReportsLearnersCSVView,
+    PartnerInstructorRemoveView, PartnerCertificateListView, PartnerCertificateExportCSVView,
+    PartnerReportsView, PartnerReportsLearnersCSVView,
 )
 
 urlpatterns = [
@@ -40,6 +40,7 @@ urlpatterns = [
     path('learners/', PartnerLearnerListView.as_view(), name='partner-learners'),
     path('learners/<uuid:pk>/remove/', PartnerLearnerRemoveView.as_view(), name='partner-learner-remove'),
     path('certificates/', PartnerCertificateListView.as_view(), name='partner-certificates'),
+    path('certificates/export/csv/', PartnerCertificateExportCSVView.as_view(), name='partner-certificate-export-csv'),
     path('reports/', PartnerReportsView.as_view(), name='partner-reports'),
     path('reports/learners/csv/', PartnerReportsLearnersCSVView.as_view(), name='partner-reports-learners-csv'),
 

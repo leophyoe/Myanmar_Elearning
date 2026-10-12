@@ -3,99 +3,184 @@
 {% block title %}{% if object %}Edit Payment Method: {{ object.name }}{% else %}Add Payment Method{% endif %} - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <!-- Breadcrumb & Top Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-[#26364B]">
         <div>
-            <a href="{% url 'billing:method-list' %}" class="text-xs text-cyan-400 hover:underline flex items-center gap-1 mb-2">
-                &larr; Back to Payment Methods
-            </a>
-            <h1 class="text-2xl font-bold text-white">
-                {% if object %}Edit Payment Method: {{ object.name }}{% else %}Add Payment Method{% endif %}
+            <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-2">
+                <a href="{% url 'billing:payment-settings' %}" class="hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
+                    &larr; <span class="lang-en">Payment Settings</span><span class="lang-my">ငွေပေးချေမှု ဆက်တင်များ</span>
+                </a>
+                <span>/</span>
+                <a href="{% url 'billing:method-list' %}" class="hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
+                    <span class="lang-en">All Methods</span><span class="lang-my">နည်းလမ်းအားလုံး</span>
+                </a>
+            </div>
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <span>{% if object %}💳 Edit: {{ object.name }}{% else %}➕ Add Payment Method{% endif %}</span>
             </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <span class="lang-en">Configure MMQR, Visa, Mastercard, MPU, Mobile Wallets, or Bank Transfer channels.</span>
+                <span class="lang-my">MMQR၊ Visa၊ Mastercard၊ MPU၊ မိုဘိုင်းပိုက်ဆံအိတ် သို့မဟုတ် ဘဏ်အကောင့်များကို သတ်မှတ်ပါ။</span>
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{% url 'billing:payment-settings' %}"
+               class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#162235] text-xs font-semibold transition">
+                <span class="lang-en">National MMQR Hub</span><span class="lang-my">MMQR ဆက်တင်များ</span>
+            </a>
         </div>
     </div>
 
-    <form method="POST" enctype="multipart/form-data" class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-6 text-sm">
+    <!-- Instructions / Channel Types Banner -->
+    <div class="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-xs text-slate-700 dark:text-slate-300 space-y-2">
+        <div class="font-bold text-[#0284C7] dark:text-[#38BDF8] flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span><span class="lang-en">Channel Configuration Guide</span><span class="lang-my">ငွေပေးချေမှု လမ်းကြောင်း သတ်မှတ်ခြင်း လမ်းညွှန်</span></span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px] text-slate-600 dark:text-slate-400 pt-1">
+            <div class="p-2.5 rounded-xl bg-white dark:bg-[#111C2E] border border-sky-100 dark:border-[#26364B]">
+                <strong class="text-slate-900 dark:text-white block mb-0.5">💳 Cards (Visa / Master / MPU)</strong>
+                <span>Set Type to <strong>Card Payment</strong>. Fill Merchant ID, Terminal Ref, or instructions.</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-white dark:bg-[#111C2E] border border-sky-100 dark:border-[#26364B]">
+                <strong class="text-slate-900 dark:text-white block mb-0.5">🔳 MMQR / Dynamic QR</strong>
+                <span>Set Type to <strong>QR Code</strong>. Upload official MMQR image asset and merchant name.</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-white dark:bg-[#111C2E] border border-sky-100 dark:border-[#26364B]">
+                <strong class="text-slate-900 dark:text-white block mb-0.5">📱 Wallets &amp; 🏦 Banks</strong>
+                <span>Set Type to <strong>Wallet</strong> (KBZPay/Wave) or <strong>Bank Transfer</strong> with phone/account.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Configuration Form -->
+    <form method="POST" enctype="multipart/form-data" class="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-xl space-y-6 text-sm">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-        <div class="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs">
+        <div class="p-4 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-xs">
             {{ form.non_field_errors }}
         </div>
         {% endif %}
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Method Name *</label>
+                <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-bold">
+                    <span class="lang-en">Method Name *</span><span class="lang-my">နည်းလမ်း အမည် *</span>
+                </label>
                 {{ form.name }}
-                {% for error in form.name.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                <p class="text-[11px] text-slate-400 mt-1">e.g. Visa / Mastercard, MPU Card, MMQR, KBZPay</p>
+                {% for error in form.name.errors %}<p class="text-[11px] text-red-500 mt-1">{{ error }}</p>{% endfor %}
             </div>
             <div>
-                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Code (Identifier) *</label>
+                <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-bold">
+                    <span class="lang-en">Code Identifier *</span><span class="lang-my">သတ်မှတ် ကုဒ် *</span>
+                </label>
                 {{ form.code }}
-                {% for error in form.code.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                <p class="text-[11px] text-slate-400 mt-1">Unique slug e.g. <span class="font-mono text-[#0284C7] dark:text-[#38BDF8]">visa_master</span>, <span class="font-mono text-[#0284C7] dark:text-[#38BDF8]">mpu</span>, <span class="font-mono text-[#0284C7] dark:text-[#38BDF8]">mmqr</span></p>
+                {% for error in form.code.errors %}<p class="text-[11px] text-red-500 mt-1">{{ error }}</p>{% endfor %}
             </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Method Type *</label>
+                <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-bold">
+                    <span class="lang-en">Method Type *</span><span class="lang-my">အမျိုးအစား *</span>
+                </label>
                 {{ form.method_type }}
-                {% for error in form.method_type.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                {% for error in form.method_type.errors %}<p class="text-[11px] text-red-500 mt-1">{{ error }}</p>{% endfor %}
             </div>
             <div>
-                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Display Order</label>
+                <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-bold">
+                    <span class="lang-en">Display Order</span><span class="lang-my">ပြသမည့် အစဉ်</span>
+                </label>
                 {{ form.display_order }}
-                {% for error in form.display_order.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                <p class="text-[11px] text-slate-400 mt-1">
+                    <span class="lang-en">Lower numbers appear first on checkout (0, 1, 2...)</span>
+                    <span class="lang-my">ဂဏန်းငယ်သော အရာများ ရှေ့ဆုံးတွင် ပေါ်မည်ဖြစ်ပါသည် (၀၊ ၁၊ ၂...)</span>
+                </p>
+                {% for error in form.display_order.errors %}<p class="text-[11px] text-red-500 mt-1">{{ error }}</p>{% endfor %}
             </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Account Name / Holder</label>
+                <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-bold">
+                    <span class="lang-en">Account Name</span><span class="lang-my">အကောင့် သို့မဟုတ် ကုန်သည် အမည်</span>
+                </label>
                 {{ form.account_name }}
-                {% for error in form.account_name.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                <p class="text-[11px] text-slate-400 mt-1">
+                    <span class="lang-en">e.g. THUTA E-Learning Platform</span>
+                    <span class="lang-my">ဥပမာ - THUTA E-Learning Platform</span>
+                </p>
+                {% for error in form.account_name.errors %}<p class="text-[11px] text-red-500 mt-1">{{ error }}</p>{% endfor %}
             </div>
             <div>
-                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Account / Phone Number</label>
+                <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-bold">
+                    <span class="lang-en">Account / Phone Number</span><span class="lang-my">အကောင့် သို့မဟုတ် ဖုန်းနံပါတ်</span>
+                </label>
                 {{ form.account_number }}
-                {% for error in form.account_number.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                <p class="text-[11px] text-slate-400 mt-1">
+                    <span class="lang-en">Bank Account, Phone, or Merchant ID</span>
+                    <span class="lang-my">ဘဏ်အကောင့်၊ ဖုန်းနံပါတ် သို့မဟုတ် ကုန်သည်ကုဒ်</span>
+                </p>
+                {% for error in form.account_number.errors %}<p class="text-[11px] text-red-500 mt-1">{{ error }}</p>{% endfor %}
             </div>
         </div>
 
         <div>
-            <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">QR Code Image</label>
+            <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-bold">
+                <span class="lang-en">QR Code Image / Gateway Asset</span><span class="lang-my">QR ကုဒ် ပုံ (သို့) လိုဂို</span>
+            </label>
             {{ form.qr_image }}
-            {% for error in form.qr_image.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+            {% if object and object.qr_image %}
+            <div class="mt-2 flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B]">
+                <img src="{{ object.qr_image.url }}" alt="{{ object.name }}" class="w-14 h-14 object-contain rounded-lg border border-slate-300 dark:border-slate-700 bg-white p-1">
+                <div class="text-xs">
+                    <span class="font-bold text-slate-900 dark:text-white block">Current uploaded asset:</span>
+                    <a href="{{ object.qr_image.url }}" target="_blank" class="text-[#0284C7] dark:text-[#38BDF8] hover:underline font-mono text-[11px]">View full size</a>
+                </div>
+            </div>
+            {% endif %}
+            {% for error in form.qr_image.errors %}<p class="text-[11px] text-red-500 mt-1">{{ error }}</p>{% endfor %}
         </div>
 
         <div>
-            <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Instructions (English)</label>
+            <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-bold">
+                <span class="lang-en">Instructions (English)</span><span class="lang-my">လမ်းညွှန်ချက် (အင်္ဂလိပ်)</span>
+            </label>
             {{ form.instructions }}
-            {% for error in form.instructions.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+            <p class="text-[11px] text-slate-400 mt-1">Guidance shown to students when this method is selected.</p>
+            {% for error in form.instructions.errors %}<p class="text-[11px] text-red-500 mt-1">{{ error }}</p>{% endfor %}
         </div>
 
         <div>
-            <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5 font-medium">Instructions (Myanmar)</label>
+            <label class="block text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px] mb-1.5 font-bold">
+                <span class="lang-en">Instructions (Myanmar)</span><span class="lang-my">လမ်းညွှန်ချက် (မြန်မာ)</span>
+            </label>
             {{ form.instructions_my }}
-            {% for error in form.instructions_my.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+            <p class="text-[11px] text-slate-400 mt-1">မြန်မာဘာသာဖြင့် ငွေပေးချေမှု လမ်းညွှန်ချက်။</p>
+            {% for error in form.instructions_my.errors %}<p class="text-[11px] text-red-500 mt-1">{{ error }}</p>{% endfor %}
         </div>
 
-        <div class="flex items-center gap-3 pt-2">
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-[#162235] border border-slate-200 dark:border-[#26364B] flex items-center gap-3">
             {{ form.is_active }}
-            <label for="{{ form.is_active.id_for_label }}" class="text-xs text-slate-300 font-medium cursor-pointer">
-                Active (display in checkout and pricing options)
+            <label for="{{ form.is_active.id_for_label }}" class="text-xs text-slate-900 dark:text-slate-200 font-bold cursor-pointer">
+                <span class="lang-en">Active (Display in checkout and membership subscription)</span>
+                <span class="lang-my">အသုံးပြုမည် (သင်တန်းအပ်နှံမှုနှင့် အသင်းဝင်မှု စာမျက်နှာများတွင် ဖော်ပြမည်)</span>
             </label>
         </div>
 
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-            <a href="{% url 'billing:method-list' %}" class="px-4 py-2 text-xs rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800">
-                Cancel
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-[#26364B]">
+            <a href="{% url 'billing:payment-settings' %}" class="px-5 py-2.5 text-xs font-semibold rounded-xl border border-slate-300 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162235] transition">
+                <span class="lang-en">Cancel</span><span class="lang-my">မလုပ်တော့ပါ</span>
             </a>
-            <button type="submit" class="px-6 py-2 text-xs font-bold rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 transition">
-                Save Method
+            <button type="submit" class="px-6 py-2.5 text-xs font-bold rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] transition shadow-md">
+                <span class="lang-en">Save Payment Method &rarr;</span><span class="lang-my">သိမ်းဆည်းမည် &rarr;</span>
             </button>
         </div>
     </form>
 </div>
 {% endblock %}
+

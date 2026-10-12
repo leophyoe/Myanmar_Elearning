@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if form.instance.pk %}Edit Exam: {{ form.instance.title }}{% else %}Create New Standalone Exam{% endif %} - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <!-- Header -->
+    <div class="mb-8 pb-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-50 dark:bg-cyan-950/80 border border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300 mb-2.5">
+                <span>📝</span>
+                <span>Exam Authoring Portal</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                {% if form.instance.pk %}Edit Examination Settings{% else %}Create Standalone Examination{% endif %}
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                Configure examination duration, passing score percentage, credentials awarded, and pricing.
+            </p>
+        </div>
+
+        <a href="{% url 'standalone-exam-list' %}" class="text-xs font-semibold text-slate-400 hover:text-cyan-400">
+            &larr; Cancel
+        </a>
+    </div>
+
+    <!-- Form Container -->
+    <form method="POST" class="space-y-6 bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] rounded-2xl p-6 sm:p-8 shadow-sm">
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="p-4 rounded-xl bg-red-950/60 border border-red-800 text-xs text-red-300 space-y-1">
+            <b>Please resolve form errors:</b>
+            <ul class="list-disc pl-5">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                    <span class="lang-en">Exam Title *</span><span class="lang-my">စာမေးပွဲ အမည် *</span>
+                </label>
+                {{ form.title }}
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                    <span class="lang-en">Associated Course (Optional)</span>
+                    <span class="lang-my">ချိတ်ဆက်မည့် သင်တန်း (ရှိပါက ရွေးပါ)</span>
+                </label>
+                {{ form.course }}
+                <span class="text-[10px] text-slate-400 block mt-1">
+                    <span class="lang-en">Link this exam as the official Final Assessment required for course certificate. Leave empty for independent Exam Center certifications.</span>
+                    <span class="lang-my">သင်တန်းတစ်ခုခုအတွက် Final Assessment အဖြစ် သတ်မှတ်လိုပါက ရွေးချယ်ပါ။ သီးခြား လွတ်လပ်သော စာမေးပွဲအတွက် ကွက်လပ်ထားပါ။</span>
+                </span>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                    Overview, Syllabus &amp; Instructions
+                </label>
+                {{ form.description }}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Exam Classification *
+                    </label>
+                    {{ form.quiz_type }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Publishing Status *
+                    </label>
+                    {{ form.status }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Admission Price (MMK)
+                    </label>
+                    {{ form.price }}
+                    <span class="text-[10px] text-slate-400">Set 0 for free practice exams.</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Time Limit (Minutes)
+                    </label>
+                    {{ form.time_limit_minutes }}
+                    <span class="text-[10px] text-slate-400">0 = untimed examination.</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Passing Threshold (%)
+                    </label>
+                    {{ form.passing_percentage }}
+                    <span class="text-[10px] text-slate-400">Default 75%.</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Max Allowed Attempts
+                    </label>
+                    {{ form.max_attempts }}
+                    <span class="text-[10px] text-slate-400">0 = unlimited practice attempts.</span>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Certificate Type Awarded
+                    </label>
+                    {{ form.certificate_type }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Assigned Evaluator / Instructor
+                    </label>
+                    {{ form.assigned_instructor }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Partner Institution Affiliation
+                    </label>
+                    {{ form.institution }}
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Certificate Template
+                        </label>
+                        <a href="{% url 'certificate-template-create' %}" target="_blank" class="text-[10px] text-amber-500 hover:underline">
+                            + Design Template
+                        </a>
+                    </div>
+                    {{ form.certificate_template }}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Available From
+                    </label>
+                    {{ form.available_from }}
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                        Available Until (Deadline)
+                    </label>
+                    {{ form.available_until }}
+                </div>
+            </div>
+
+            <!-- Checkbox toggles -->
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+                <label class="flex items-center gap-3 text-xs cursor-pointer">
+                    {{ form.requires_manual_grading }}
+                    <span class="font-bold text-slate-900 dark:text-white">Requires Manual Instructor Review</span>
+                    <span class="text-[11px] text-slate-400 block font-normal">(Holds score and certificate pending rubric grading)</span>
+                </label>
+                <label class="flex items-center gap-3 text-xs cursor-pointer">
+                    {{ form.randomize_questions }}
+                    <span class="text-slate-900 dark:text-white font-medium">Randomize question sequence per attempt</span>
+                </label>
+                <label class="flex items-center gap-3 text-xs cursor-pointer">
+                    {{ form.randomize_choices }}
+                    <span class="text-slate-900 dark:text-white font-medium">Randomize choices order per question</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+            <a href="{% url 'standalone-exam-list' %}" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-md transition">
+                {% if form.instance.pk %}Update Exam{% else %}Create Exam &rarr;{% endif %}
+            </button>
+        </div>
+    </form>
+
+</div>
+{% endblock %}
+

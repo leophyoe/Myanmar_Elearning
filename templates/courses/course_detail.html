@@ -119,10 +119,22 @@
                         <div class="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-500 transition-all duration-300"
                              style="width: {{ progress_pct }}%"></div>
                     </div>
+                    {% if earned_certificate %}
+                    <a href="{% url 'certificate-verify' cert_id=earned_certificate.pk %}"
+                       class="block w-full text-center text-xs font-bold px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-sm transition">
+                        📜 View Certificate &rarr;
+                    </a>
+                    {% elif all_lessons_completed and final_exam and not final_exam_passed %}
+                    <a href="{% url 'assessment-detail' slug=course.slug assessment_id=final_exam.id %}"
+                       class="block w-full text-center text-xs font-bold px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white shadow-sm transition">
+                        📝 Take Final Exam &rarr;
+                    </a>
+                    {% else %}
                     <a href="{% url 'my-courses' %}"
                        class="block w-full text-center text-xs font-semibold px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition">
                         ✓ Enrolled — Open Player &rarr;
                     </a>
+                    {% endif %}
                 {% elif not course.is_free %}
                     <div class="text-center mb-4">
                         <div class="text-2xl font-extrabold text-slate-900 dark:text-white">
@@ -174,6 +186,356 @@
         </div>
     </div>
 
+    <!-- Celebratory Certificate / Final Exam Action Banner -->
+    {% if has_access %}
+        {% if earned_certificate %}
+        <div class="mb-8 p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-amber-500/15 border-2 border-amber-400 dark:border-amber-600/80 shadow-xl flex flex-col md:flex-row items-center justify-between gap-5">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-amber-500/20 border border-amber-400 text-3xl flex items-center justify-center shrink-0 shadow-inner">
+                    🏆
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 font-mono">
+                            CERTIFIED ALUMNUS
+                        </span>
+                        <span class="text-xs text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                            Grade: {{ earned_certificate.grade }}
+                        </span>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-1">
+                        <span class="lang-en">Congratulations! You have completed the course and earned your verified certificate</span>
+                        <span class="lang-my">ဂုဏ်ယူပါသည်! သင်တန်းအောင်မြင်ပြီးမြောက်၍ တရားဝင် အောင်လက်မှတ် ရရှိပြီးဖြစ်ပါသည်</span>
+                    </h3>
+                    <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5">
+                        <span class="lang-en">Your verified credential (Code: <span class="font-mono font-bold text-amber-600 dark:text-amber-400">{{ earned_certificate.certificate_code }}</span>) is ready to view and download.</span>
+                        <span class="lang-my">သင်၏ စစ်မှန်ကြောင်း အတည်ပြုပြီး အောင်လက်မှတ် (Code: <span class="font-mono font-bold text-amber-600 dark:text-amber-400">{{ earned_certificate.certificate_code }}</span>) ကို ရယူ/ဒေါင်းလုဒ် ပြုလုပ်နိုင်ပါပြီ။</span>
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0 w-full md:w-auto">
+                <a href="{% url 'certificate-verify' cert_id=earned_certificate.pk %}"
+                   class="flex-1 md:flex-none text-center px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5">
+                    <span class="lang-en">📜 View Certificate</span>
+                    <span class="lang-my">📜 အောင်လက်မှတ် ကြည့်ရှုမည်</span>
+                    <span class="font-mono">&rarr;</span>
+                </a>
+                <a href="{% url 'certificate-list' %}"
+                   class="px-4 py-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition">
+                    <span class="lang-en">Certificate Center</span>
+                    <span class="lang-my">လက်မှတ်များ စင်တာ</span>
+                </a>
+            </div>
+        </div>
+        {% elif all_lessons_completed and final_exam and not final_exam_passed %}
+        <div class="mb-8 p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-purple-500/15 via-sky-500/10 to-purple-500/15 border-2 border-purple-400 dark:border-purple-600/80 shadow-xl flex flex-col md:flex-row items-center justify-between gap-5">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-purple-500/20 border border-purple-400 text-3xl flex items-center justify-center shrink-0 shadow-inner">
+                    🎓
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700 font-mono">
+                            ALL LESSONS COMPLETED
+                        </span>
+                        <span class="text-xs text-purple-600 dark:text-purple-400 font-semibold font-mono">
+                            Pass Mark: {{ final_exam.passing_percentage }}%
+                        </span>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-1">
+                        <span class="lang-en">All lessons completed! Take your Final Assessment Exam</span>
+                        <span class="lang-my">သင်ခန်းစာအားလုံး လေ့လာပြီးပါပြီ! Final Assessment Exam ဖြေဆိုပါ</span>
+                    </h3>
+                    <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-0.5">
+                        <span class="lang-en">To earn your official verified certificate, please begin the final exam ({{ final_exam.title }}).</span>
+                        <span class="lang-my">တရားဝင် အောင်လက်မှတ် ရရှိရန်အတွက် နောက်ဆုံး အကဲဖြတ် စာမေးပွဲ ({{ final_exam.title }}) ကို စတင်ဖြေဆိုနိုင်ပါပြီ။</span>
+                    </p>
+                </div>
+            </div>
+            <div class="shrink-0 w-full md:w-auto">
+                <a href="{% url 'assessment-detail' slug=course.slug assessment_id=final_exam.id %}"
+                   class="w-full md:w-auto text-center px-6 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5">
+                    <span class="lang-en">📝 Take Final Exam Now</span>
+                    <span class="lang-my">📝 နောက်ဆုံးစာမေးပွဲ စတင်ဖြေဆိုမည်</span>
+                    <span class="font-mono">&rarr;</span>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- Edube-Style "My Progress" Interactive Curriculum Roadmap -->
+    <div class="mb-8 p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+        <!-- Progress Header & Resume Stepper -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                        Edube Learning Track
+                    </span>
+                    <span class="text-[10px] px-2 py-0.5 rounded font-mono bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        {{ completed_lesson_ids|length }} / {{ total_lessons }} Completed
+                    </span>
+                </div>
+                <h2 class="text-xl font-extrabold text-slate-900 dark:text-white mt-1 flex items-center gap-2">
+                    <span>My Progress</span>
+                    <span class="text-sm font-semibold text-sky-600 dark:text-sky-400 font-mono">({{ progress_pct }}%)</span>
+                </h2>
+                <!-- Full-width progress bar -->
+                <div class="w-full sm:w-72 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-2">
+                    <div class="h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-400 to-emerald-500 transition-all duration-500"
+                         style="width: {{ progress_pct }}%"></div>
+                </div>
+            </div>
+
+            <!-- Prominent Resume / Start / Exam / Certificate Action Button -->
+            <div class="shrink-0">
+                {% if has_access %}
+                    {% if earned_certificate %}
+                    <a href="{% url 'certificate-verify' cert_id=earned_certificate.pk %}"
+                       class="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/25 flex items-center gap-2 transition transform hover:-translate-y-0.5">
+                        <span>📜 View Certificate</span>
+                        <span class="font-mono">&rarr;</span>
+                    </a>
+                    {% elif all_lessons_completed and final_exam and not final_exam_passed %}
+                    <a href="{% url 'assessment-detail' slug=course.slug assessment_id=final_exam.id %}"
+                       class="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/25 flex items-center gap-2 transition transform hover:-translate-y-0.5">
+                        <span>📝 Take Final Exam</span>
+                        <span class="font-mono">&rarr;</span>
+                    </a>
+                    {% elif resume_lesson %}
+                    <a href="{% url 'lesson-detail' lesson_id=resume_lesson.id %}"
+                       class="px-6 py-3 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/25 flex items-center gap-2 transition transform hover:-translate-y-0.5">
+                        <span>Resume Course</span>
+                        <span class="font-mono">&rarr;</span>
+                    </a>
+                    {% elif first_lesson %}
+                    <a href="{% url 'lesson-detail' lesson_id=first_lesson.id %}"
+                       class="px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-lg shadow-sky-600/25 flex items-center gap-2 transition">
+                        <span>Start First Lesson</span>
+                        <span class="font-mono">&rarr;</span>
+                    </a>
+                    {% endif %}
+                {% elif course.is_free %}
+                    <form method="POST" action="{% url 'enroll' slug=course.slug %}">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 flex items-center gap-2 transition">
+                            <span>Enrol &amp; Start Learning</span>
+                            <span>&rarr;</span>
+                        </button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'checkout' slug=course.slug %}"
+                       class="px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-lg shadow-sky-600/25 flex items-center gap-2 transition">
+                        <span>Unlock Full Course</span>
+                        <span>&rarr;</span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Horizontal Modular Roadmap Cards (Mirroring OpenEDG / Edube) -->
+        <div class="mt-5 overflow-x-auto pb-3">
+            <div class="flex items-stretch gap-3.5 min-w-max">
+                {% for item in module_progress_data %}
+                <div class="w-64 p-4 rounded-xl border flex flex-col justify-between transition
+                    {% if item.is_completed %}
+                        bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/80
+                    {% elif item.completed_lessons > 0 %}
+                        bg-sky-50/50 dark:bg-sky-950/20 border-sky-300 dark:border-sky-800/80
+                    {% else %}
+                        bg-slate-50/80 dark:bg-[#0B1220] border-slate-200 dark:border-slate-800
+                    {% endif %}">
+                    <div>
+                        <!-- Module Header -->
+                        <div class="flex items-center justify-between text-[11px] mb-2 font-mono">
+                            <span class="font-bold text-sky-600 dark:text-sky-400">{{ item.module.code }}</span>
+                            {% if item.is_completed %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                ✓ Done
+                            </span>
+                            {% elif item.completed_lessons > 0 %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-800">
+                                In Progress
+                            </span>
+                            {% else %}
+                            <span class="text-slate-400 dark:text-slate-500 text-[10px]">
+                                Step {{ forloop.counter }}
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Module Title -->
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white line-clamp-2 mb-3">
+                            {{ item.module.title }}
+                        </h4>
+
+                        <!-- Sub-Item Indicators (Resources, Quiz, Lab) -->
+                        <div class="space-y-1.5 text-[11px] pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500 dark:text-slate-400">Study Resources</span>
+                                {% if item.is_completed %}
+                                <span class="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                    <span>✓</span> <span>Done</span>
+                                </span>
+                                {% else %}
+                                <span class="text-slate-700 dark:text-slate-300 font-mono">
+                                    {{ item.completed_lessons }}/{{ item.total_lessons }}
+                                </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500 dark:text-slate-400">Checkpoint Quiz</span>
+                                {% if item.quiz_score is not None %}
+                                <span class="font-mono font-bold {% if item.quiz_score >= 70 %}text-emerald-600 dark:text-emerald-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">
+                                    {{ item.quiz_score }}%
+                                </span>
+                                {% elif item.quiz %}
+                                <span class="text-slate-400 dark:text-slate-500 font-mono">Pending</span>
+                                {% else %}
+                                <span class="text-slate-400 dark:text-slate-500 font-mono">—</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500 dark:text-slate-400">Cyber Lab</span>
+                                {% if item.has_labs %}
+                                <span class="text-cyan-600 dark:text-cyan-400 font-semibold">Active</span>
+                                {% else %}
+                                <span class="text-slate-400 dark:text-slate-500 font-mono">—</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Action Footer -->
+                    <div class="mt-4 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/60">
+                        {% if has_access and item.first_lesson %}
+                        <a href="{% url 'lesson-detail' lesson_id=item.first_lesson.id %}"
+                           class="w-full text-center py-1.5 px-3 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 text-sky-600 dark:text-sky-300 border border-slate-200 dark:border-slate-700 block transition">
+                            Launch Module &rarr;
+                        </a>
+                        {% else %}
+                        <span class="text-[11px] text-slate-500 block text-center">
+                            {{ item.total_lessons }} Lessons
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Summary Test / Final Exam Roadmap Step -->
+                <div class="w-64 p-4 rounded-xl border flex flex-col justify-between transition
+                    {% if final_exam_score and final_exam_score >= final_exam.passing_percentage %}
+                        bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/80
+                    {% else %}
+                        bg-purple-50/40 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800/60
+                    {% endif %}">
+                    <div>
+                        <div class="flex items-center justify-between text-[11px] mb-2 font-mono">
+                            <span class="font-bold text-purple-600 dark:text-purple-400">Final Assessment</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-800">
+                                Exam
+                            </span>
+                        </div>
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white line-clamp-2 mb-3">
+                            {% if final_exam %}{{ final_exam.title }}{% else %}Comprehensive Final Exam{% endif %}
+                        </h4>
+
+                        <div class="space-y-1.5 text-[11px] pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500 dark:text-slate-400">Exam Status</span>
+                                {% if final_exam_score is not None %}
+                                <span class="font-mono font-bold {% if final_exam_score >= final_exam.passing_percentage %}text-emerald-600 dark:text-emerald-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">
+                                    {{ final_exam_score }}%
+                                </span>
+                                {% else %}
+                                <span class="text-slate-500 font-mono">Not attempted</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500 dark:text-slate-400">Pass Requirement</span>
+                                <span class="font-mono text-slate-700 dark:text-slate-300">
+                                    {{ final_exam.passing_percentage|default:"70" }}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/60">
+                        {% if final_exam and has_access %}
+                        <a href="{% url 'assessment-detail' slug=course.slug assessment_id=final_exam.id %}"
+                           class="w-full text-center py-1.5 px-3 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white block transition shadow-sm">
+                            Open Examination &rarr;
+                        </a>
+                        {% else %}
+                        <span class="text-[11px] text-slate-400 dark:text-slate-500 block text-center">
+                            Unlocked upon completion
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Verified Certificate & Badge Roadmap Step -->
+                <div class="w-64 p-4 rounded-xl border flex flex-col justify-between transition
+                    {% if earned_certificate %}
+                        bg-amber-50/70 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600/80 ring-2 ring-amber-400/30
+                    {% elif progress_pct >= 100 %}
+                        bg-amber-50/50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700/80
+                    {% else %}
+                        bg-slate-50/80 dark:bg-[#0B1220] border-slate-200 dark:border-slate-800
+                    {% endif %}">
+                    <div>
+                        <div class="flex items-center justify-between text-[11px] mb-2 font-mono">
+                            <span class="font-bold text-amber-600 dark:text-amber-400">Credential</span>
+                            <span class="text-amber-500 font-bold">🎖️ Verified</span>
+                        </div>
+                        <h4 class="text-xs font-bold text-slate-900 dark:text-white line-clamp-2 mb-3">
+                            Official Completion Certificate
+                        </h4>
+
+                        <div class="space-y-1.5 text-[11px] pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500 dark:text-slate-400">Status</span>
+                                {% if earned_certificate %}
+                                <span class="text-emerald-600 dark:text-emerald-400 font-bold font-mono">Issued ✓ ({{ earned_certificate.grade }})</span>
+                                {% elif progress_pct >= 100 %}
+                                <span class="text-emerald-600 dark:text-emerald-400 font-bold">100% Complete</span>
+                                {% else %}
+                                <span class="text-slate-500 font-mono">Progress: {{ progress_pct }}%</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-500 dark:text-slate-400">Verification</span>
+                                {% if earned_certificate %}
+                                <span class="text-amber-600 dark:text-amber-400 font-mono font-bold">{{ earned_certificate.certificate_code }}</span>
+                                {% else %}
+                                <span class="text-slate-700 dark:text-slate-300">Public QR Code</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/60">
+                        {% if earned_certificate %}
+                        <a href="{% url 'certificate-verify' cert_id=earned_certificate.pk %}"
+                            class="w-full text-center py-1.5 px-3 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 block transition shadow-sm">
+                            📜 View Certificate &rarr;
+                        </a>
+                        {% else %}
+                        <a href="{% url 'certificate-list' %}"
+                            class="w-full text-center py-1.5 px-3 rounded-lg text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 block transition">
+                            Certificate Center &rarr;
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Inside-Page Tab Bar Navigation -->
     <div class="mel-tab-bar mb-8" role="tablist">
         <a href="#tab-syllabus" class="mel-tab-item active">
@@ -200,22 +562,47 @@
         </div>
         <div class="space-y-3">
             {% for session in live_sessions %}
-            <div class="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-slate-800">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl {% if session.is_live %}bg-red-500/5 dark:bg-red-950/20 border border-red-300 dark:border-red-900/60{% else %}bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-slate-800{% endif %}">
                 <div class="shrink-0 w-24 text-center">
+                    {% if session.is_live %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 border border-red-300 dark:border-red-800 animate-pulse">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1"></span> LIVE NOW
+                    </span>
+                    <div class="text-[10px] text-red-500 font-mono mt-1 font-semibold">In Session</div>
+                    {% else %}
                     <div class="text-[10px] uppercase tracking-wider text-slate-500">{{ session.starts_at|date:"M" }}</div>
                     <div class="text-xl font-bold text-sky-600 dark:text-sky-400 font-mono">{{ session.starts_at|date:"d" }}</div>
                     <div class="text-[10px] text-slate-500 font-mono">{{ session.starts_at|date:"H:i" }}</div>
+                    {% endif %}
                 </div>
                 <div class="flex-1 min-w-0">
-                    <div class="text-sm font-semibold text-slate-900 dark:text-white">{{ session.title }}</div>
+                    <div class="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>{{ session.title }}</span>
+                        {% if session.is_live %}
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold">● Active</span>
+                        {% endif %}
+                    </div>
                     <div class="text-[11px] text-slate-500 mt-0.5">
                         {{ session.get_provider_display }} · {{ session.duration_minutes }} minutes
                         {% if session.notes %} · {{ session.notes|truncatechars:70 }}{% endif %}
+                        {% if session.join_url %}
+                        <div class="mt-1">
+                            <a href="{{ session.join_url }}" target="_blank" rel="noopener noreferrer" class="text-[11px] text-sky-600 dark:text-sky-400 hover:underline inline-flex items-center gap-1 font-mono">
+                                <span>🔗 {{ session.join_url }}</span>
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
-                <a href="{{ session.join_url }}" target="_blank" rel="noopener noreferrer"
-                   class="shrink-0 text-xs px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white dark:bg-sky-500 dark:hover:bg-sky-400 dark:text-slate-950 font-semibold transition text-center shadow-sm">
-                    Join Session &rarr;
+                <a href="{% url 'live-session-detail' session_id=session.id %}"
+                   class="shrink-0 text-xs px-4 py-2 rounded-xl {% if session.is_live %}bg-red-600 hover:bg-red-500 text-white font-bold shadow-md shadow-red-600/30{% else %}bg-sky-600 hover:bg-sky-500 text-white dark:bg-sky-500 dark:hover:bg-sky-400 dark:text-slate-950 font-semibold{% endif %} transition text-center shadow-sm">
+                    {% if session.is_live %}
+                    <span class="lang-en">🔴 Join Live Now &rarr;</span>
+                    <span class="lang-my">🔴 ယခု တိုက်ရိုက်ဝင်မည် &rarr;</span>
+                    {% else %}
+                    <span class="lang-en">Enter Classroom &rarr;</span>
+                    <span class="lang-my">အတန်းသို့ ဝင်မည် &rarr;</span>
+                    {% endif %}
                 </a>
             </div>
             {% endfor %}

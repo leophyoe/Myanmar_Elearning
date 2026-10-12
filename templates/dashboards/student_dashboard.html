@@ -6,44 +6,52 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
     <!-- Header & Student Banner -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 mb-8 border-b border-slate-200 dark:border-slate-800 gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 mb-8 border-b border-slate-200 dark:border-[#26364B] gap-4">
         <div>
             <div class="flex items-center space-x-3">
                 <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-wide">
                     {{ user.get_full_name|default:user.username }}
                 </h1>
-                <span class="text-xs px-2.5 py-0.5 rounded bg-sky-50 dark:bg-cyan-950 border border-sky-200 dark:border-cyan-800 text-sky-700 dark:text-cyan-300 font-mono font-semibold">
+                <span class="text-xs px-2.5 py-0.5 rounded-full bg-[#E0F2FE] text-[#075985] border border-[#BAE6FD] dark:bg-[#172B40] dark:text-[#7DD3FC] dark:border-[#26364B] font-mono font-semibold">
                     {{ profile.student_id }}
                 </span>
-                <span class="text-xs px-2.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-semibold">
+                <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-[#162235] border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 font-semibold">
                     {{ profile.batch }}
                 </span>
             </div>
-            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Enrolled in: <strong class="text-slate-900 dark:text-slate-300">{{ DIPLOMA_PROGRAM_TITLE }}</strong> (10 Months)</p>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                <span class="lang-en">Enrolled in:</span><span class="lang-my">တက်ရောက်နေသော သင်တန်း:</span>
+                <strong class="text-slate-900 dark:text-slate-200">{{ DIPLOMA_PROGRAM_TITLE }}</strong> (10 Months)
+            </p>
         </div>
 
         <div class="flex items-center space-x-3">
-            <a href="{% url 'course-list' %}" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-sm transition">
-                Continue Learning
+            <a href="{% url 'course-list' %}" class="px-4 py-2 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] text-xs font-bold shadow-sm transition">
+                <span class="lang-en">Continue Learning</span>
+                <span class="lang-my">ဆက်လက်လေ့လာမည်</span>
             </a>
-            <a href="{% url 'apply-instructor' %}" class="px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/80 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+            <a href="{% url 'apply-instructor' %}" class="px-3.5 py-2 rounded-xl bg-[#FFFBEB] dark:bg-[#302719] hover:bg-amber-100 dark:hover:bg-[#423522] border border-[#FDE68A] dark:border-[#423522] text-[#92400E] dark:text-[#FCD34D] text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
                 <span>👨‍🏫</span>
-                <span>Become an Instructor</span>
+                <span class="lang-en">Become an Instructor</span>
+                <span class="lang-my">ဆရာအဖြစ် လျှောက်ထားမည်</span>
             </a>
-            <a href="{% url 'profile' %}" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium transition border border-slate-200 dark:border-slate-700">
-                Edit Profile
+            <a href="{% url 'profile' %}" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#162235] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium transition border border-slate-200 dark:border-[#26364B]">
+                <span class="lang-en">Edit Profile</span>
+                <span class="lang-my">ပရိုဖိုင် ပြင်ဆင်မည်</span>
             </a>
         </div>
     </div>
 
     {% if pending_invitations %}
-    <div class="mb-8 p-5 rounded-2xl bg-blue-50/70 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 space-y-3">
+    <div class="mb-8 p-5 rounded-2xl bg-[#E0F2FE]/50 dark:bg-[#172B40]/40 border border-[#BAE6FD] dark:border-[#26364B] space-y-3">
         <h2 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <span>🏛️</span> Institutional Partnership Invitations
+            <span>🏛️</span>
+            <span class="lang-en">Institutional Partnership Invitations</span>
+            <span class="lang-my">အဖွဲ့အစည်းဆိုင်ရာ ဖိတ်ခေါ်ချက်များ</span>
         </h2>
         <div class="space-y-2">
             {% for inv in pending_invitations %}
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl gap-3 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] rounded-xl gap-3 shadow-sm">
                 <div>
                     <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ inv.institution.name }} wants to associate you with their organization.</p>
                     <p class="text-xs text-slate-600 dark:text-slate-400">
@@ -54,14 +62,16 @@
                 <div class="flex items-center gap-2 shrink-0">
                     <form method="post" action="{% url 'partner-invitation-accept' pk=inv.id %}">
                         {% csrf_token %}
-                        <button type="submit" class="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-lg transition shadow-sm">
-                            Accept
+                        <button type="submit" class="px-3.5 py-1.5 bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] font-bold text-xs rounded-lg transition shadow-sm">
+                            <span class="lang-en">Accept</span>
+                            <span class="lang-my">လက်ခံမည်</span>
                         </button>
                     </form>
                     <form method="post" action="{% url 'partner-invitation-decline' pk=inv.id %}">
                         {% csrf_token %}
-                        <button type="submit" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-lg transition border border-slate-200 dark:border-slate-700">
-                            Decline
+                        <button type="submit" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-[#162235] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded-lg transition border border-slate-200 dark:border-[#26364B]">
+                            <span class="lang-en">Decline</span>
+                            <span class="lang-my">ငြင်းပယ်မည်</span>
                         </button>
                     </form>
                 </div>
@@ -72,14 +82,17 @@
     {% endif %}
 
     {% if student_recognitions %}
-    <div class="mb-8 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 shadow-sm">
+    <div class="mb-8 p-4 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] flex items-center justify-between gap-4 shadow-sm">
         <div class="flex items-center gap-3">
             <span class="text-2xl">🎖️</span>
             <div>
-                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Student Honors & Merit Recognition</h3>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    <span class="lang-en">Student Honors &amp; Merit Recognition</span>
+                    <span class="lang-my">ကျောင်းသား ဂုဏ်ထူးဆောင် အသိအမှတ်ပြုမှုများ</span>
+                </h3>
                 <div class="flex flex-wrap items-center gap-2 mt-1">
                     {% for rec in student_recognitions %}
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#FFFBEB] dark:bg-[#302719] border border-[#FDE68A] dark:border-[#423522] text-[#92400E] dark:text-[#FCD34D]">
                         <span>★</span> {{ rec.title }}
                         <span class="text-[10px] text-amber-600 dark:text-amber-400 font-mono">({{ rec.credential_code }})</span>
                     </span>
@@ -91,13 +104,16 @@
     {% endif %}
 
     <!-- Membership Status Card -->
-    <div class="mb-8 p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+    <div class="mb-8 p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
         <div class="flex items-center gap-3.5">
-            <div class="w-10 h-10 rounded-xl {% if membership_subscription and membership_subscription.plan.plan_type == 'premium' %}bg-amber-100 text-amber-600 dark:bg-amber-600/20 dark:text-amber-400 border border-amber-200 dark:border-amber-600/30{% elif membership_subscription and membership_subscription.plan.plan_type == 'standard' %}bg-sky-100 text-sky-600 dark:bg-blue-600/20 dark:text-blue-400 border border-sky-200 dark:border-blue-600/30{% else %}bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700{% endif %} flex items-center justify-center font-bold text-lg shrink-0">
+            <div class="w-10 h-10 rounded-xl {% if membership_subscription and membership_subscription.plan.plan_type == 'premium' %}bg-amber-100 text-amber-600 dark:bg-amber-600/20 dark:text-amber-400 border border-amber-200 dark:border-amber-600/30{% elif membership_subscription and membership_subscription.plan.plan_type == 'standard' %}bg-sky-100 text-sky-600 dark:bg-blue-600/20 dark:text-blue-400 border border-sky-200 dark:border-blue-600/30{% else %}bg-slate-100 text-slate-600 dark:bg-[#162235] dark:text-slate-300 border border-slate-200 dark:border-[#26364B]{% endif %} flex items-center justify-center font-bold text-lg shrink-0">
                 {% if membership_subscription and membership_subscription.plan.plan_type == 'premium' %}👑{% elif membership_subscription and membership_subscription.plan.plan_type == 'standard' %}⭐{% else %}🌱{% endif %}
             </div>
             <div>
-                <div class="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">Membership</div>
+                <div class="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">
+                    <span class="lang-en">Membership Tier</span>
+                    <span class="lang-my">အသင်းဝင် အဆင့်</span>
+                </div>
                 <div class="flex items-center gap-2 mt-0.5">
                     <span class="text-base font-bold text-slate-900 dark:text-white">
                         {% if membership_subscription %}{{ membership_subscription.plan.name }} Membership{% else %}Starter (Free){% endif %}
@@ -112,7 +128,8 @@
                 </div>
                 {% if membership_subscription and membership_subscription.end_date %}
                 <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Renews: <span class="text-slate-700 dark:text-slate-300 font-mono">{{ membership_subscription.end_date|date:"M d, Y" }}</span>
+                    <span class="lang-en">Renews:</span><span class="lang-my">သက်တမ်းကုန်ဆုံးမည့်ရက်:</span>
+                    <span class="text-slate-700 dark:text-slate-300 font-mono">{{ membership_subscription.end_date|date:"M d, Y" }}</span>
                 </div>
                 {% endif %}
             </div>
@@ -120,20 +137,24 @@
 
         <div class="flex items-center gap-2.5">
             {% if membership_subscription and membership_subscription.plan.plan_type != 'starter' %}
-                <a href="{% url 'billing:my-subscription' %}" class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition border border-slate-200 dark:border-slate-700">
-                    Manage Membership
+                <a href="{% url 'billing:my-subscription' %}" class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#162235] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition border border-slate-200 dark:border-[#26364B]">
+                    <span class="lang-en">Manage Membership</span>
+                    <span class="lang-my">အသင်းဝင် စီမံမည်</span>
                 </a>
                 {% if membership_subscription.plan.plan_type != 'premium' %}
-                    <a href="{% url 'billing:subscribe' plan_type='premium' %}" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-sm">
-                        Upgrade to Premium
+                    <a href="{% url 'billing:subscribe' plan_type='premium' %}" class="px-3.5 py-1.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] text-xs font-bold transition shadow-sm">
+                        <span class="lang-en">Upgrade to Premium</span>
+                        <span class="lang-my">ပရီမီယံသို့ အဆင့်မြှင့်မည်</span>
                     </a>
                 {% endif %}
             {% else %}
-                <a href="{% url 'course-list' %}" class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition border border-slate-200 dark:border-slate-700">
-                    Explore Courses
+                <a href="{% url 'course-list' %}" class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#162235] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition border border-slate-200 dark:border-[#26364B]">
+                    <span class="lang-en">Explore Courses</span>
+                    <span class="lang-my">သင်တန်းများ ကြည့်မည်</span>
                 </a>
-                <a href="{% url 'billing:pricing' %}" class="px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold transition shadow-sm">
-                    Upgrade
+                <a href="{% url 'billing:pricing' %}" class="px-3.5 py-1.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] text-xs font-bold transition shadow-sm">
+                    <span class="lang-en">Upgrade</span>
+                    <span class="lang-my">အဆင့်မြှင့်မည်</span>
                 </a>
             {% endif %}
         </div>
@@ -142,51 +163,81 @@
     <!-- Overview Metrics Grid -->
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
         <!-- Progress Metric -->
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Program Progress</div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">
+                <span class="lang-en">Program Progress</span>
+                <span class="lang-my">သင်ရိုး တိုးတက်မှု</span>
+            </div>
             <div class="text-2xl font-bold text-slate-900 dark:text-white mb-2">{{ progress_percentage }}%</div>
             <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                <div class="bg-sky-500 dark:bg-cyan-500 h-1.5 rounded-full" style="width: {{ progress_percentage }}%"></div>
+                <div class="bg-[#0284C7] dark:bg-[#38BDF8] h-1.5 rounded-full" style="width: {{ progress_percentage }}%"></div>
             </div>
         </div>
 
         <!-- Modules Metric -->
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Lessons Completed</div>
-            <div class="text-2xl font-bold text-sky-600 dark:text-cyan-400 mb-1">{{ completed_lessons }} <span class="text-xs text-slate-500 font-normal">/ {{ total_lessons }}</span></div>
-            <div class="text-[11px] text-slate-500 dark:text-slate-400">{{ enrollments|length }} enrolled course{{ enrollments|length|pluralize }}</div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">
+                <span class="lang-en">Lessons Completed</span>
+                <span class="lang-my">ပြီးစီးသော သင်ခန်းစာ</span>
+            </div>
+            <div class="text-2xl font-bold text-[#0284C7] dark:text-[#38BDF8] mb-1 font-mono">{{ completed_lessons }} <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">/ {{ total_lessons }}</span></div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">
+                {{ enrollments|length }} <span class="lang-en">enrolled course{{ enrollments|length|pluralize }}</span><span class="lang-my">တက်ရောက်နေသော သင်တန်း</span>
+            </div>
         </div>
 
         <!-- Labs Metric -->
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Hands-on Labs</div>
-            <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-1">{{ completed_labs_count }} <span class="text-xs text-slate-500 font-normal">/ {{ total_labs_count }}</span></div>
-            <div class="text-[11px] text-slate-500 dark:text-slate-400">Docker Isolated</div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">
+                <span class="lang-en">Hands-on Labs</span>
+                <span class="lang-my">လက်တွေ့ Labs</span>
+            </div>
+            <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-1 font-mono">{{ completed_labs_count }} <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">/ {{ total_labs_count }}</span></div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">
+                <span class="lang-en">Docker Isolated</span>
+                <span class="lang-my">သီးခြားဆာဗာစနစ်</span>
+            </div>
         </div>
 
         <!-- CTF Points Metric -->
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">CTF Score</div>
-            <div class="text-2xl font-bold text-amber-600 dark:text-amber-400 mb-1">{{ profile.points }} <span class="text-xs text-slate-500 font-normal">PTS</span></div>
-            <div class="text-[11px] text-slate-500 dark:text-slate-400">Flags & Challenges</div>
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">
+                <span class="lang-en">CTF Score</span>
+                <span class="lang-my">စိန်ခေါ်မှု ရမှတ်</span>
+            </div>
+            <div class="text-2xl font-bold text-amber-600 dark:text-amber-400 mb-1 font-mono">{{ profile.points }} <span class="text-xs text-slate-500 dark:text-slate-400 font-normal">PTS</span></div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400">
+                <span class="lang-en">Flags &amp; Challenges</span>
+                <span class="lang-my">ဖြေရှင်းထားသော စိန်ခေါ်မှု</span>
+            </div>
         </div>
 
         <!-- Rank Metric -->
-        <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">Global Rank</div>
-            <div class="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1">#{{ profile.rank }}</div>
-            <a href="{% url 'leaderboard' %}" class="text-[11px] text-sky-600 dark:text-cyan-400 hover:underline font-medium">View Leaderboard &rarr;</a>
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 font-medium">
+                <span class="lang-en">Global Rank</span>
+                <span class="lang-my">အဆင့်သတ်မှတ်ချက်</span>
+            </div>
+            <div class="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1 font-mono">#{{ profile.rank }}</div>
+            <a href="{% url 'leaderboard' %}" class="text-[11px] text-[#0284C7] dark:text-[#38BDF8] hover:underline font-semibold">
+                <span class="lang-en">Leaderboard &rarr;</span>
+                <span class="lang-my">အဆင့်ဇယား &rarr;</span>
+            </a>
         </div>
     </div>
 
     <!-- Enrolled courses / resume learning -->
     <div class="mb-10">
-        <div class="flex items-center justify-between mb-3">
-            <h2 class="text-base font-bold text-slate-900 dark:text-white">Continue Learning</h2>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">
+                <span class="lang-en">Continue Learning</span>
+                <span class="lang-my">ဆက်လက်လေ့လာရန် သင်ခန်းစာများ</span>
+            </h2>
             {% if next_lesson %}
             <a href="{% url 'lesson-detail' lesson_id=next_lesson.id %}"
-               class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-sm transition">
-                Resume: {{ next_lesson.title|truncatechars:40 }}
+               class="px-4 py-2 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] text-xs font-bold shadow-sm transition">
+                <span class="lang-en">Resume: {{ next_lesson.title|truncatechars:40 }}</span>
+                <span class="lang-my">ပြန်လည်စတင်ရန်: {{ next_lesson.title|truncatechars:35 }}</span>
             </a>
             {% endif %}
         </div>
@@ -194,26 +245,26 @@
         {% if enrollments %}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for enrollment in enrollments %}
-            <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-700 transition">
+            <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm flex flex-col justify-between hover:border-slate-300 dark:hover:border-slate-600 transition">
                 <div>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[10px] px-2 py-0.5 rounded uppercase font-bold
-                            {% if enrollment.status == 'completed' %}bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800
-                            {% elif enrollment.status == 'dropped' %}bg-rose-50 text-rose-700 border border-rose-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800
-                            {% else %}bg-sky-50 text-sky-700 border border-sky-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800{% endif %}">
+                        <span class="text-[10px] px-2.5 py-0.5 rounded-full uppercase font-bold
+                            {% if enrollment.status == 'completed' %}bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] dark:bg-[#142B25] dark:text-[#86EFAC] dark:border-[#1E3A30]
+                            {% elif enrollment.status == 'dropped' %}bg-[#FEF2F2] text-[#991B1B] border border-[#FECDD3] dark:bg-[#321F26] dark:text-[#FCA5A5] dark:border-[#452934]
+                            {% else %}bg-[#E0F2FE] text-[#075985] border border-[#BAE6FD] dark:bg-[#172B40] dark:text-[#7DD3FC] dark:border-[#26364B]{% endif %}">
                             {{ enrollment.get_status_display }}
                         </span>
-                        <span class="text-[11px] font-mono text-slate-500 dark:text-slate-400">{{ enrollment.live_progress }}%</span>
+                        <span class="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400">{{ enrollment.live_progress }}%</span>
                     </div>
                     <a href="{% url 'course-detail' slug=enrollment.course.slug %}"
-                       class="block text-sm font-semibold text-slate-900 dark:text-slate-200 hover:text-sky-600 dark:hover:text-cyan-300 transition mt-2">
+                       class="block text-sm font-bold text-slate-900 dark:text-white hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition mt-2.5">
                         {{ enrollment.course.title }}
                     </a>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{{ enrollment.course.subject.title|default:"General" }}</p>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{{ enrollment.course.subject.title|default:"General" }}</p>
                 </div>
                 <div class="mt-4">
                     <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                        <div class="bg-gradient-to-r from-sky-500 to-blue-600 h-1.5 rounded-full"
+                        <div class="bg-gradient-to-r from-[#0284C7] to-[#38BDF8] h-1.5 rounded-full"
                              style="width: {{ enrollment.live_progress }}%"></div>
                     </div>
                 </div>
@@ -221,11 +272,19 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="p-8 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
-            <p class="text-sm text-slate-800 dark:text-slate-300 font-semibold mb-1">You are not enrolled in a course yet</p>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Pick a course to start tracking lessons, quizzes and certificates.</p>
-            <a href="{% url 'course-list' %}" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-sm transition">
-                Browse Courses
+        <div class="p-10 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-center shadow-sm">
+            <span class="text-3xl block mb-2">📚</span>
+            <p class="text-sm text-slate-900 dark:text-white font-bold mb-1">
+                <span class="lang-en">You are not enrolled in a course yet</span>
+                <span class="lang-my">သင်တန်းများ မအပ်နှံရသေးပါ</span>
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-5 max-w-sm mx-auto">
+                <span class="lang-en">Pick a course to start tracking lessons, hands-on labs and earn verified digital certificates.</span>
+                <span class="lang-my">သင်ခန်းစာများ၊ လက်တွေ့လေ့ကျင့်ခန်းများနှင့် အောင်လက်မှတ်ရယူရန် သင်တန်းတစ်ခုကို စတင်ရွေးချယ်ပါ။</span>
+            </p>
+            <a href="{% url 'course-list' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] text-xs font-bold shadow-sm transition">
+                <span class="lang-en">Browse Courses &rarr;</span>
+                <span class="lang-my">သင်တန်းများ လေ့လာမည် &rarr;</span>
             </a>
         </div>
         {% endif %}
@@ -235,29 +294,33 @@
     {% if upcoming_live_sessions %}
     <div class="mb-10">
         <div class="flex items-center justify-between mb-3">
-            <h2 class="text-base font-bold text-slate-900 dark:text-white">Upcoming Live Sessions</h2>
-            <span class="text-[10px] px-2 py-0.5 rounded bg-sky-50 dark:bg-cyan-950 text-sky-700 dark:text-cyan-300 border border-sky-200 dark:border-cyan-800 uppercase font-bold">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">
+                <span class="lang-en">Upcoming Live Sessions</span>
+                <span class="lang-my">လာမည့် တိုက်ရိုက်သင်တန်းချိန်များ</span>
+            </h2>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-sky-50 dark:bg-[#172B40] text-[#0284C7] dark:text-[#38BDF8] border border-sky-200 dark:border-[#26364B] uppercase font-bold">
                 Zoom / Meet / Teams
             </span>
         </div>
         <div class="space-y-3">
             {% for session in upcoming_live_sessions %}
-            <div class="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
                 <div class="shrink-0 w-20 text-center">
                     <div class="text-[10px] uppercase tracking-wider text-slate-500">{{ session.starts_at|date:"M" }}</div>
-                    <div class="text-xl font-bold text-sky-600 dark:text-cyan-300 font-mono">{{ session.starts_at|date:"d" }}</div>
+                    <div class="text-xl font-bold text-[#0284C7] dark:text-[#38BDF8] font-mono">{{ session.starts_at|date:"d" }}</div>
                     <div class="text-[10px] text-slate-500 font-mono">{{ session.starts_at|date:"H:i" }}</div>
                 </div>
                 <div class="flex-1 min-w-0">
                     <a href="{% url 'course-detail' slug=session.course.slug %}"
-                       class="text-sm font-semibold text-slate-900 dark:text-white hover:text-sky-600 dark:hover:text-cyan-300 transition">{{ session.title }}</a>
+                       class="text-sm font-semibold text-slate-900 dark:text-white hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">{{ session.title }}</a>
                     <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                         {{ session.course.title }} · {{ session.get_provider_display }} · {{ session.duration_minutes }} min
                     </div>
                 </div>
                 <a href="{{ session.join_url }}" target="_blank" rel="noopener noreferrer"
-                   class="shrink-0 text-xs px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold transition shadow-sm text-center">
-                    Join session
+                   class="shrink-0 text-xs px-4 py-2 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white font-semibold transition shadow-sm text-center">
+                    <span class="lang-en">Join Session</span>
+                    <span class="lang-my">တက်ရောက်ရန်</span>
                 </a>
             </div>
             {% endfor %}
@@ -269,12 +332,15 @@
     <div class="mb-10">
         <h2 class="text-base font-bold text-slate-900 dark:text-white mb-3 flex items-center space-x-2">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Active Sandbox Lab Machine</span>
+            <span>
+                <span class="lang-en">Active Sandbox Lab Machine</span>
+                <span class="lang-my">လက်ရှိ အသုံးပြုနေသော လက်တွေ့ Lab စက်</span>
+            </span>
         </h2>
 
         {% if active_instances %}
             {% for inst in active_instances %}
-            <div class="p-6 rounded-2xl bg-gradient-to-r from-sky-50/50 via-white to-blue-50/50 dark:from-slate-900 dark:via-slate-900/90 dark:to-[#0f1d36] border border-sky-200 dark:border-cyan-800/60 shadow-lg">
+            <div class="p-6 rounded-2xl bg-gradient-to-r from-sky-50/50 via-white to-blue-50/50 dark:from-[#111C2E] dark:via-[#111C2E] dark:to-[#172B40] border border-sky-200 dark:border-[#26364B] shadow-lg">
                 <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                     <div>
                         <div class="flex items-center space-x-3 mb-2">
@@ -286,7 +352,7 @@
                             </span>
                         </div>
                         <div class="flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-400">
-                            <div>Target IP: <code class="text-sky-700 dark:text-cyan-300 font-bold bg-white dark:bg-slate-950 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">{{ inst.target_ip|default:"172.30.1.100" }}</code></div>
+                            <div>Target IP: <code class="text-[#0284C7] dark:text-[#38BDF8] font-bold bg-white dark:bg-[#0B1220] px-2 py-0.5 rounded border border-slate-200 dark:border-[#26364B]">{{ inst.target_ip|default:"172.30.1.100" }}</code></div>
                             <div>Subnet Bridge: <span class="text-slate-700 dark:text-slate-300">{{ inst.network_name|default:"Internal Sandbox (No WAN)" }}</span></div>
                             <div>Auto-Expires In: <span class="text-amber-600 dark:text-amber-400 font-mono font-bold">{{ inst.remaining_seconds }}s</span></div>
                         </div>
@@ -296,20 +362,23 @@
                     <div class="flex flex-wrap items-center gap-3">
                         <a href="{% url 'terminal-view' instance_id=inst.id %}" target="_blank" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md transition flex items-center space-x-1.5">
                             <span>💻</span>
-                            <span>Open Web Terminal</span>
+                            <span>
+                                <span class="lang-en">Open Web Terminal</span>
+                                <span class="lang-my">Web Terminal ဖွင့်ရန်</span>
+                            </span>
                         </a>
 
                         <form method="POST" action="{% url 'lab-reset' instance_id=inst.id %}" class="inline">
                             {% csrf_token %}
                             <button type="submit" class="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950 dark:hover:bg-amber-900 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 text-xs font-semibold transition" onclick="return confirm('Reset this lab environment? A new clean container and flag will be created.')">
-                                🔄 Reset Lab
+                                🔄 <span class="lang-en">Reset</span><span class="lang-my">ပြန်လည်စတင်</span>
                             </button>
                         </form>
 
                         <form method="POST" action="{% url 'lab-stop' instance_id=inst.id %}" class="inline">
                             {% csrf_token %}
                             <button type="submit" class="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950 dark:hover:bg-red-900 border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 text-xs font-semibold transition" onclick="return confirm('Stop this lab? Containers will be decommissioned.')">
-                                ⏹️ Stop Lab
+                                ⏹️ <span class="lang-en">Stop</span><span class="lang-my">ရပ်တန့်</span>
                             </button>
                         </form>
                     </div>
@@ -317,12 +386,19 @@
             </div>
             {% endfor %}
         {% else %}
-            <div class="p-8 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
+            <div class="p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-center shadow-sm">
                 <div class="text-2xl mb-2">⚡</div>
-                <p class="text-sm text-slate-800 dark:text-slate-300 font-semibold mb-1">No Active Lab Sandbox Running</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Start any hands-on laboratory from the cyber labs catalog or curriculum lessons.</p>
-                <a href="{% url 'lab-list' %}" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold shadow-sm transition">
-                    Browse Cyber Labs
+                <p class="text-sm text-slate-800 dark:text-slate-300 font-semibold mb-1">
+                    <span class="lang-en">No Active Lab Sandbox Running</span>
+                    <span class="lang-my">လက်ရှိ အသုံးပြုနေသော လက်တွေ့ Lab မရှိပါ</span>
+                </p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                    <span class="lang-en">Start any hands-on laboratory from the cyber labs catalog or curriculum lessons.</span>
+                    <span class="lang-my">Cyber Labs သို့မဟုတ် သင်ခန်းစာများမှ လက်တွေ့ခန်းများကို စတင်လေ့ကျင့်နိုင်ပါသည်။</span>
+                </p>
+                <a href="{% url 'lab-list' %}" class="inline-block px-4 py-2 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-semibold shadow-sm transition">
+                    <span class="lang-en">Browse Cyber Labs</span>
+                    <span class="lang-my">Cyber Labs များကြည့်ရှုရန်</span>
                 </a>
             </div>
         {% endif %}
@@ -331,47 +407,58 @@
     <!-- Two-Column Layout: Unlocked Badges & Solved Challenges -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Badges Card -->
-        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
             <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center justify-between">
-                <span>🏆 Unlocked Badges & Achievements</span>
-                <span class="text-xs text-sky-600 dark:text-cyan-400 font-normal">{{ badges.count }} Earned</span>
+                <span>
+                    <span class="lang-en">🏆 Unlocked Badges</span>
+                    <span class="lang-my">🏆 ရရှိထားသော အောင်လက်မှတ်တံဆိပ်များ</span>
+                </span>
+                <span class="text-xs text-[#0284C7] dark:text-[#38BDF8] font-normal font-mono">{{ badges.count }} Earned</span>
             </h3>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {% for ub in badges %}
-                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-center">
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] text-center">
                         <div class="text-xl mb-1">🛡️</div>
                         <div class="text-xs font-bold text-slate-800 dark:text-slate-200">{{ ub.badge.name }}</div>
-                        <div class="text-[10px] text-slate-500 mt-0.5">{{ ub.awarded_at|date:"M d, Y" }}</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5 font-mono">{{ ub.awarded_at|date:"M d, Y" }}</div>
                     </div>
                 {% empty %}
                     <div class="col-span-3 text-center py-6 text-xs text-slate-500">
-                        Complete labs and CTF challenges to unlock your first achievement badge.
+                        <span class="lang-en">Complete labs and CTF challenges to unlock your first achievement badge.</span>
+                        <span class="lang-my">ပထမဆုံး တံဆိပ်ရရှိရန် Labs နှင့် စိန်ခေါ်မှုများကို ဖြေရှင်းပါ။</span>
                     </div>
                 {% endfor %}
             </div>
         </div>
 
         <!-- Solved CTF Challenges Card -->
-        <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
             <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider flex items-center justify-between">
-                <span>🚩 Solved CTF Challenges</span>
-                <a href="{% url 'ctf-board' %}" class="text-xs text-sky-600 dark:text-cyan-400 font-normal hover:underline">Challenge Board &rarr;</a>
+                <span>
+                    <span class="lang-en">🚩 Solved CTF Challenges</span>
+                    <span class="lang-my">🚩 ဖြေရှင်းပြီးသော စိန်ခေါ်မှုများ</span>
+                </span>
+                <a href="{% url 'ctf-board' %}" class="text-xs text-[#0284C7] dark:text-[#38BDF8] font-normal hover:underline">
+                    <span class="lang-en">Challenge Board &rarr;</span>
+                    <span class="lang-my">စိန်ခေါ်မှုများ &rarr;</span>
+                </a>
             </h3>
             <div class="space-y-2">
                 {% for solve in solved_challenges|slice:":5" %}
-                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs">
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] flex justify-between items-center text-xs">
                         <div>
                             <span class="font-bold text-slate-900 dark:text-white">{{ solve.challenge.title }}</span>
                             <span class="text-[10px] text-slate-500 block">{{ solve.challenge.get_category_display }}</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-emerald-600 dark:text-emerald-400 font-bold">+{{ solve.points_awarded }} PTS</span>
-                            <span class="text-[10px] text-slate-500 block">{{ solve.solved_at|date:"M d, H:i" }}</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-bold font-mono">+{{ solve.points_awarded }} PTS</span>
+                            <span class="text-[10px] text-slate-500 block font-mono">{{ solve.solved_at|date:"M d, H:i" }}</span>
                         </div>
                     </div>
                 {% empty %}
                     <div class="text-center py-6 text-xs text-slate-500">
-                        No challenges solved yet. Visit the CTF board to submit your first flag!
+                        <span class="lang-en">No challenges solved yet. Visit the CTF board to submit your first flag!</span>
+                        <span class="lang-my">စိန်ခေါ်မှု မဖြေရှင်းရသေးပါ။ အမှတ်ရယူရန် Flag တင်သွင်းပါ။</span>
                     </div>
                 {% endfor %}
             </div>

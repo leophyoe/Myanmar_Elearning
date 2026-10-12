@@ -133,3 +133,128 @@ class CertificateServiceTests(TestCase):
         self.assertContains(resp_valid, 'VALID')
         self.assertContains(resp_valid, 'OFFICIALLY VERIFIED CREDENTIAL')
 
+
+class InstructorAndPartnerCertificateTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+        # Teacher
+        self.teacher = User.objects.create_user(
+            username='prof_thuta',
+            email='teacher@example.com',
+            password='Password123!',
+            role='teacher',
+        )
+
+        # Partner User & Institution
+        from apps.partner.models import Institution, PartnerMembership
+        self.partner_user = User.objects.create_user(
+            username='partner_admin',
+            email='partner@example.com',
+            password='Password123!',
+            role='partner',
+        )
+        self.institution = Institution.objects.create(
+            name='Tech Academy Myanmar',
+            slug='tech-academy-myanmar',
+            contact_person=self.partner_user,
+            is_verified=True,
+        )
+
+        # Student
+        self.student = User.objects.create_user(
+            username='kyaw_student',
+            email='kyaw@example.com',
+            password='Password123!',
+            first_name='Kyaw',
+            last_name='Zin',
+        )
+
+        # Teacher's course & certificate
+        self.teacher_course = Course.objects.create(
+            title='Cyber Defense Masterclass',
+            slug='cyber-defense-masterclass',
+            owner=self.teacher,
+            certificate_eligible=True,
+        )
+        self.teacher_cert = Certificate.objects.create(
+            student=self.student,
+            course=self.teacher_course,
+            certificate_code='THUTA-CERT-2026-TEACH1',
+            grade='Distinction',
+            is_revoked=False,
+        )
+
+        # Partner course & certificate
+        self.partner_course = Course.objects.create(
+            title='Enterprise Cloud Architecture',
+            slug='enterprise-cloud-architecture',
+            partner_institution=self.institution,
+            certificate_eligible=True,
+        )
+        self.partner_cert = Certificate.objects.create(
+            student=self.student,
+            course=self.partner_course,
+            certificate_code='THUTA-CERT-2026-PART1',
+            grade='Pass',
+            is_revoked=False,
+        )
+
+    def test_instructor_certificate_list_view_as_teacher(self):
+        self.client.force_login(self.teacher)
+        resp = self.client.get(reverse('instructor-certificate-list'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'THUTA-CERT-2026-TEACH1')
+        self.assertContains(resp, 'Kyaw Zin')
+        self.assertContains(resp, 'Cyber Defense Masterclass')
+        # Does not show partner course certificate that is not taught by teacher
+        self.assertNotContains(resp, 'THUTA-CERT-2026-PART1')
+
+    def test_instructor_certificate_list_filtering(self):
+        self.client.force_login(self.teacher)
+        # Search match
+        resp = self.client.get(reverse('instructor-certificate-list'), {'q': 'Kyaw'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'THUTA-CERT-2026-TEACH1')
+
+        # Status distinction filter
+        resp_dist = self.client.get(reverse('instructor-certificate-list'), {'status': 'distinction'})
+        self.assertEqual(resp_dist.status_code, 200)
+        self.assertContains(resp_dist, 'THUTA-CERT-2026-TEACH1')
+
+        # Search miss
+        resp_miss = self.client.get(reverse('instructor-certificate-list'), {'q': 'NonExistentXYZ'})
+        self.assertEqual(resp_miss.status_code, 200)
+        self.assertContains(resp_miss, 'No Student Certificates Found')
+
+    def test_instructor_certificate_export_csv(self):
+        self.client.force_login(self.teacher)
+        resp = self.client.get(reverse('instructor-certificate-export-csv'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'text/csv; charset=utf-8')
+        content = resp.content.decode('utf-8')
+        self.assertIn('Serial Code', content)
+        self.assertIn('THUTA-CERT-2026-TEACH1', content)
+        self.assertIn('Cyber Defense Masterclass', content)
+
+    def test_partner_certificate_list_view_as_partner(self):
+        self.client.force_login(self.partner_user)
+        resp = self.client.get(reverse('partner-certificates'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'THUTA-CERT-2026-PART1')
+        self.assertContains(resp, 'Enterprise Cloud Architecture')
+        self.assertContains(resp, 'Tech Academy Myanmar')
+        # Does not show unrelated teacher course
+        self.assertNotContains(resp, 'THUTA-CERT-2026-TEACH1')
+
+    def test_partner_certificate_export_csv(self):
+        self.client.force_login(self.partner_user)
+        resp = self.client.get(reverse('partner-certificate-export-csv'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'text/csv; charset=utf-8')
+        content = resp.content.decode('utf-8')
+        self.assertIn('Serial Code', content)
+        self.assertIn('THUTA-CERT-2026-PART1', content)
+        self.assertIn('Tech Academy Myanmar', content)
+
+

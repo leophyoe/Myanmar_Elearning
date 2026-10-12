@@ -1,31 +1,51 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
 {% block title %}Delete Live Session - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
 <div class="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <a href="{% url 'live-session-list' %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to live sessions</a>
+    <a href="{% url 'live-session-list' %}" class="inline-flex items-center text-xs font-medium text-slate-500 hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition mb-4">
+        <span class="lang-en">&larr; Back to Live Sessions</span>
+        <span class="lang-my">&larr; တိုက်ရိုက်သင်ကြားမှုများသို့ ပြန်သွားရန်</span>
+    </a>
 
-    <div class="p-8 rounded-2xl bg-slate-900 border border-red-900/60 shadow-xl mt-4">
-        <h1 class="text-xl font-bold text-white mb-3">Delete this live session?</h1>
-        <p class="text-sm text-slate-400 mb-2">
-            <span class="text-white font-semibold">{{ object.title }}</span>
-            <span class="text-slate-600">— {{ object.course.title }}</span>
-        </p>
-        <p class="text-xs text-slate-500 mb-2">
-            {{ object.starts_at|date:"D, d M Y, H:i" }} · {{ object.get_provider_display }} · {{ object.duration_minutes }} min
-        </p>
-        <p class="text-xs text-red-400 mb-6">
-            Students will no longer see this session. It cannot be undone.
+    <div class="p-8 rounded-2xl bg-white dark:bg-[#111C2E] border border-red-200 dark:border-red-900/60 shadow-xl">
+        <div class="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 flex items-center justify-center mb-4">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </div>
+
+        <h1 class="text-xl font-bold text-slate-900 dark:text-white mb-2">
+            <span class="lang-en">Delete this live session?</span>
+            <span class="lang-my">ဤတိုက်ရိုက်သင်ကြားမှု အတန်းအား ဖျက်ပစ်မည်လား။</span>
+        </h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+            <span class="lang-en">Are you sure you want to delete this live classroom session?</span>
+            <span class="lang-my">ဤတိုက်ရိုက်သင်ကြားမှု အတန်းအား ဖျက်ပစ်ရန် သေချာပါသလား။</span>
         </p>
 
-        <form method="POST" class="flex gap-3">
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] mb-6">
+            <div class="text-sm font-semibold text-slate-900 dark:text-white">{{ object.title }}</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ object.course.title }}</div>
+            <div class="text-[11px] font-mono text-slate-400 dark:text-slate-500 mt-2">
+                {{ object.starts_at|date:"D, d M Y, H:i" }} · {{ object.get_provider_display }} · {{ object.duration_minutes }} <span class="lang-en">mins</span><span class="lang-my">မိနစ်</span>
+            </div>
+        </div>
+
+        <p class="text-xs text-red-600 dark:text-red-400 mb-6 font-medium">
+            <span class="lang-en">Warning: Enrolled students will no longer be able to access this session. This action cannot be undone.</span>
+            <span class="lang-my">သတိပေးချက် - စာရင်းသွင်းထားသော ကျောင်းသားများ ဤအတန်းသို့ ဝင်ရောက်နိုင်တော့မည် မဟုတ်ပါ။ ဤလုပ်ဆောင်ချက်ကို ပြန်ပြင်၍ မရပါ။</span>
+        </p>
+
+        <form method="POST" class="flex items-center gap-3">
             {% csrf_token %}
-            <button type="submit" class="px-6 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition">
-                Yes, delete it
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold shadow-md shadow-red-600/20 transition">
+                <span class="lang-en">Yes, Delete Session</span>
+                <span class="lang-my">အတန်းဖျက်သိမ်းမည်</span>
             </button>
-            <a href="{% url 'live-session-edit' session_id=object.id %}" class="px-6 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition">
-                Cancel
+            <a href="{% url 'live-session-list' %}" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-[#26364B] transition">
+                <span class="lang-en">Cancel</span>
+                <span class="lang-my">မလုပ်တော့ပါ</span>
             </a>
         </form>
     </div>

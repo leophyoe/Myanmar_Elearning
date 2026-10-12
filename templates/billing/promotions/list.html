@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Promotions &amp; Discounts — THUTA E-Learning{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 pb-6 border-b border-slate-200 dark:border-[#26364B]">
+        <div>
+            <nav class="flex items-center text-xs text-slate-500 dark:text-slate-400 mb-2 space-x-2">
+                <a href="{% url 'dashboard' %}" class="inline-flex items-center gap-1 hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition font-semibold">
+                    <span>&larr;</span>
+                    <span class="lang-en">Dashboard</span>
+                    <span class="lang-my">ပင်မစာမျက်နှာ</span>
+                </a>
+                <span>/</span>
+                <span class="text-slate-700 dark:text-slate-300 font-semibold">
+                    <span class="lang-en">Promotions &amp; Coupons</span>
+                    <span class="lang-my">ပရိုမိုးရှင်းနှင့် ကူပွန်များ</span>
+                </span>
+            </nav>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                <span class="lang-en">Course Promotions &amp; Discounts</span>
+                <span class="lang-my">သင်တန်း လျှော့စျေးနှင့် ကူပွန်များ</span>
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                <span class="lang-en">Create targeted discount codes, percentage vouchers, and track redemption analytics.</span>
+                <span class="lang-my">သင်တန်းများအတွက် လျှော့စျေးကူပွန်များ ဖန်တီး၍ အသုံးပြုမှုစာရင်းများကို စစ်ဆေးပါ။</span>
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'billing:promotion-create' %}" class="px-5 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs sm:text-sm font-bold shadow-sm transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span class="lang-en">Create Promotion</span>
+                <span class="lang-my">ပရိုမိုးရှင်း အသစ်ဖန်တီးရန်</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <span class="lang-en">Total Promos</span>
+                <span class="lang-my">ကူပွန် စုစုပေါင်း</span>
+            </div>
+            <div class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono">{{ stats.total_promotions }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <span class="lang-en">Created campaigns</span>
+                <span class="lang-my">ဖန်တီးထားသော စီမံချက်</span>
+            </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <span class="lang-en">Active Now</span>
+                <span class="lang-my">လက်ရှိ အသုံးပြုနိုင်</span>
+            </div>
+            <div class="text-2xl font-extrabold text-emerald-600 dark:text-[#86EFAC] font-mono">{{ stats.active_promotions }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <span class="lang-en">Valid campaigns</span>
+                <span class="lang-my">သက်တမ်းရှိ အစီအစဉ်</span>
+            </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <span class="lang-en">Total Redemptions</span>
+                <span class="lang-my">အသုံးပြုမှု အကြိမ်ရေ</span>
+            </div>
+            <div class="text-2xl font-extrabold text-[#0284C7] dark:text-[#38BDF8] font-mono">{{ stats.total_usages }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <span class="lang-en">Times applied</span>
+                <span class="lang-my">ကျောင်းသားများ သုံးစွဲမှု</span>
+            </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <span class="lang-en">Discounts Given</span>
+                <span class="lang-my">လျှော့စျေး ပေးထားငွေ</span>
+            </div>
+            <div class="text-2xl font-extrabold text-amber-600 dark:text-[#FCD34D] font-mono">{{ stats.total_discount|intcomma }} <span class="text-xs text-slate-500 font-normal">MMK</span></div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <span class="lang-en">Student savings</span>
+                <span class="lang-my">ကျောင်းသား သက်သာငွေ</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search Toolbar -->
+    <div class="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 mb-6">
+        <!-- Status Tabs -->
+        <div class="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] overflow-x-auto text-xs">
+            <a href="?status=all{% if search_query %}&q={{ search_query }}{% endif %}"
+               class="px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap transition {% if status_filter == 'all' %}bg-white dark:bg-[#111C2E] text-slate-900 dark:text-white shadow-sm font-semibold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                <span class="lang-en">All</span>
+                <span class="lang-my">အားလုံး</span>
+            </a>
+            <a href="?status=active{% if search_query %}&q={{ search_query }}{% endif %}"
+               class="px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap transition {% if status_filter == 'active' %}bg-white dark:bg-[#111C2E] text-slate-900 dark:text-white shadow-sm font-semibold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                <span class="lang-en">Active</span>
+                <span class="lang-my">လက်ရှိဖွင့်ထား</span>
+            </a>
+            <a href="?status=scheduled{% if search_query %}&q={{ search_query }}{% endif %}"
+               class="px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap transition {% if status_filter == 'scheduled' %}bg-white dark:bg-[#111C2E] text-slate-900 dark:text-white shadow-sm font-semibold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                <span class="lang-en">Scheduled</span>
+                <span class="lang-my">လာမည့်အစီအစဉ်</span>
+            </a>
+            <a href="?status=expired{% if search_query %}&q={{ search_query }}{% endif %}"
+               class="px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap transition {% if status_filter == 'expired' %}bg-white dark:bg-[#111C2E] text-slate-900 dark:text-white shadow-sm font-semibold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                <span class="lang-en">Expired</span>
+                <span class="lang-my">သက်တမ်းကုန်</span>
+            </a>
+            <a href="?status=disabled{% if search_query %}&q={{ search_query }}{% endif %}"
+               class="px-3.5 py-1.5 rounded-lg font-medium whitespace-nowrap transition {% if status_filter == 'disabled' %}bg-white dark:bg-[#111C2E] text-slate-900 dark:text-white shadow-sm font-semibold{% else %}text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white{% endif %}">
+                <span class="lang-en">Disabled</span>
+                <span class="lang-my">ပိတ်ထားသည်</span>
+            </a>
+        </div>
+
+        <!-- Search Form -->
+        <form method="GET" class="flex gap-2 max-w-sm w-full">
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search code or name..."
+                   class="w-full bg-white dark:bg-[#0B1220] border border-slate-300 dark:border-[#26364B] rounded-xl px-3.5 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#0284C7] dark:focus:border-[#38BDF8]">
+            <button type="submit" class="px-4 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-[#172B40] dark:hover:bg-[#26364B] border border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-200 text-xs font-semibold transition">
+                <span class="lang-en">Search</span>
+                <span class="lang-my">ရှာရန်</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Promotions Table Card -->
+    <div class="bg-white dark:bg-[#111C2E] rounded-2xl border border-slate-200 dark:border-[#26364B] shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead class="text-[11px] uppercase bg-slate-50 dark:bg-[#0B1220] text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#26364B]">
+                    <tr>
+                        <th class="py-3.5 px-4 font-semibold">
+                            <span class="lang-en">Promotion &amp; Code</span>
+                            <span class="lang-my">အမည်နှင့် ကူပွန်ကုဒ်</span>
+                        </th>
+                        <th class="py-3.5 px-4 font-semibold">
+                            <span class="lang-en">Discount</span>
+                            <span class="lang-my">လျှော့စျေး</span>
+                        </th>
+                        <th class="py-3.5 px-4 font-semibold">
+                            <span class="lang-en">Scope</span>
+                            <span class="lang-my">အကျုံးဝင်မှု</span>
+                        </th>
+                        <th class="py-3.5 px-4 font-semibold">
+                            <span class="lang-en">Redemptions</span>
+                            <span class="lang-my">အသုံးပြုမှု</span>
+                        </th>
+                        <th class="py-3.5 px-4 font-semibold">
+                            <span class="lang-en">Validity Period</span>
+                            <span class="lang-my">သက်တမ်း</span>
+                        </th>
+                        <th class="py-3.5 px-4 font-semibold">
+                            <span class="lang-en">Status</span>
+                            <span class="lang-my">အခြေအနေ</span>
+                        </th>
+                        <th class="py-3.5 px-4 text-right font-semibold">
+                            <span class="lang-en">Actions</span>
+                            <span class="lang-my">ဆောင်ရွက်ရန်</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-[#26364B]/60">
+                    {% for promo in promotions %}
+                    <tr class="hover:bg-slate-50/60 dark:hover:bg-[#172B40]/40 transition">
+                        <td class="py-3.5 px-4">
+                            <div class="font-bold text-slate-900 dark:text-white">{{ promo.name }}</div>
+                            <div class="mt-1 flex items-center gap-1.5">
+                                <span class="px-2 py-0.5 rounded-lg bg-[#E0F2FE] dark:bg-[#172B40] text-[#0284C7] dark:text-[#38BDF8] border border-sky-200 dark:border-[#26364B] font-mono font-bold text-[11px] tracking-wide">
+                                    {{ promo.code }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            {% if promo.discount_type == 'percentage' %}
+                                <span class="text-sm font-extrabold text-[#0284C7] dark:text-[#38BDF8] font-mono">{{ promo.discount_value }}% OFF</span>
+                                {% if promo.maximum_discount %}
+                                    <span class="text-[10px] text-slate-400 block font-mono">Max: {{ promo.maximum_discount|intcomma }} MMK</span>
+                                {% endif %}
+                            {% elif promo.discount_type == 'fixed' %}
+                                <span class="text-sm font-extrabold text-emerald-600 dark:text-[#86EFAC] font-mono">-{{ promo.discount_value|intcomma }} MMK</span>
+                            {% else %}
+                                <span class="text-sm font-extrabold text-purple-600 dark:text-[#C4B5FD] font-mono">100% FREE</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                            {% if promo.courses.exists %}
+                                <span class="text-xs font-semibold">{{ promo.courses.count }} course(s)</span>
+                                <span class="text-[10px] text-slate-400 block">Specific curricula</span>
+                            {% else %}
+                                <span class="text-xs font-semibold text-emerald-600 dark:text-[#86EFAC]">Global (All Courses)</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 font-mono">
+                            <div class="font-bold text-slate-800 dark:text-slate-200">
+                                {{ promo.usage_count }} <span class="text-slate-400 font-normal">/ {{ promo.usage_limit|default:"∞" }}</span>
+                            </div>
+                            {% if promo.per_user_limit %}
+                                <div class="text-[10px] text-slate-400">{{ promo.per_user_limit }}/user limit</div>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300 font-mono text-[11px]">
+                            {% if promo.start_at or promo.end_at %}
+                                <div>{{ promo.start_at|date:"M d, Y"|default:"Start" }}</div>
+                                <div class="text-slate-400">&rarr; {{ promo.end_at|date:"M d, Y"|default:"Indefinite" }}</div>
+                            {% else %}
+                                <span class="text-slate-400">Always active</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4">
+                            {% if not promo.is_active %}
+                                <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-[#172B40] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#26364B]">Disabled</span>
+                            {% elif promo.is_expired %}
+                                <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-50 dark:bg-[#321F26] text-red-700 dark:text-[#FCA5A5] border border-red-200 dark:border-[#522933]">Expired</span>
+                            {% elif promo.is_scheduled %}
+                                <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-50 dark:bg-[#302719] text-amber-700 dark:text-[#FCD34D] border border-amber-200 dark:border-[#4d3a20]">Scheduled</span>
+                            {% else %}
+                                <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-50 dark:bg-[#142B25] text-emerald-700 dark:text-[#86EFAC] border border-emerald-200 dark:border-[#1e4839]">Active</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-right">
+                            <div class="inline-flex items-center gap-1.5">
+                                <a href="{% url 'billing:promotion-analytics' promo.pk %}" class="p-1.5 rounded-lg border border-slate-200 dark:border-[#26364B] text-slate-600 dark:text-slate-300 hover:text-[#0284C7] dark:hover:text-[#38BDF8] hover:bg-slate-50 dark:hover:bg-[#172B40] transition" title="Analytics">
+                                    📊
+                                </a>
+                                <a href="{% url 'billing:promotion-update' promo.pk %}" class="p-1.5 rounded-lg border border-slate-200 dark:border-[#26364B] text-slate-600 dark:text-slate-300 hover:text-[#0284C7] dark:hover:text-[#38BDF8] hover:bg-slate-50 dark:hover:bg-[#172B40] transition" title="Edit">
+                                    ✏️
+                                </a>
+                                <form method="POST" action="{% url 'billing:promotion-toggle' promo.pk %}" class="inline m-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-1.5 rounded-lg border border-slate-200 dark:border-[#26364B] text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-50 dark:hover:bg-[#172B40] transition" title="{% if promo.is_active %}Disable{% else %}Activate{% endif %}">
+                                        {% if promo.is_active %}⏸️{% else %}▶️{% endif %}
+                                    </button>
+                                </form>
+                                <form method="POST" action="{% url 'billing:promotion-delete' promo.pk %}" onsubmit="return confirm('Delete or archive promotion {{ promo.code }}?');" class="inline m-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-1.5 rounded-lg border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition" title="Delete">
+                                        🗑️
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-12 text-center text-slate-500">
+                            <div class="text-3xl mb-2">🎟️</div>
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                <span class="lang-en">No promotions found matching your filter</span>
+                                <span class="lang-my">ရှာဖွေမှုနှင့် ကိုက်ညီသော ပရိုမိုးရှင်း မရှိပါ</span>
+                            </p>
+                            <p class="text-xs text-slate-400 mt-1 mb-4">
+                                <span class="lang-en">Create your first course discount code to attract more student enrollments.</span>
+                                <span class="lang-my">ကျောင်းသားများ ပိုမိုတက်ရောက်နိုင်ရန် လျှော့စျေးကူပွန် အသစ်ဖန်တီးပါ။</span>
+                            </p>
+                            <a href="{% url 'billing:promotion-create' %}" class="inline-block px-4 py-2 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold shadow-sm transition">
+                                <span class="lang-en">Create Promotion</span>
+                                <span class="lang-my">ပရိုမိုးရှင်း အသစ်ဖန်တီးရန်</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="p-4 border-t border-slate-100 dark:border-[#26364B] flex items-center justify-between text-xs text-slate-500">
+            <div>
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </div>
+            <div class="flex gap-2">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-3 py-1 rounded-lg border border-slate-200 dark:border-[#26364B] hover:bg-slate-50 dark:hover:bg-[#172B40] transition">Previous</a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-3 py-1 rounded-lg border border-slate-200 dark:border-[#26364B] hover:bg-slate-50 dark:hover:bg-[#172B40] transition">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

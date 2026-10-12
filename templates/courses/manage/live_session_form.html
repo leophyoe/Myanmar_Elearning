@@ -1,55 +1,363 @@
 {% extends 'base.html' %}
+{% load i18n %}
 
-{% block title %}Live Session - {{ PLATFORM_NAME }}{% endblock %}
+{% block title %}{% if object %}Edit Live Session{% else %}Schedule Live Session{% endif %} - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <a href="{% url 'live-session-list' %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to live sessions</a>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <!-- Breadcrumb -->
+    <div class="mb-6 flex items-center justify-between">
+        <a href="{% url 'live-session-list' %}" class="inline-flex items-center text-xs font-medium text-slate-500 hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            <span class="lang-en">Back to Live Sessions</span>
+            <span class="lang-my">တိုက်ရိုက်သင်ကြားမှုများသို့ ပြန်သွားရန်</span>
+        </a>
+        <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+            THUTA Virtual Classroom Studio
+        </span>
+    </div>
 
-    <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mt-4">
-        <div class="flex items-center justify-between pb-5 mb-6 border-b border-slate-800">
-            <h1 class="text-xl font-bold text-white">
-                {% if object %}Edit Live Session{% else %}Schedule Live Session{% endif %}
-            </h1>
-            <span class="text-[11px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 uppercase">
-                Zoom / Meet / Teams
-            </span>
+    <!-- Main Card -->
+    <div class="rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-xl overflow-hidden">
+        <!-- Header -->
+        <div class="px-6 sm:px-8 py-6 border-b border-slate-100 dark:border-[#26364B] bg-gradient-to-r from-sky-500/5 via-transparent to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#0284C7] dark:bg-[#38BDF8]"></span>
+                    <span class="lang-en">{% if object %}Edit Live Session{% else %}Schedule New Live Session{% endif %}</span>
+                    <span class="lang-my">{% if object %}တိုက်ရိုက်သင်ကြားမှု ပြင်ဆင်ရန်{% else %}တိုက်ရိုက်သင်ကြားမှု အသစ်ဖွင့်လှစ်ရန်{% endif %}</span>
+                </h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    <span class="lang-en">Configure schedule and virtual classroom connection settings.</span>
+                    <span class="lang-my">တိုက်ရိုက်သင်ကြားမှု အချိန်ဇယားနှင့် Virtual Classroom ချိတ်ဆက်မှု သတ်မှတ်ရန်</span>
+                </p>
+            </div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] text-[11px] font-mono text-slate-600 dark:text-slate-300">
+                <svg class="w-3.5 h-3.5 text-[#0284C7] dark:text-[#38BDF8]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <span>BigBlueButton · Zoom · Meet</span>
+            </div>
         </div>
 
-        <form method="POST" class="space-y-5 text-sm">
+        <!-- Form Body -->
+        <form method="POST" class="p-6 sm:p-8 space-y-6 text-sm">
             {% csrf_token %}
 
             {% if form.non_field_errors %}
-            <div class="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs">
+            <div class="p-4 rounded-xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:red-900 text-red-700 dark:text-red-300 text-xs">
                 {{ form.non_field_errors }}
             </div>
             {% endif %}
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {% for field in form %}
-                <div class="{% if field.name == 'notes' or field.name == 'join_url' %}md:col-span-2{% endif %}">
-                    <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">
-                        {{ field.label }}{% if field.field.required %} <span class="text-red-400">*</span>{% endif %}
-                    </label>
-                    {{ field }}
-                    {% if field.help_text %}<p class="text-[10px] text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
-                    {% for error in field.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+            <!-- Provider Selection Banner -->
+            <div id="bbbNotice" class="p-4 rounded-xl bg-sky-50/80 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-xs text-sky-900 dark:text-sky-200 flex items-start gap-3">
+                <div class="p-1.5 rounded-lg bg-sky-100 dark:bg-sky-900/60 text-[#0284C7] dark:text-[#38BDF8] shrink-0 mt-0.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
-                {% endfor %}
+                <div class="leading-relaxed">
+                    <div class="font-bold text-slate-900 dark:text-white text-xs mb-0.5">
+                        <span class="lang-en">THUTA Classroom (BigBlueButton) Auto-Provisioning Active</span>
+                        <span class="lang-my">THUTA စာသင်ခန်း အလိုအလျောက် ချိတ်ဆက်မှုစနစ်</span>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-300">
+                        <span class="lang-en">External meeting links are not required for BigBlueButton. THUTA will automatically provision a secure virtual room with whiteboard, slide presentation, screen sharing, and attendance tracking.</span>
+                        <span class="lang-my">BigBlueButton ကို အသုံးပြုရာတွင် ပြင်ပ meeting link ထည့်သွင်းရန် မလိုပါ။ THUTA မှ whiteboard, presentation slide, screen sharing နှင့် attendance စနစ်ပါဝင်သော လုံခြုံသည့် virtual room ကို အလိုအလျောက် ဖန်တီးပေးမည်ဖြစ်ပါသည်။</span>
+                    </p>
+                </div>
             </div>
 
-            <div class="flex gap-3 pt-2">
-                <button type="submit" class="px-6 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition">
-                    Save session
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Course -->
+                <div class="md:col-span-2">
+                    <label class="block text-slate-700 dark:text-slate-300 font-semibold text-xs mb-2">
+                        <span class="lang-en">Course</span>
+                        <span class="lang-my">သက်ဆိုင်ရာ သင်တန်း</span>
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.course }}
+                    {% for error in form.course.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+                </div>
+
+                <!-- Session Title -->
+                <div class="md:col-span-2">
+                    <label class="block text-slate-700 dark:text-slate-300 font-semibold text-xs mb-2">
+                        <span class="lang-en">Session Title</span>
+                        <span class="lang-my">အတန်းခေါင်းစဉ်</span>
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.title }}
+                    {% for error in form.title.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+                </div>
+
+                <!-- Video Conferencing Provider -->
+                <div>
+                    <label class="block text-slate-700 dark:text-slate-300 font-semibold text-xs mb-2">
+                        <span class="lang-en">Video Conferencing Provider</span>
+                        <span class="lang-my">အသုံးပြုမည့် စနစ်</span>
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.provider }}
+                    {% for error in form.provider.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+                </div>
+
+                <!-- External Join URL (Dynamic) -->
+                <div id="joinUrlContainer">
+                    <label class="block text-slate-700 dark:text-slate-300 font-semibold text-xs mb-2">
+                        <span class="lang-en">Meeting URL</span>
+                        <span class="lang-my">ချိတ်ဆက်ရန် လင့်ခ်</span>
+                        <span id="urlRequiredMark" class="text-red-500 hidden">*</span>
+                    </label>
+                    {{ form.join_url }}
+                    <p id="urlHelpText" class="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">
+                        <span class="lang-en">For Zoom / Meet, paste external link. Not required for BigBlueButton.</span>
+                        <span class="lang-my">Zoom / Google Meet အသုံးပြုပါက ပြင်ပ link ထည့်ပေးပါ။ BigBlueButton အတွက် မလိုပါ။</span>
+                    </p>
+                    {% for error in form.join_url.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+                </div>
+
+                <!-- Schedule Mode & Multi-Day Series Pattern -->
+                <div class="md:col-span-2 p-5 rounded-2xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B]">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <div>
+                            <label class="block text-slate-800 dark:text-slate-200 font-bold text-xs">
+                                <span class="lang-en">Schedule Pattern / Live Class Frequency</span>
+                                <span class="lang-my">အတန်းချိန်ဖွင့်လှစ်မှု ပုံစံ (၁ ရက်တည်း သို့မဟုတ် ရက်ရှည်/အကြိမ်ကြိမ် အတန်းစဉ်)</span>
+                            </label>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                <span class="lang-en">Choose single class or multi-day recurring series across multiple weeks/days (e.g. Sat &amp; Sun).</span>
+                                <span class="lang-my">တစ်ရက်တည်း အတန်း သို့မဟုတ် ရက်သတ္တပတ်ပေါင်းများစွာ အကြိမ်ကြိမ်သင်ကြားမည့် အတန်းစဉ် ရွေးချယ်နိုင်ပါသည်။</span>
+                            </p>
+                        </div>
+                        <div class="w-full sm:w-72">
+                            {{ form.schedule_type }}
+                        </div>
+                    </div>
+
+                    <!-- Multi-Day Recurring Details (Shown when schedule_type == 'recurring') -->
+                    <div id="recurringScheduleBox" class="pt-4 border-t border-slate-200 dark:border-[#26364B] space-y-4 hidden">
+                        <div>
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold text-xs mb-2">
+                                <span class="lang-en">Repeating Days of the Week</span>
+                                <span class="lang-my">သင်ကြားမည့် နေ့ရက်များ ရွေးချယ်ရန်</span>
+                                <span class="text-red-500">*</span>
+                            </label>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2" id="weekdaysGrid">
+                                {% for choice in form.recurring_days %}
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-[#26364B] bg-white dark:bg-[#111C2E] hover:border-sky-500 dark:hover:border-sky-400 cursor-pointer text-xs transition">
+                                    {{ choice.tag }}
+                                    <span class="font-medium text-slate-800 dark:text-slate-200 text-[11px]">{{ choice.choice_label }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            {% for error in form.recurring_days.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-slate-700 dark:text-slate-300 font-semibold text-xs mb-1.5">
+                                    <span class="lang-en">Number of Weeks (ကြာမြင့်မည့် အပတ်အရေအတွက်)</span>
+                                    <span class="lang-my">ကြာမြင့်မည့် အပတ်အရေအတွက်</span>
+                                </label>
+                                {{ form.recurrence_weeks }}
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">e.g. 4 weeks, 8 weeks, 12 weeks</p>
+                                {% for error in form.recurrence_weeks.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                            <div>
+                                <label class="block text-slate-700 dark:text-slate-300 font-semibold text-xs mb-1.5">
+                                    <span class="lang-en">Total Sessions Cap (စုစုပေါင်း အတန်းချိန် အရေအတွက်)</span>
+                                    <span class="lang-my">စုစုပေါင်း အတန်းချိန် အရေအတွက်</span>
+                                </label>
+                                {{ form.total_sessions }}
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">e.g. 8 sessions (auto-capped by week count if left empty)</p>
+                                {% for error in form.total_sessions.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Summary Badge -->
+                        <div id="recurringSummaryPreview" class="p-3 rounded-xl bg-purple-50/80 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-xs text-purple-900 dark:text-purple-200 flex items-center gap-2.5">
+                            <svg class="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span id="recurringPreviewText">Recurring Series: Automatic batch creation of class sessions across your selected days.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Start Time -->
+                <div>
+                    <label class="block text-slate-700 dark:text-slate-300 font-semibold text-xs mb-2">
+                        <span class="lang-en">Starting Date &amp; Time (ပထမဆုံးအတန်း စတင်မည့် အချိန်)</span>
+                        <span class="lang-my">ပထမဆုံးအတန်း စတင်မည့် အချိန်</span>
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.starts_at }}
+                    {% for error in form.starts_at.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+                </div>
+
+                <!-- Duration Minutes -->
+                <div>
+                    <label class="block text-slate-700 dark:text-slate-300 font-semibold text-xs mb-2">
+                        <span class="lang-en">Session Duration (Minutes)</span>
+                        <span class="lang-my">ကြာမြင့်ချိန် (မိနစ်)</span>
+                        <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.duration_minutes }}
+                    {% for error in form.duration_minutes.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+                </div>
+
+                <!-- Notes / Agenda -->
+                <div class="md:col-span-2">
+                    <label class="block text-slate-700 dark:text-slate-300 font-semibold text-xs mb-2">
+                        <span class="lang-en">Agenda &amp; Prerequisites</span>
+                        <span class="lang-my">သင်ကြားမည့် အကြောင်းအရာနှင့် ကြိုတင်ပြင်ဆင်ရန်</span>
+                    </label>
+                    {{ form.notes }}
+                    {% for error in form.notes.errors %}<p class="text-xs text-red-500 mt-1">{{ error }}</p>{% endfor %}
+                </div>
+
+                <!-- Checkboxes -->
+                <div class="md:col-span-2 space-y-3 pt-2">
+                    <div class="flex items-center gap-3">
+                        {{ form.record_meeting }}
+                        <label for="{{ form.record_meeting.id_for_label }}" class="text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                            <span class="lang-en">Enable automatic classroom recording for student replay</span>
+                            <span class="lang-my">ကျောင်းသားများ ပြန်လည်ကြည့်ရှုနိုင်ရန် သင်ကြားမှုအား အလိုအလျောက် record ပြုလုပ်မည်</span>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        {{ form.is_published }}
+                        <label for="{{ form.is_published.id_for_label }}" class="text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                            <span class="lang-en">Publish to enrolled students</span>
+                            <span class="lang-my">သင်တန်းသားများ အချိန်ဇယားတွင် မြင်တွေ့ခွင့်ပြုမည်</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-4 pt-6 border-t border-slate-100 dark:border-[#26364B]">
+                <button type="submit" class="px-6 py-3 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white font-semibold text-sm transition shadow-lg shadow-sky-600/20 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    <span class="lang-en">Save Live Session</span>
+                    <span class="lang-my">သိမ်းဆည်းမည်</span>
                 </button>
-                <a href="{% url 'live-session-list' %}" class="px-6 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition">Cancel</a>
+                <a href="{% url 'live-session-list' %}" class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium transition">
+                    <span class="lang-en">Cancel</span>
+                    <span class="lang-my">မလုပ်တော့ပါ</span>
+                </a>
             </div>
         </form>
     </div>
 
-    <p class="text-[11px] text-slate-600 mt-4 leading-relaxed">
-        The joining link is only shown to students who already have access to the
-        course (approved enrolment for paid courses).
-    </p>
+    <!-- Security & Privacy Note -->
+    <div class="mt-6 p-4 rounded-xl bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] text-xs text-slate-500 dark:text-slate-400 flex items-center gap-3">
+        <svg class="w-5 h-5 text-[#0284C7] dark:text-[#38BDF8] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        <p class="leading-relaxed">
+            <span class="lang-en">For security, only enrolled students and authorized instructors have access to this live classroom.</span>
+            <span class="lang-my">လုံခြုံရေးအရ သင်တန်းတွင် တက်ရောက်ခွင့်ရရှိထားသော ကျောင်းသားများနှင့် တာဝန်ကျ ဆရာ/ဆရာမများသာ ဤ Live Session သို့ ဝင်ရောက်ခွင့်ရရှိမည်ဖြစ်ပါသည်။</span>
+        </p>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var providerSelect = document.getElementById('id_provider');
+    var bbbNotice = document.getElementById('bbbNotice');
+    var joinUrlInput = document.getElementById('id_join_url');
+    var urlRequiredMark = document.getElementById('urlRequiredMark');
+    var urlHelpText = document.getElementById('urlHelpText');
+
+    var scheduleTypeSelect = document.getElementById('id_schedule_type');
+    var recurringBox = document.getElementById('recurringScheduleBox');
+    var previewText = document.getElementById('recurringPreviewText');
+    var weeksInput = document.getElementById('id_recurrence_weeks');
+    var totalSessionsInput = document.getElementById('id_total_sessions');
+    var dayCheckboxes = document.querySelectorAll('.recurring-day-check');
+
+    var dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    function updateProviderUI() {
+        if (!providerSelect) return;
+        var val = providerSelect.value;
+        if (val === 'bigbluebutton') {
+            if (bbbNotice) bbbNotice.classList.remove('hidden');
+            if (urlRequiredMark) urlRequiredMark.classList.add('hidden');
+            if (joinUrlInput) {
+                joinUrlInput.placeholder = 'Auto-provisioned by THUTA BigBlueButton (Leave blank)';
+                joinUrlInput.classList.add('opacity-60');
+            }
+            if (urlHelpText) {
+                urlHelpText.innerHTML = '<span class="lang-en">BigBlueButton will automatically create the room. Leave blank.</span><span class="lang-my">BigBlueButton အသုံးပြုပါက အလိုအလျောက် room ဖန်တီးပေးမည်ဖြစ်၍ ကွက်လပ်ထားနိုင်ပါသည်။</span>';
+            }
+        } else {
+            if (bbbNotice) bbbNotice.classList.add('hidden');
+            if (urlRequiredMark) urlRequiredMark.classList.remove('hidden');
+            if (joinUrlInput) {
+                joinUrlInput.classList.remove('opacity-60');
+                if (val === 'zoom') {
+                    joinUrlInput.placeholder = 'https://zoom.us/j/123456789...';
+                    if (urlHelpText) urlHelpText.innerHTML = '<span class="lang-en">Please enter the full Zoom meeting link.</span><span class="lang-my">Zoom meeting link အပြည့်အစုံ ထည့်သွင်းပေးပါ။</span>';
+                } else if (val === 'google_meet') {
+                    joinUrlInput.placeholder = 'https://meet.google.com/abc-defg-hij';
+                    if (urlHelpText) urlHelpText.innerHTML = '<span class="lang-en">Please enter the full Google Meet link.</span><span class="lang-my">Google Meet link အပြည့်အစုံ ထည့်သွင်းပေးပါ။</span>';
+                } else {
+                    joinUrlInput.placeholder = 'https://...';
+                    if (urlHelpText) urlHelpText.innerHTML = '<span class="lang-en">Please enter the meeting join URL.</span><span class="lang-my">Meeting join URL ကို ထည့်သွင်းပေးပါ။</span>';
+                }
+            }
+        }
+    }
+
+    function updateRecurringUI() {
+        if (!scheduleTypeSelect || !recurringBox) return;
+        var isRecurring = scheduleTypeSelect.value === 'recurring';
+        if (isRecurring) {
+            recurringBox.classList.remove('hidden');
+            updateRecurringPreview();
+        } else {
+            recurringBox.classList.add('hidden');
+        }
+    }
+
+    function updateRecurringPreview() {
+        if (!previewText) return;
+        var selectedDays = [];
+        dayCheckboxes.forEach(function(cb) {
+            if (cb.checked) {
+                var idx = parseInt(cb.value, 10);
+                if (!isNaN(idx) && dayLabels[idx]) {
+                    selectedDays.push(dayLabels[idx]);
+                }
+            }
+        });
+
+        var weeks = parseInt(weeksInput ? weeksInput.value : 4, 10) || 4;
+        var totalCap = parseInt(totalSessionsInput ? totalSessionsInput.value : 0, 10);
+
+        if (selectedDays.length === 0) {
+            previewText.textContent = "📅 Multi-Day Series: Please select one or more days of the week above (e.g. Sat & Sun).";
+        } else {
+            var calculatedCount = selectedDays.length * weeks;
+            if (totalCap && totalCap < calculatedCount) {
+                calculatedCount = totalCap;
+            }
+            previewText.textContent = "📅 Multi-Day Series: Recurring every " + selectedDays.join(', ') + " across " + weeks + " weeks (Total ~" + calculatedCount + " live classroom sessions).";
+        }
+    }
+
+    if (providerSelect) {
+        providerSelect.addEventListener('change', updateProviderUI);
+        updateProviderUI();
+    }
+
+    if (scheduleTypeSelect) {
+        scheduleTypeSelect.addEventListener('change', updateRecurringUI);
+        updateRecurringUI();
+    }
+
+    dayCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateRecurringPreview);
+    });
+    if (weeksInput) weeksInput.addEventListener('input', updateRecurringPreview);
+    if (totalSessionsInput) totalSessionsInput.addEventListener('input', updateRecurringPreview);
+});
+</script>
 {% endblock %}

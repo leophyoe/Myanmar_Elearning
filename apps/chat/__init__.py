@@ -1,0 +1,2 @@
+"""THUTA Messenger app package."""
+

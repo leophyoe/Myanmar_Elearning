@@ -21,7 +21,7 @@
                     <span class="lang-en">Membership Tier</span>
                     <span class="lang-my">အသင်းဝင် အဆင့်</span>
                 </span>
-                <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">{{ plan.name }} <span class="lang-en">Membership</span><span class="lang-my">အသင်းဝင်ခွင့်</span></h1>
+                <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white"><span class="lang-en">{{ plan.name }} Membership</span><span class="lang-my">{{ plan.name }} အသင်းဝင်ခွင့်</span></h1>
                 <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">{{ plan.description }}</p>
             </div>
             <div class="text-left sm:text-right shrink-0">
@@ -51,56 +51,74 @@
                 </div>
             {% endif %}
 
-            <!-- Local Payment Instructions Box -->
+            <!-- Dynamic Accepted Payment Methods Box -->
             <div class="rounded-2xl bg-slate-50 dark:bg-[#162235] border border-slate-200 dark:border-[#26364B] p-6 shadow-sm">
-                <div class="flex items-center gap-2 mb-2 text-[#0284C7] dark:text-[#38BDF8] font-bold text-sm">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span><span class="lang-en">Accepted Myanmar Payment Methods</span><span class="lang-my">လက်ခံသော မြန်မာငွေပေးချေမှု နည်းလမ်းများ</span></span>
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2 text-[#0284C7] dark:text-[#38BDF8] font-bold text-sm">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <span><span class="lang-en">Accepted Payment Channels</span><span class="lang-my">လက်ခံသော ငွေပေးချေမှု လမ်းကြောင်းများ</span></span>
+                    </div>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-950/80 text-[#0284C7] dark:text-[#38BDF8] border border-sky-200 dark:border-sky-800">
+                        {{ payment_methods|length }} Channels Active
+                    </span>
                 </div>
                 <p class="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
-                    <span class="lang-en">Please transfer the subscription fee to one of our official payment accounts below and upload the transaction screenshot receipt.</span>
-                    <span class="lang-my">ကျေးဇူးပြု၍ အောက်ဖော်ပြပါ တရားဝင် ငွေပေးချေမှုအကောင့်များသို့ လွှဲပြောင်းပြီး ငွေလွှဲပြေစာ screenshot ကို တင်ပေးပါ။</span>
+                    <span class="lang-en">Transfer the membership fee using any active channel below (MMQR, Visa, MPU, Mobile Wallet, or Bank Transfer) and submit your screenshot receipt.</span>
+                    <span class="lang-my">အောက်ပါ တရားဝင် ငွေပေးချေမှု လမ်းကြောင်းများ (MMQR၊ Visa၊ MPU၊ မိုဘိုင်းပိုက်ဆံအိတ် သို့မဟုတ် ဘဏ်) မှ အဆင်ပြေရာသို့ လွှဲပြောင်းပြီး ငွေလွှဲပြေစာ screenshot ကို တင်ပေးပါ။</span>
                 </p>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="p-4 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] flex items-start gap-3 shadow-sm">
-                        <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 flex items-center justify-center font-bold text-xs shrink-0">
-                            KP
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-slate-900 dark:text-white">KBZPay (KPay)</div>
-                            <div class="text-sm font-mono font-bold text-[#0284C7] dark:text-[#38BDF8] select-all">09-974288199</div>
-                            <div class="text-[11px] text-slate-500 dark:text-slate-400">Name: Myanmar E-Learning</div>
-                        </div>
-                    </div>
-
-                    <div class="p-4 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] flex items-start gap-3 shadow-sm">
-                        <div class="w-9 h-9 rounded-lg bg-yellow-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 flex items-center justify-center font-bold text-xs shrink-0">
-                            WP
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-slate-900 dark:text-white">Wave Money / Wave Pay</div>
-                            <div class="text-sm font-mono font-bold text-amber-600 dark:text-amber-400 select-all">09-974288199</div>
-                            <div class="text-[11px] text-slate-500 dark:text-slate-400">Name: Myanmar E-Learning</div>
-                        </div>
-                    </div>
-
-                    <div class="sm:col-span-2 p-4 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] flex items-start gap-3 shadow-sm">
-                        <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center font-bold text-xs shrink-0">
-                            🏦
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-slate-900 dark:text-white">Bank Transfer (KBZ / CB / AYA Bank)</div>
-                            <div class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                                KBZ Bank: <strong class="text-slate-900 dark:text-white font-mono select-all">012345678901234</strong> &nbsp;|&nbsp;
-                                AYA Bank: <strong class="text-slate-900 dark:text-white font-mono select-all">009876543210</strong>
+                {% if payment_methods %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {% for pm in payment_methods %}
+                    <div class="p-4 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] flex flex-col justify-between gap-3 shadow-sm hover:border-[#0284C7] dark:hover:border-[#38BDF8] transition">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-[#0284C7] dark:text-[#38BDF8] border border-sky-200 dark:border-sky-800 flex items-center justify-center font-bold text-base shrink-0">
+                                {% if pm.is_card %}💳
+                                {% elif pm.is_wallet %}📱
+                                {% elif pm.is_bank %}🏦
+                                {% else %}🔳{% endif %}
                             </div>
-                            <div class="text-[11px] text-slate-500 dark:text-slate-400">Account Name: Myanmar E-Learning</div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-1">
+                                    <div class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ pm.name }}</div>
+                                    <span class="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">{{ pm.code }}</span>
+                                </div>
+                                {% if pm.account_number %}
+                                <div class="text-sm font-mono font-bold text-[#0284C7] dark:text-[#38BDF8] select-all mt-0.5">{{ pm.account_number }}</div>
+                                {% endif %}
+                                {% if pm.account_name %}
+                                <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate">{{ pm.account_name }}</div>
+                                {% endif %}
+                            </div>
                         </div>
+
+                        {% if pm.qr_image %}
+                        <div class="p-2.5 rounded-lg bg-slate-50 dark:bg-[#0B1220] border border-slate-200 dark:border-[#26364B] flex items-center gap-3">
+                            <img src="{{ pm.qr_image.url }}" alt="{{ pm.name }} QR" class="w-14 h-14 object-contain rounded bg-white p-0.5 border border-slate-300 dark:border-slate-700 shrink-0">
+                            <div class="text-[11px] text-slate-600 dark:text-slate-400">
+                                <span class="font-bold text-slate-900 dark:text-white block">Official QR Code</span>
+                                <a href="{{ pm.qr_image.url }}" target="_blank" class="text-[#0284C7] dark:text-[#38BDF8] hover:underline">Scan or View Full Size &rarr;</a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if pm.instructions or pm.instructions_my %}
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-[#1E2C3F] leading-tight">
+                            <span class="lang-en">{{ pm.instructions|default:pm.instructions_my }}</span>
+                            <span class="lang-my">{{ pm.instructions_my|default:pm.instructions }}</span>
+                        </div>
+                        {% endif %}
                     </div>
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="p-6 text-center text-slate-500 dark:text-slate-400 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B]">
+                    <p class="font-bold text-sm">Payment channels are currently undergoing setup.</p>
+                    <p class="text-xs mt-1">Please check back shortly or contact platform support.</p>
+                </div>
+                {% endif %}
             </div>
 
             <!-- Payment Submission Form -->

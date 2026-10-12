@@ -231,8 +231,10 @@ class PaymentMethod(BaseModel):
     """
     class MethodType(models.TextChoices):
         QR = 'qr', 'QR Code (MMQR / Dynamic QR)'
-        WALLET = 'wallet', 'Mobile Wallet'
+        CARD = 'card', 'Card Payment (Visa / Mastercard / MPU / JCB)'
+        WALLET = 'wallet', 'Mobile Wallet (KBZPay / WavePay / AYA Pay)'
         BANK_TRANSFER = 'bank_transfer', 'Bank Transfer'
+        GATEWAY = 'gateway', 'Online Payment Gateway'
         OTHER = 'other', 'Other'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -260,6 +262,62 @@ class PaymentMethod(BaseModel):
         status = "Active" if self.is_active else "Disabled"
         return f"{self.name} ({self.get_method_type_display()}) - {status}"
 
+    @property
+    def is_mmqr(self) -> bool:
+        return self.code == 'mmqr' or self.method_type == self.MethodType.QR
+
+    @property
+    def is_card(self) -> bool:
+        return self.method_type == self.MethodType.CARD or self.code in ['visa', 'mastercard', 'mpu', 'visa_master', 'card']
+
+    @property
+    def is_wallet(self) -> bool:
+        return self.method_type == self.MethodType.WALLET
+
+    @property
+    def is_bank(self) -> bool:
+        return self.method_type == self.MethodType.BANK_TRANSFER
+
+    def is_ready_for_checkout(self) -> bool:
+        """
+        MMQR is only ready for customer checkout if it is enabled AND
+        has an actual administrator-uploaded QR image.
+        """
+        return bool(self.is_active and self.qr_image)
+
+    def get_missing_requirements(self) -> list:
+        """Returns list of missing requirements to display as admin warnings."""
+        missing = []
+        if not self.is_active:
+            missing.append("Availability status is currently set to Disabled.")
+        if not self.qr_image:
+            missing.append("Official MMQR code image has not been uploaded.")
+        if not (self.account_name or '').strip():
+            missing.append("Merchant / Platform display name is missing.")
+        if not (self.instructions or self.instructions_my or '').strip():
+            missing.append("Customer payment instructions are missing.")
+        return missing
+
+    @classmethod
+    def get_mmqr(cls):
+        """Retrieves or creates the canonical MMQR payment method."""
+        mmqr = cls.objects.filter(code='mmqr').first()
+        if not mmqr:
+            mmqr, _ = cls.objects.get_or_create(
+                code='mmqr',
+                defaults={
+                    'name': 'MMQR',
+                    'method_type': cls.MethodType.QR,
+                    'account_name': 'THUTA E-Learning Platform',
+                    'account_number': '',
+                    'instructions': 'Scan the official MMQR with any Myanmar banking or mobile wallet app (KBZPay, WavePay, AYA Pay, CB Pay, etc.). Pay the exact amount displayed above and submit your transaction slip below.',
+                    'instructions_my': 'မည်သည့် မြန်မာမိုဘိုင်းဘဏ် သို့မဟုတ် ဝေါလက်အက်ပ်ဖြင့်မဆို (KBZPay, WavePay, AYA, CB စသည်) တရားဝင် MMQR ကို စကင်ဖတ်ပါ။ အထက်ဖော်ပြပါ ငွေပမာဏအတိအကျကို ထည့်သွင်းပေးချေပြီး ငွေလွှဲပြေစာနံပါတ် သို့မဟုတ် စလစ်ကို အောက်တွင် တင်သွင်းပါ။',
+                    'display_order': 1,
+                    'is_active': False,
+                }
+            )
+        return mmqr
+
     @classmethod
     def ensure_default_methods(cls):
         defaults = [
@@ -274,6 +332,28 @@ class PaymentMethod(BaseModel):
                 'is_active': False,
             },
             {
+                'code': 'visa_master',
+                'name': 'Visa / Mastercard',
+                'method_type': cls.MethodType.CARD,
+                'account_name': 'THUTA E-Learning Co., Ltd.',
+                'account_number': 'Merchant ID: THUTA-CARD-01',
+                'instructions': 'Pay via Visa or Mastercard credit/debit card. Submit payment reference number and transaction slip.',
+                'instructions_my': 'Visa သို့မဟုတ် Mastercard ကတ်ဖြင့် ပေးချေပါ။ ငွေလွှဲခွင့်ပြုချက်နံပါတ် သို့မဟုတ် စလစ်ကို ထည့်သွင်းပါ။',
+                'display_order': 2,
+                'is_active': False,
+            },
+            {
+                'code': 'mpu',
+                'name': 'MPU Card (Myanmar Payment Union)',
+                'method_type': cls.MethodType.CARD,
+                'account_name': 'THUTA E-Learning Co., Ltd.',
+                'account_number': 'Merchant ID: THUTA-MPU-01',
+                'instructions': 'Pay via Myanmar Payment Union (MPU) debit card. Submit authorization code or receipt.',
+                'instructions_my': 'MPU ကတ်ဖြင့် ပေးချေပါ။ ငွေလွှဲခွင့်ပြုချက်နံပါတ် သို့မဟုတ် စလစ်ကို ထည့်သွင်းပါ။',
+                'display_order': 3,
+                'is_active': False,
+            },
+            {
                 'code': 'kbz_pay',
                 'name': 'KBZPay (KPay)',
                 'method_type': cls.MethodType.WALLET,
@@ -281,7 +361,7 @@ class PaymentMethod(BaseModel):
                 'account_number': '09-974288199',
                 'instructions': 'Transfer to the KBZPay phone number and attach screenshot.',
                 'instructions_my': 'KBZPay ဖုန်းနံပါတ်သို့ လွှဲပြီး ငွေလွှဲပြေစာ screenshot ထည့်သွင်းပါ။',
-                'display_order': 2,
+                'display_order': 4,
                 'is_active': True,
             },
             {
@@ -292,7 +372,7 @@ class PaymentMethod(BaseModel):
                 'account_number': '09-974288199',
                 'instructions': 'Transfer to the WavePay phone number and attach screenshot.',
                 'instructions_my': 'WavePay ဖုန်းနံပါတ်သို့ လွှဲပြီး ငွေလွှဲပြေစာ screenshot ထည့်သွင်းပါ။',
-                'display_order': 3,
+                'display_order': 5,
                 'is_active': True,
             },
             {
@@ -303,16 +383,20 @@ class PaymentMethod(BaseModel):
                 'account_number': '1234-5678-9012-3456',
                 'instructions': 'Transfer to KBZ Bank account and attach bank receipt.',
                 'instructions_my': 'KBZ ဘဏ်အကောင့်သို့ လွှဲပြီး ငွေလွှဲစလစ် ထည့်သွင်းပါ။',
-                'display_order': 4,
+                'display_order': 6,
                 'is_active': True,
             },
         ]
         created_or_updated = []
         for d in defaults:
             code = d.pop('code')
-            obj, _ = cls.objects.update_or_create(code=code, defaults=d)
+            obj, _ = cls.objects.get_or_create(code=code, defaults=d)
             created_or_updated.append(obj)
         return created_or_updated
+
+    @classmethod
+    def ensure_defaults(cls):
+        return cls.ensure_default_methods()
 
 
 class Payment(BaseModel):
@@ -339,6 +423,10 @@ class Payment(BaseModel):
 
     class Method(models.TextChoices):
         MMQR = 'mmqr', 'MMQR'
+        VISA = 'visa', 'Visa'
+        MASTERCARD = 'mastercard', 'Mastercard'
+        MPU = 'mpu', 'MPU Card'
+        CARD = 'card', 'Card Payment'
         KBZ_PAY = 'kbz_pay', 'KBZ Pay'
         WAVE_PAY = 'wave_pay', 'Wave Pay'
         BANK_TRANSFER = 'bank_transfer', 'Bank transfer'
@@ -351,6 +439,10 @@ class Payment(BaseModel):
     course = models.ForeignKey(
         Course, on_delete=models.PROTECT, related_name='payments',
         null=True, blank=True
+    )
+    exam = models.ForeignKey(
+        'courses.Quiz', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='payments'
     )
     plan = models.ForeignKey(
         SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True,
@@ -385,6 +477,24 @@ class Payment(BaseModel):
     platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     teacher_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     commission_rate = models.DecimalField(max_digits=5, decimal_places=4, default=0.25)
+
+    # Frozen financial split attributes (immutable upon settlement)
+    instructor_level_at_payment = models.CharField(
+        max_length=32, blank=True, default='', db_index=True,
+        help_text="Instructor pedagogical rank frozen at transaction time."
+    )
+    platform_commission_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('50.00'),
+        help_text="Platform commission percentage frozen at payment settlement."
+    )
+    instructor_share_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, default=Decimal('50.00'),
+        help_text="Instructor revenue share percentage frozen at payment settlement."
+    )
+    net_financial_basis = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text="Actual net discounted amount paid by student forming financial basis."
+    )
 
     billing_period = models.CharField(
         max_length=16, choices=Course.BillingPeriod.choices,
@@ -424,20 +534,145 @@ class Payment(BaseModel):
         indexes = [
             models.Index(fields=['status', 'created_at']),
             models.Index(fields=['student', 'course']),
+            models.Index(fields=['student', 'exam']),
             models.Index(fields=['student', 'plan']),
             models.Index(fields=['payment_type', 'status']),
         ]
 
     def __str__(self):
-        item = self.course.title if self.course else (self.plan.name if self.plan else self.get_payment_type_display())
+        item = self.course.title if self.course else (self.exam.title if self.exam else (self.plan.name if self.plan else self.get_payment_type_display()))
         return f'{self.amount} {self.currency} - {self.student.username} / {item}'
 
     @classmethod
-    def split(cls, amount):
+    def calculate_level_split(cls, amount, course=None):
+        """
+        Calculates exact revenue share split based on instructor level or partner terms:
+        - Freezes financial basis to actual discounted amount paid by the student.
+        - Associate Instructor: THUTA 60% / Instructor 40%
+        - Instructor: THUTA 50% / Instructor 50%
+        - Professional Instructor: THUTA 40% / Instructor 60%
+        - Teacher: Entry level (only free tutorials; 100% platform / 0% teacher fallback)
+        - Partner Course: Partner share based on course.partner_revenue_share_pct (e.g. 75/25)
+        - Platform Course / Subscription: THUTA 100% / Instructor 0%
+        """
+        amount = Decimal(str(amount or '0.00')).quantize(Decimal('0.01'))
+        if amount <= Decimal('0.00'):
+            return {
+                'platform_fee': Decimal('0.00'),
+                'teacher_amount': Decimal('0.00'),
+                'platform_commission_pct': Decimal('50.00'),
+                'instructor_share_pct': Decimal('50.00'),
+                'instructor_level_at_payment': '',
+                'net_financial_basis': Decimal('0.00'),
+            }
+
+        if not course:
+            comm_rate = Decimal(str(commission_rate()))
+            plat_fee = (amount * comm_rate).quantize(Decimal('0.01'))
+            teach_amt = amount - plat_fee
+            plat_pct = (comm_rate * Decimal('100.00')).quantize(Decimal('0.01'))
+            return {
+                'platform_fee': plat_fee,
+                'teacher_amount': teach_amt,
+                'platform_commission_pct': plat_pct,
+                'instructor_share_pct': Decimal('100.00') - plat_pct,
+                'instructor_level_at_payment': '',
+                'net_financial_basis': amount,
+            }
+
+        # Check partner course
+        if getattr(course, 'partner_institution', None):
+            raw_partner_pct = getattr(course, 'partner_revenue_share_pct', None)
+            partner_pct = Decimal(str(raw_partner_pct if raw_partner_pct is not None else '75.00'))
+            plat_pct = Decimal('100.00') - partner_pct
+            plat_fee = (amount * (plat_pct / Decimal('100.00'))).quantize(Decimal('0.01'))
+            return {
+                'platform_fee': plat_fee,
+                'teacher_amount': Decimal('0.00'),
+                'platform_commission_pct': plat_pct,
+                'instructor_share_pct': Decimal('0.00'),
+                'instructor_level_at_payment': '',
+                'net_financial_basis': amount,
+            }
+
+        # Check official platform course or no owner
+        owner = getattr(course, 'owner', None)
+        if not owner or getattr(course, 'is_official', False) or getattr(owner, 'is_admin', False):
+            return {
+                'platform_fee': amount,
+                'teacher_amount': Decimal('0.00'),
+                'platform_commission_pct': Decimal('100.00'),
+                'instructor_share_pct': Decimal('0.00'),
+                'instructor_level_at_payment': '',
+                'net_financial_basis': amount,
+            }
+
+        # Individual instructor course
+        teacher_profile = getattr(owner, 'teacher_profile', None)
+        from apps.users.models import InstructorLevel
+        clvl = getattr(teacher_profile, 'canonical_level', None)
+
+        if clvl == InstructorLevel.ASSOCIATE_INSTRUCTOR:
+            plat_pct = Decimal('60.00')
+            inst_pct = Decimal('40.00')
+        elif clvl == InstructorLevel.INSTRUCTOR:
+            plat_pct = Decimal('50.00')
+            inst_pct = Decimal('50.00')
+        elif clvl == InstructorLevel.PROFESSIONAL_INSTRUCTOR:
+            plat_pct = Decimal('40.00')
+            inst_pct = Decimal('60.00')
+        else:
+            # Fallback to default platform commission rate for backwards compatibility
+            comm_rate = Decimal(str(commission_rate()))
+            plat_pct = (comm_rate * Decimal('100.00')).quantize(Decimal('0.01'))
+            inst_pct = Decimal('100.00') - plat_pct
+            clvl = clvl or ''
+
+        plat_fee = (amount * (plat_pct / Decimal('100.00'))).quantize(Decimal('0.01'))
+        teach_amt = amount - plat_fee
+
+        return {
+            'platform_fee': plat_fee,
+            'teacher_amount': teach_amt,
+            'platform_commission_pct': plat_pct,
+            'instructor_share_pct': inst_pct,
+            'instructor_level_at_payment': clvl or '',
+            'net_financial_basis': amount,
+        }
+
+    @classmethod
+    def split(cls, amount, course=None):
         """Return ``(platform_fee, teacher_amount)`` for a gross amount."""
-        amount = Decimal(str(amount))
-        fee = (amount * Decimal(str(commission_rate()))).quantize(Decimal('0.01'))
-        return fee, amount - fee
+        res = cls.calculate_level_split(amount, course=course)
+        return res['platform_fee'], res['teacher_amount']
+
+    def freeze_revenue_split(self):
+        """
+        Freezes revenue split percentages and amounts at transaction time.
+        Once set, historical records remain immutable regardless of future
+        instructor promotions or platform policy changes.
+        """
+        if self.payment_type == self.PaymentType.SUBSCRIPTION or not self.course:
+            self.net_financial_basis = self.amount
+            self.platform_commission_pct = Decimal('100.00')
+            self.instructor_share_pct = Decimal('0.00')
+            self.instructor_level_at_payment = ''
+            self.platform_fee = self.amount
+            self.teacher_amount = Decimal('0.00')
+            return
+
+        split = self.calculate_level_split(self.amount, course=self.course)
+        self.net_financial_basis = split['net_financial_basis']
+        self.platform_commission_pct = split['platform_commission_pct']
+        self.instructor_share_pct = split['instructor_share_pct']
+        self.instructor_level_at_payment = split['instructor_level_at_payment']
+        self.platform_fee = split['platform_fee']
+        self.teacher_amount = split['teacher_amount']
+
+    def save(self, *args, **kwargs):
+        if self.amount and (self.net_financial_basis == Decimal('0.00') or not self.instructor_level_at_payment):
+            self.freeze_revenue_split()
+        super().save(*args, **kwargs)
 
     @property
     def is_successful(self):
@@ -477,7 +712,12 @@ class Payment(BaseModel):
         self.status = self.Status.SUCCESS
         self.reviewed_by = reviewer
         self.reviewed_at = timezone.now()
-        self.save(update_fields=['status', 'reviewed_by', 'reviewed_at', 'updated_at'])
+        self.freeze_revenue_split()
+        self.save(update_fields=[
+            'status', 'reviewed_by', 'reviewed_at', 'updated_at',
+            'net_financial_basis', 'platform_commission_pct', 'instructor_share_pct',
+            'instructor_level_at_payment', 'platform_fee', 'teacher_amount'
+        ])
 
     def mark_failed(self, reason='', status=None):
         if self.status in [self.Status.SUCCESS, self.Status.APPROVED]:
@@ -652,6 +892,22 @@ def has_paid_exam_voucher(user, course):
     return Payment.objects.filter(
         student=user,
         course=course,
+        payment_type=Payment.PaymentType.EXAM_VOUCHER,
+        status__in=[Payment.Status.APPROVED, Payment.Status.SUCCESS]
+    ).exists()
+
+
+def has_paid_standalone_exam(user, exam):
+    """Checks whether the student holds access to the standalone exam (free or approved payment)."""
+    if not getattr(user, 'is_authenticated', False):
+        return False
+    if getattr(user, 'is_admin', False) or user == getattr(exam, 'owner', None) or user == getattr(exam, 'assigned_instructor', None):
+        return True
+    if getattr(exam, 'is_free', False):
+        return True
+    return Payment.objects.filter(
+        student=user,
+        exam=exam,
         payment_type=Payment.PaymentType.EXAM_VOUCHER,
         status__in=[Payment.Status.APPROVED, Payment.Status.SUCCESS]
     ).exists()

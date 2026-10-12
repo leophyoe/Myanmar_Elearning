@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block title %}Instructor Exam Grading Queue - {{ PLATFORM_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <!-- Header Banner -->
+    <div class="mb-8 pb-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/80 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 mb-2.5">
+                <span>📋</span>
+                <span class="lang-en">Assessment &amp; Exam Evaluation Queue</span>
+                <span class="lang-my">စာမေးပွဲ အကဲဖြတ်စစ်ဆေးရေး ဇယား</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                <span class="lang-en">Pending Exam Submissions for Manual Grading</span>
+                <span class="lang-my">အမှတ်ပေးစစ်ဆေးရန် ကျန်ရှိသော စာမေးပွဲ အဖြေလွှာများ</span>
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                <span class="lang-en">Review and evaluate student essay responses, coding solutions, and practical labs using standardized scoring rubrics.</span>
+                <span class="lang-my">ကျောင်းသားများ၏ အဖြေလွှာများ၊ ကုဒ်ရေးသားချက်များနှင့် လက်တွေ့စစ်ဆေးမှုများကို စံသတ်မှတ်ချက်များဖြင့် စစ်ဆေးအမှတ်ပေးပါ။</span>
+            </p>
+        </div>
+
+        <a href="{% url 'standalone-exam-list' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 font-semibold text-xs transition">
+            <span>&larr;</span>
+            <span class="lang-en">Exam Center</span>
+            <span class="lang-my">စာမေးပွဲဗဟို</span>
+        </a>
+    </div>
+
+    <!-- Filter Toolbar -->
+    <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm mb-6">
+        <form method="GET" class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-[240px]">
+                <select name="exam" onchange="this.form.submit()"
+                        class="w-full px-4 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                    <option value="" data-text-en="All Examinations" data-text-my="မေးခွန်းလွှာအားလုံး">All Examinations</option>
+                    {% for ex in exams %}
+                    <option value="{{ ex.id }}" {% if selected_exam == ex.id|stringformat:"s" %}selected{% endif %}>{{ ex.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table of Submissions -->
+    {% if attempts %}
+    <div class="overflow-x-auto rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+        <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-slate-400 font-mono uppercase tracking-wider text-[11px]">
+                <tr>
+                    <th class="p-4">
+                        <span class="lang-en">Student Candidate</span>
+                        <span class="lang-my">ဖြေဆိုသူ ကျောင်းသား</span>
+                    </th>
+                    <th class="p-4">
+                        <span class="lang-en">Examination Title</span>
+                        <span class="lang-my">စာမေးပွဲ အမည်</span>
+                    </th>
+                    <th class="p-4">
+                        <span class="lang-en">Submitted At</span>
+                        <span class="lang-my">တင်သွင်းချိန်</span>
+                    </th>
+                    <th class="p-4">
+                        <span class="lang-en">Auto Score</span>
+                        <span class="lang-my">စနစ်အမှတ်</span>
+                    </th>
+                    <th class="p-4">
+                        <span class="lang-en">Status</span>
+                        <span class="lang-my">အခြေအနေ</span>
+                    </th>
+                    <th class="p-4 text-right">
+                        <span class="lang-en">Action</span>
+                        <span class="lang-my">လုပ်ဆောင်ချက်</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% for attempt in attempts %}
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
+                    <td class="p-4 font-semibold text-slate-900 dark:text-white">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-full bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center text-xs">
+                                {{ attempt.student.username|slice:":1"|upper }}
+                            </span>
+                            <div>
+                                <span class="font-bold text-slate-900 dark:text-white">{{ attempt.student.get_full_name|default:attempt.student.username }}</span>
+                                <span class="text-[10px] text-slate-400 block font-mono">@{{ attempt.student.username }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-4 text-slate-800 dark:text-slate-200 font-medium">
+                        {{ attempt.quiz.title }}
+                        {% if attempt.quiz.certificate_type == 'exam_verified' %}
+                        <span class="text-[10px] text-amber-400 block font-mono">
+                            <span class="lang-en">★ Verified Credential Target</span>
+                            <span class="lang-my">★ တရားဝင် အသိအမှတ်ပြု လက်မှတ်ရည်မှန်းချက်</span>
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4 text-slate-500 dark:text-slate-400 font-mono">
+                        {{ attempt.created_at|date:"M d, Y • H:i" }}
+                    </td>
+                    <td class="p-4 font-mono font-bold text-slate-900 dark:text-white">
+                        {{ attempt.score_percentage }}% ({{ attempt.points_earned }} <span class="lang-en">pts</span><span class="lang-my">မှတ်</span>)
+                    </td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                            <span class="lang-en">Pending Review</span>
+                            <span class="lang-my">စစ်ဆေးရန်ကျန်</span>
+                        </span>
+                    </td>
+                    <td class="p-4 text-right">
+                        <a href="{% url 'exam-grading-detail' attempt_id=attempt.id %}"
+                           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-sm transition">
+                            <span class="lang-en">Evaluate Rubric &rarr;</span>
+                            <span class="lang-my">အမှတ်ပေး စစ်ဆေးမည် &rarr;</span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-12 text-center rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B]">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl text-emerald-400">
+            ✓
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">
+            <span class="lang-en">Grading Queue Clean!</span>
+            <span class="lang-my">စစ်ဆေးရန် ကျန်ရှိသော စာမေးပွဲမရှိပါ</span>
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            <span class="lang-en">All submitted exams have been reviewed and finalized. Outstanding manual submissions will automatically appear here.</span>
+            <span class="lang-my">တင်သွင်းထားသော စာမေးပွဲများအားလုံးကို စစ်ဆေးပြီးပါပြီ။ စစ်ဆေးရန် စာမေးပွဲအသစ်များ ရောက်ရှိလာပါက ဤနေရာတွင် အလိုအလျောက် ပေါ်လာပါမည်။</span>
+        </p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+

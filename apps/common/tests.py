@@ -74,7 +74,8 @@ class Phase1SystemTests(TestCase):
 
         # Verify StudentProfile was auto-created by signals
         self.assertTrue(hasattr(self.student, 'student_profile'))
-        self.assertTrue(self.student.student_profile.student_id.startswith("MEL-2026-"))
+        self.assertTrue(self.student.student_profile.student_id.startswith("MEL-"))
+        self.assertEqual(self.student.student_profile.student_id, self.student.account_id)
 
         # Verify TeacherProfile was auto-created for the teacher
         self.assertTrue(hasattr(self.instructor, 'teacher_profile'))
@@ -281,10 +282,10 @@ class RoleBasedAccessTests(TestCase):
         )
 
     def test_07_role_values_are_three(self):
-        """The platform exposes the supported roles: ADMIN / TEACHER / STUDENT / PARTNER."""
+        """The platform exposes the supported roles: ADMIN / TEACHER / INSTRUCTOR / STUDENT / PARTNER."""
         self.assertEqual(
             [value for value, _ in UserRole.choices],
-            ['admin', 'teacher', 'student', 'partner']
+            ['admin', 'teacher', 'instructor', 'student', 'partner']
         )
 
     def test_08_dashboard_routes_resolve(self):

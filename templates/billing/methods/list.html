@@ -1,86 +1,118 @@
 {% extends 'base.html' %}
 
-{% block title %}Payment Methods Management - {{ PLATFORM_NAME }}{% endblock %}
+{% block title %}Accepted Payment Channels - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+    <!-- Top Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-[#26364B]">
         <div>
-            <h1 class="text-2xl font-bold text-white">Accepted Myanmar Payment Methods</h1>
-            <p class="text-xs text-slate-400 mt-1">Configure MMQR, mobile wallets, and bank transfer channels displayed during checkout.</p>
+            <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-2">
+                <a href="{% url 'billing:payment-settings' %}" class="hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition">
+                    &larr; <span class="lang-en">Payment Settings &amp; MMQR Hub</span><span class="lang-my">ငွေပေးချေမှု ဆက်တင်များ</span>
+                </a>
+            </div>
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <span>💳 Accepted Payment Channels</span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <span class="lang-en">Manage MMQR, Visa, Mastercard, MPU, Mobile Wallets, and Bank Transfer channels for student checkout.</span>
+                <span class="lang-my">ကျောင်းသားများ သင်တန်းအပ်နှံရန် MMQR၊ Visa၊ Mastercard၊ MPU၊ မိုဘိုင်းပိုက်ဆံအိတ်နှင့် ဘဏ်အကောင့်များကို စီမံခန့်ခွဲပါ။</span>
+            </p>
         </div>
-        <a href="{% url 'billing:method-create' %}"
-           class="px-4 py-2 text-xs font-bold rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 transition flex items-center gap-1.5 shadow-md">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Add Payment Method
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{% url 'billing:payment-settings' %}"
+               class="px-4 py-2.5 text-xs font-bold rounded-xl border border-slate-300 dark:border-[#26364B] bg-white dark:bg-[#111C2E] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#162235] transition flex items-center gap-1.5 shadow-sm">
+                <svg class="w-4 h-4 text-[#0284C7] dark:text-[#38BDF8]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                <span>MMQR Gateway Hub</span>
+            </a>
+            <a href="{% url 'billing:method-create' %}"
+               class="px-4 py-2.5 text-xs font-bold rounded-xl bg-[#0284C7] hover:bg-[#0369A1] dark:bg-[#38BDF8] dark:hover:bg-[#7DD3FC] text-white dark:text-[#0B1220] transition flex items-center gap-1.5 shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>Add Payment Method</span>
+            </a>
+        </div>
     </div>
 
-    <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900 shadow-xl">
-        <table class="w-full text-left text-xs text-slate-300 divide-y divide-slate-800">
-            <thead class="bg-slate-950/60 uppercase tracking-wider text-[11px] text-slate-400 font-semibold">
+    <!-- Table Card -->
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-[#26364B] bg-white dark:bg-[#111C2E] shadow-sm">
+        <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300 divide-y divide-slate-200 dark:divide-[#26364B]">
+            <thead class="bg-slate-50 dark:bg-[#0B1220] uppercase tracking-wider text-[11px] text-slate-500 dark:text-slate-400 font-bold">
                 <tr>
                     <th class="px-4 py-3.5">Order</th>
-                    <th class="px-4 py-3.5">Method Name</th>
-                    <th class="px-4 py-3.5">Type / Code</th>
-                    <th class="px-4 py-3.5">Account / Number</th>
+                    <th class="px-4 py-3.5">Method Channel</th>
+                    <th class="px-4 py-3.5">Type &amp; Code</th>
+                    <th class="px-4 py-3.5">Merchant / Account</th>
                     <th class="px-4 py-3.5">QR Asset</th>
                     <th class="px-4 py-3.5">Status</th>
                     <th class="px-4 py-3.5 text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-800/80">
+            <tbody class="divide-y divide-slate-200 dark:divide-[#26364B]/80">
                 {% for method in payment_methods %}
-                <tr class="hover:bg-slate-800/40 transition">
+                <tr class="hover:bg-slate-50/80 dark:hover:bg-[#162235]/60 transition">
                     <td class="px-4 py-3.5 font-mono text-slate-400">{{ method.display_order }}</td>
-                    <td class="px-4 py-3.5 font-bold text-white">{{ method.name }}</td>
+                    <td class="px-4 py-3.5 font-bold text-slate-900 dark:text-white">
+                        <div class="flex items-center gap-2">
+                            <span>
+                                {% if method.is_card %}💳
+                                {% elif method.is_wallet %}📱
+                                {% elif method.is_bank %}🏦
+                                {% else %}🔳{% endif %}
+                            </span>
+                            <span>{{ method.name }}</span>
+                        </div>
+                    </td>
                     <td class="px-4 py-3.5 font-mono">
-                        <span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-cyan-300 text-[10px]">
+                        <span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[#0284C7] dark:text-[#38BDF8] text-[10px] font-bold">
                             {{ method.code }}
                         </span>
                         <div class="text-[10px] text-slate-500 mt-0.5">{{ method.get_method_type_display }}</div>
                     </td>
                     <td class="px-4 py-3.5">
-                        <div class="text-slate-200">{{ method.account_name|default:"-" }}</div>
-                        <div class="font-mono text-amber-300 text-[11px]">{{ method.account_number|default:"-" }}</div>
+                        <div class="font-medium text-slate-800 dark:text-slate-200">{{ method.account_name|default:"-" }}</div>
+                        <div class="font-mono text-xs text-[#0284C7] dark:text-[#38BDF8] font-bold">{{ method.account_number|default:"-" }}</div>
                     </td>
                     <td class="px-4 py-3.5">
                         {% if method.qr_image %}
-                        <a href="{{ method.qr_image.url }}" target="_blank" class="text-xs text-cyan-400 hover:underline flex items-center gap-1">
+                        <a href="{{ method.qr_image.url }}" target="_blank" class="text-xs text-[#0284C7] dark:text-[#38BDF8] hover:underline flex items-center gap-1 font-semibold">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                            View Image
+                            View Asset
                         </a>
                         {% else %}
-                        <span class="text-slate-600 text-[11px]">No QR</span>
+                        <span class="text-slate-400 text-[11px]">No QR / Asset</span>
                         {% endif %}
                     </td>
                     <td class="px-4 py-3.5">
                         {% if method.is_active %}
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                             Active
                         </span>
                         {% else %}
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                            <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                             Disabled
                         </span>
                         {% endif %}
                     </td>
                     <td class="px-4 py-3.5 text-right space-x-1">
-                        <a href="{% url 'billing:method-edit' pk=method.pk %}" class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white inline-block">
+                        <a href="{% url 'billing:method-edit' pk=method.pk %}" class="px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-semibold transition inline-block">
                             Edit
                         </a>
-                        <a href="{% url 'billing:method-toggle' pk=method.pk %}" class="p-1.5 rounded hover:bg-slate-800 {% if method.is_active %}text-amber-400{% else %}text-emerald-400{% endif %} inline-block">
+                        <a href="{% url 'billing:method-toggle' pk=method.pk %}" class="px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 {% if method.is_active %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %} font-semibold transition inline-block">
                             {% if method.is_active %}Disable{% else %}Enable{% endif %}
                         </a>
-                        <a href="{% url 'billing:method-delete' pk=method.pk %}" onclick="return confirm('Delete payment channel {{ method.name }}?');" class="p-1.5 rounded hover:bg-slate-800 text-red-400 inline-block">
+                        <a href="{% url 'billing:method-delete' pk=method.pk %}" onclick="return confirm('Delete payment channel {{ method.name }}?');" class="px-2.5 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 font-semibold transition inline-block">
                             Delete
                         </a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="px-6 py-8 text-center text-slate-500">
-                        No payment channels configured.
+                    <td colspan="7" class="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                        <p class="font-bold text-sm">No payment channels configured.</p>
+                        <p class="text-xs mt-1">Click "Add Payment Method" or open MMQR Gateway Hub to configure payment options.</p>
                     </td>
                 </tr>
                 {% endfor %}
@@ -89,3 +121,4 @@
     </div>
 </div>
 {% endblock %}
+

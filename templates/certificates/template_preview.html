@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview: {{ cert_template.title }} - {{ PLATFORM_NAME }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800;900&family=Great+Vibes&family=Inter:wght@400;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        @page { size: A4 landscape; margin: 0; }
+        @media print {
+            body { background: white !important; padding: 0 !important; margin: 0 !important; }
+            .no-print { display: none !important; }
+            #cert-container { box-shadow: none !important; border-radius: 0 !important; width: 100vw !important; height: 100vh !important; }
+        }
+        .cert-font { font-family: {{ cert_font_family }}; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4 sm:p-8">
+
+    <!-- Top Action Bar -->
+    <div class="no-print max-w-5xl w-full flex flex-wrap items-center justify-between gap-3 mb-6 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-xl backdrop-blur-md">
+        <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                TEMPLATE PREVIEW
+            </span>
+            <span class="text-xs font-bold text-white">{{ cert_template.title }}</span>
+            <span class="text-xs text-slate-400">({{ cert_template.get_design_mode_display }})</span>
+        </div>
+        <div class="flex items-center gap-2.5">
+            <a href="{% url 'certificate-template-edit' pk=cert_template.pk %}" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition flex items-center gap-1">
+                <span>✏️</span>
+                <span>Edit in Studio</span>
+            </a>
+            <button onclick="window.print()" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 transition flex items-center gap-1">
+                <span>🖨️</span>
+                <span>Test Print / PDF</span>
+            </button>
+            <button id="btn-download-png" onclick="downloadPreviewPNG()" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1">
+                <span>📥</span>
+                <span>Download PNG</span>
+            </button>
+            <a href="{% url 'certificate-template-list' %}" class="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition">
+                &times; Close
+            </a>
+        </div>
+    </div>
+
+    <!-- The Certificate Canvas (A4 Landscape aspect ratio 1.414) -->
+    <div id="cert-container"
+         class="w-full max-w-[1050px] aspect-[1.414] relative rounded-2xl overflow-hidden shadow-2xl flex flex-col justify-between p-8 sm:p-14 select-none"
+         style="{% if cert_template.design_mode == 'custom_upload' and cert_template.background_image %}background-image: url('{{ cert_template.background_image.url }}'); background-size: 100% 100%; background-repeat: no-repeat;{% else %}{% if cert_template.theme_style == 'classic_gold' %}background: radial-gradient(circle at center, #111c33 0%, #080d19 100%); border: 8px double {{ cert_template.primary_color|default:'#d97706' }}; box-shadow: 0 0 50px rgba(217, 119, 6, 0.15);{% elif cert_template.theme_style == 'academic_emerald' %}background: radial-gradient(circle at center, #063d2e 0%, #022018 100%); border: 8px double {{ cert_template.primary_color|default:'#10b981' }}; box-shadow: 0 0 50px rgba(16, 185, 129, 0.15);{% elif cert_template.theme_style == 'cyber_tech' %}background: radial-gradient(circle at center, #091326 0%, #030712 100%); border: 8px double {{ cert_template.primary_color|default:'#06b6d4' }}; box-shadow: 0 0 50px rgba(6, 182, 212, 0.2);{% else %}background: #fafaf9; border: 8px double {{ cert_template.primary_color|default:'#b45309' }}; color: #1c1917; box-shadow: 0 0 50px rgba(180, 83, 9, 0.15);{% endif %}{% endif %}">
+
+        {% if cert_template.design_mode == 'custom_upload' and cert_template.background_image %}
+            <!-- Mode A: Custom Upload Coordinate Overlays -->
+            <div style="position: absolute; top: {{ cert_template.name_pos_top }}%; left: 50%; transform: translateX(-50%); font-size: {{ cert_template.name_font_size }}px; color: {{ cert_template.name_color }}; font-weight: bold; text-align: center; width: 85%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <span class="cert-font">{{ sample_student_name }}</span>
+            </div>
+
+            <div style="position: absolute; top: {{ cert_template.title_pos_top }}%; left: 50%; transform: translateX(-50%); font-size: {{ cert_template.title_font_size }}px; color: {{ cert_template.title_color }}; font-weight: 600; text-align: center; width: 85%;">
+                {{ sample_program_title }}
+            </div>
+
+            <div style="position: absolute; top: {{ cert_template.date_pos_top }}%; left: {{ cert_template.date_pos_left }}%; transform: translateX(-50%); font-size: 13px; color: {{ cert_template.accent_color }}; font-weight: 600;">
+                {{ sample_date }}
+            </div>
+
+            {% if cert_template.show_qr_code %}
+            <div style="position: absolute; top: {{ cert_template.qr_pos_top }}%; left: {{ cert_template.qr_pos_left }}%; transform: translate(-50%, -50%);">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white p-1 rounded shadow-md flex items-center justify-center font-mono text-[9px] text-slate-800 text-center">
+                    [QR CODE]
+                </div>
+            </div>
+            {% endif %}
+
+            <div style="position: absolute; top: {{ cert_template.serial_pos_top }}%; left: {{ cert_template.serial_pos_left }}%; transform: translateX(-50%); font-family: monospace; font-size: 11px; color: {{ cert_template.accent_color }}; opacity: 0.85;">
+                {{ sample_serial }}
+            </div>
+
+        {% else %}
+            <!-- Mode B: Built-in Regal Diploma Theme Layout -->
+            <!-- Vector Corner Flourishes -->
+            <div class="pointer-events-none absolute inset-3 border border-amber-500/30 rounded-lg">
+                <div class="absolute -top-1 -left-1 w-8 h-8 border-t-2 border-l-2 border-amber-400"></div>
+                <div class="absolute -top-1 -right-1 w-8 h-8 border-t-2 border-r-2 border-amber-400"></div>
+                <div class="absolute -bottom-1 -left-1 w-8 h-8 border-b-2 border-l-2 border-amber-400"></div>
+                <div class="absolute -bottom-1 -right-1 w-8 h-8 border-b-2 border-r-2 border-amber-400"></div>
+            </div>
+
+            <!-- Header Section -->
+            <div class="text-center relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    {% if cert_template.logo_image %}
+                    <img src="{{ cert_template.logo_image.url }}" alt="Logo" class="h-12 w-auto object-contain">
+                    {% else %}
+                    <div class="text-xs tracking-widest font-extrabold uppercase" style="color: {{ cert_template.primary_color }};">
+                        ✦ THUTA ACADEMY ✦
+                    </div>
+                    {% endif %}
+
+                    {% if cert_template.partner_logo %}
+                    <img src="{{ cert_template.partner_logo.url }}" alt="Partner Logo" class="h-12 w-auto object-contain">
+                    {% elif cert_template.partner %}
+                    <div class="text-xs font-semibold text-cyan-400">
+                        {{ cert_template.partner.name }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="text-xs sm:text-sm uppercase tracking-widest font-bold mb-1" style="color: {{ cert_template.primary_color }};">
+                    {{ cert_template.institution_name }}
+                </div>
+                <h1 class="cert-font text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight mb-2 {% if cert_template.theme_style == 'minimal_elegant' %}text-stone-900{% else %}text-white{% endif %}">
+                    {{ cert_template.header_title }}
+                </h1>
+                <p class="text-xs sm:text-sm italic text-slate-300 font-serif">
+                    {{ cert_template.subtitle }}
+                </p>
+            </div>
+
+            <!-- Recipient Section -->
+            <div class="text-center py-4 relative z-10">
+                <div class="cert-font text-2xl sm:text-4xl lg:text-5xl font-bold tracking-wide mb-3 inline-block border-b-2 pb-1 px-8 {% if cert_template.theme_style == 'minimal_elegant' %}text-stone-900 border-amber-600{% else %}text-white border-amber-500/60{% endif %}" style="color: {{ cert_template.name_color }};">
+                    {{ sample_student_name }}
+                </div>
+                <p class="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed mb-2 font-serif">
+                    {{ cert_template.body_text }}
+                </p>
+                <h2 class="text-base sm:text-xl lg:text-2xl font-bold tracking-wide" style="color: {{ cert_template.primary_color }};">
+                    {{ sample_program_title }}
+                </h2>
+                <div class="text-xs mt-1 font-semibold text-amber-400">
+                    Academic Standing: {{ sample_grade }}
+                </div>
+            </div>
+
+            <!-- Footer Section -->
+            <div class="grid grid-cols-3 items-end pt-4 border-t border-slate-700/50 relative z-10 text-xs">
+                <!-- Left: Serial & Date -->
+                <div class="space-y-1 text-left">
+                    <div class="font-mono text-[10px] text-cyan-400">{{ sample_serial }}</div>
+                    <div class="text-[11px] text-slate-400">Awarded: <strong class="text-slate-200">{{ sample_date }}</strong></div>
+                    <div class="text-[10px] text-emerald-400 font-bold">✓ VERIFIED CREDENTIAL</div>
+                </div>
+
+                <!-- Center: Seal & QR -->
+                <div class="flex flex-col items-center justify-center">
+                    {% if cert_template.show_seal %}
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400 bg-gradient-to-tr from-amber-600 to-yellow-400 text-slate-950 font-bold text-[9px] uppercase tracking-wider flex flex-col items-center justify-center text-center shadow-lg shadow-amber-500/20 p-1">
+                        <span>★ OFFICIAL ★</span>
+                        <span class="font-extrabold text-[10px]">SEAL</span>
+                        <span class="text-[7px]">ACCREDITED</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Right: Signatures -->
+                <div class="space-y-2 text-right">
+                    {% if cert_template.signature_2_image %}
+                    <img src="{{ cert_template.signature_2_image.url }}" alt="Signature" class="h-10 w-auto ml-auto object-contain">
+                    {% else %}
+                    <div class="font-serif italic text-base text-slate-200">
+                        {{ cert_template.signature_2_name }}
+                    </div>
+                    {% endif %}
+                    <div class="border-t border-slate-600/60 pt-1 text-[11px]">
+                        <strong class="{% if cert_template.theme_style == 'minimal_elegant' %}text-stone-900{% else %}text-white{% endif %}">{{ cert_template.signature_2_name }}</strong>
+                        <div class="text-slate-400 text-[10px]">{{ cert_template.signature_2_title }}</div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+    function downloadPreviewPNG() {
+        const btn = document.getElementById('btn-download-png');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span>⏳</span><span>Generating...</span>';
+        btn.disabled = true;
+
+        const canvasElem = document.getElementById('cert-container');
+        html2canvas(canvasElem, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: null,
+        }).then(function(canvas) {
+            const link = document.createElement('a');
+            link.download = 'certificate-preview-sample.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }).catch(function(err) {
+            console.error('Download PNG failed', err);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+    </script>
+</body>
+</html>

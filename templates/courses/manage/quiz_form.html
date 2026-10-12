@@ -1,144 +1,1503 @@
 {% extends 'base.html' %}
 
-{% block title %}Quiz Builder - {{ PLATFORM_NAME }}{% endblock %}
+{% block title %}Question Builder - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <a href="{% url 'lesson-detail' lesson_id=lesson.id %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to “{{ lesson.title }}”</a>
+    <!-- Breadcrumb -->
+    <div class="mb-4">
+        {% if lesson %}
+        <a href="{% url 'lesson-detail' lesson_id=lesson.id %}" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition">
+            &larr; <span class="lang-en">Back to Lesson “{{ lesson.title }}”</span><span class="lang-my">သင်ခန်းစာ “{{ lesson.title }}” သို့ ပြန်သွားမည်</span>
+        </a>
+        {% elif course %}
+        <a href="{% url 'course-edit' slug=course.slug %}" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition">
+            &larr; <span class="lang-en">Back to Course “{{ course.title }}”</span><span class="lang-my">သင်တန်း “{{ course.title }}” သို့ ပြန်သွားမည်</span>
+        </a>
+        {% else %}
+        <a href="{% url 'standalone-exam-detail' exam_id=quiz.id %}" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition">
+            &larr; <span class="lang-en">Back to Exam “{{ quiz.title }}”</span><span class="lang-my">စာမေးပွဲ “{{ quiz.title }}” သို့ ပြန်သွားမည်</span>
+        </a>
+        {% endif %}
+    </div>
 
-    <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mt-4">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-5 mb-6 border-b border-slate-800">
+    <!-- Main Builder Card -->
+    <div class="p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-800">
             <div>
-                <h1 class="text-xl font-bold text-white">Quiz Builder</h1>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-950 text-cyan-400 border border-cyan-800">
+                        {% if lesson %}Checkpoint Quiz{% else %}Examination Assessment{% endif %}
+                    </span>
+                    <span class="text-xs text-slate-500 font-mono" id="liveStatsCounter">{{ quiz.questions.count }} question(s)</span>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                    <span>📝</span>
+                    <span class="lang-en">{% if lesson %}Interactive Quiz Builder{% else %}Assessment Question Builder{% endif %}</span>
+                    <span class="lang-my">{% if lesson %}Quiz မေးခွန်းများ စီမံခန့်ခွဲခြင်း{% else %}စာမေးပွဲ မေးခွန်းများ စီမံခန့်ခွဲခြင်း{% endif %}</span>
+                </h1>
                 <p class="text-xs text-slate-400 mt-1">
-                    {{ course.title }} &rsaquo; {{ module.code }} &rsaquo; {{ lesson.title }}
+                    {% if lesson %}
+                        {{ course.title }} &rsaquo; {{ module.code }} &rsaquo; <span class="text-cyan-400">{{ lesson.title }}</span>
+                    {% elif course %}
+                        {{ course.title }} &rsaquo; <span class="text-amber-400 font-semibold">Course Final Assessment</span>
+                    {% else %}
+                        Exam Center &rsaquo; <span class="text-purple-400">{{ quiz.title }}</span>
+                    {% endif %}
                 </p>
             </div>
-            <span class="text-[11px] font-mono text-slate-500">{{ quiz.questions.count }} question(s)</span>
+
+            <!-- Total Score & Live Summary Badge + Student Preview Button -->
+            <div class="flex items-center gap-3 flex-wrap">
+                <button type="button" onclick="openStudentSimulationModal()" class="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/25 transition flex items-center gap-1.5 border border-cyan-400/30">
+                    <span>👁️</span>
+                    <span class="lang-en">Test Quiz (Student View)</span>
+                    <span class="lang-my">ကျောင်းသားအမြင်ဖြင့် စမ်းသပ်ဖြေဆိုမည်</span>
+                </button>
+                <div class="px-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-center">
+                    <span class="block text-[10px] uppercase tracking-wider text-slate-400">Total Marks</span>
+                    <span class="text-base font-extrabold font-mono text-cyan-400" id="totalPointsDisplay">0 pts</span>
+                </div>
+                <div class="px-4 py-2 rounded-2xl bg-slate-950 border border-slate-800 text-center">
+                    <span class="block text-[10px] uppercase tracking-wider text-slate-400">Passing Mark</span>
+                    <span class="text-base font-extrabold font-mono text-emerald-400">{{ quiz.passing_percentage }}%</span>
+                </div>
+            </div>
         </div>
 
-        <form method="POST" class="space-y-8 text-sm">
+        <form method="POST" id="quizBuilderForm" class="space-y-8 text-sm">
             {% csrf_token %}
 
             {% if form.non_field_errors or question_formset.non_form_errors %}
-            <div class="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs space-y-1">
+            <div class="p-4 rounded-xl bg-red-950/70 border border-red-800 text-red-200 text-xs space-y-1">
                 {{ form.non_field_errors }}
                 {{ question_formset.non_form_errors }}
             </div>
             {% endif %}
 
-            <!-- Quiz settings -->
-            <div>
-                <h2 class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider mb-3">Quiz settings</h2>
+            <!-- 1. Quiz Settings Card -->
+            <div class="p-5 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                        <span>⚙️</span>
+                        <span class="lang-en">Assessment Configuration</span>
+                        <span class="lang-my">စာမေးပွဲ အခြေခံ သတ်မှတ်ချက်များ</span>
+                    </h2>
+                    <span class="text-[11px] text-slate-500">Configure title, passing score &amp; duration</span>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                     {% for field in form %}
-                    <div class="{% if field.name == 'title' %}md:col-span-3{% endif %}">
-                        <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">
+                    <div class="{% if field.name == 'title' %}md:col-span-3{% elif field.name == 'description' %}md:col-span-3{% endif %}">
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
                             {{ field.label }}{% if field.field.required %} <span class="text-red-400">*</span>{% endif %}
                         </label>
                         {{ field }}
-                        {% for error in field.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                        {% if field.help_text %}
+                        <p class="text-[10px] text-slate-500 mt-1">{{ field.help_text }}</p>
+                        {% endif %}
+                        {% for error in field.errors %}
+                        <p class="text-[11px] text-red-400 mt-1 font-semibold">{{ error }}</p>
+                        {% endfor %}
                     </div>
                     {% endfor %}
                 </div>
             </div>
 
-            <!-- Questions -->
+            <!-- 2. Questions Section (Google Forms / Quizizz Style) -->
             <div>
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider">Questions</h2>
-                    <p class="text-[10px] text-slate-600">Tick “Delete” on a row to remove it.</p>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                    <div>
+                        <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+                            <span>📋</span>
+                            <span class="lang-en">Question Items &amp; Problem Sets</span>
+                            <span class="lang-my">မေးခွန်းများနှင့် အဖြေများ ထည့်သွင်းခြင်း</span>
+                        </h2>
+                        <p class="text-[11px] text-slate-400 mt-0.5">
+                            <span class="lang-en">Support for Multiple Choice, Checkboxes, True/False, Fill in Blank, Essay &amp; Coding.</span>
+                            <span class="lang-my">MCQ၊ အမှန်/အမှား၊ ကွက်လပ်ဖြည့်၊ စာစီစာကုံးနှင့် Code ရေးသားမှု မေးခွန်းပုံစံ အားလုံး ထည့်သွင်းနိုင်ပါသည်။</span>
+                        </p>
+                    </div>
+
+                    <!-- Action Controls: Bulk Import + Collapse/Expand -->
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button type="button" onclick="openBulkImportModal()" class="px-3 py-1.5 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 text-xs font-semibold flex items-center gap-1.5 transition shadow">
+                            <span>📥</span> Bulk Import (Text/AI)
+                        </button>
+                        <button type="button" onclick="collapseAllQuestions()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition" title="Collapse All">
+                            ▲ Collapse All
+                        </button>
+                        <button type="button" onclick="expandAllQuestions()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition" title="Expand All">
+                            ▼ Expand All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Add & Starter Packs Toolbar -->
+                <div class="space-y-3 mb-4">
+                    <div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 flex-wrap">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-[11px] text-slate-400 font-semibold mr-1">Quick Add:</span>
+                            <button type="button" onclick="addNewQuestion('multiple_choice')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1 transition">
+                                <span>🔘</span> + MCQ
+                            </button>
+                            <button type="button" onclick="addNewQuestion('multiple_select')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1 transition">
+                                <span>☑️</span> + Multi-Select
+                            </button>
+                            <button type="button" onclick="addNewQuestion('true_false')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1 transition">
+                                <span>⚖️</span> + True/False
+                            </button>
+                            <button type="button" onclick="addNewQuestion('fill_in_blank')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1 transition">
+                                <span>📝</span> + Fill Blank
+                            </button>
+                            <button type="button" onclick="addNewQuestion('short_answer')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1 transition">
+                                <span>✍️</span> + Short Answer
+                            </button>
+                            <button type="button" onclick="addNewQuestion('coding')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1 transition">
+                                <span>💻</span> + Coding Lab
+                            </button>
+                        </div>
+
+                        <!-- 1-Click Starter Question Packs -->
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[10px] text-purple-400 font-bold uppercase tracking-wider">⚡ Starter Packs:</span>
+                            <button type="button" onclick="insertStarterPack('cybersecurity')" class="px-2.5 py-1 rounded-lg bg-purple-950/70 hover:bg-purple-900 text-purple-300 border border-purple-800/80 text-xs font-semibold flex items-center gap-1 transition" title="Add 3 Cyber Defense questions">
+                                <span>🛡️</span> Cyber Defense
+                            </button>
+                            <button type="button" onclick="insertStarterPack('python')" class="px-2.5 py-1 rounded-lg bg-amber-950/70 hover:bg-amber-900 text-amber-300 border border-amber-800/80 text-xs font-semibold flex items-center gap-1 transition" title="Add 3 Python programming questions">
+                                <span>🐍</span> Python
+                            </button>
+                            <button type="button" onclick="insertStarterPack('webdev')" class="px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-800/80 text-xs font-semibold flex items-center gap-1 transition" title="Add 3 Web & API questions">
+                                <span>🌐</span> Web &amp; API
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Question Navigator & Live Filter Bar -->
+                    <div id="questionNavigatorCard" class="p-3 rounded-2xl bg-slate-950 border border-slate-800/90 flex flex-col md:flex-row md:items-center justify-between gap-3 sticky top-4 z-20 shadow-xl backdrop-blur-md bg-opacity-95">
+                        <div class="flex items-center gap-1.5 overflow-x-auto py-1 max-w-full" id="questionNavPills">
+                            <!-- Populated dynamically via JS: Q1, Q2, Q3... with ready/draft dots -->
+                        </div>
+
+                        <div class="flex items-center gap-2 shrink-0">
+                            <!-- Search filter -->
+                            <div class="relative">
+                                <input type="text" id="questionSearchInput" oninput="filterQuestions()" placeholder="Search questions..." class="w-36 sm:w-44 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+                            </div>
+                            <!-- Type filter -->
+                            <select id="questionTypeFilter" onchange="filterQuestions()" class="px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-300 focus:outline-none focus:border-cyan-500">
+                                <option value="all">All Types</option>
+                                <option value="multiple_choice">MCQ</option>
+                                <option value="multiple_select">Multi-Select</option>
+                                <option value="true_false">True/False</option>
+                                <option value="fill_in_blank">Fill in Blank</option>
+                                <option value="short_answer">Short Answer</option>
+                                <option value="coding">Coding</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 {{ question_formset.management_form }}
 
-                <div class="space-y-5">
+                <!-- Questions Container -->
+                <div class="space-y-6" id="questionsContainer">
                     {% for qform in question_formset.forms %}
-                    <fieldset class="p-5 rounded-xl bg-slate-950 border border-slate-800">
-                        <legend class="px-2 text-[11px] font-bold text-white uppercase tracking-wider">
-                            Question {{ forloop.counter }}
-                        </legend>
-
+                    <div class="question-card p-5 sm:p-6 rounded-2xl bg-slate-950 border border-slate-800 shadow-md transition duration-200 relative group hover:border-slate-700" data-form-index="{{ forloop.counter0 }}">
                         {% for hidden in qform.hidden_fields %}{{ hidden }}{% endfor %}
 
                         {% if qform.non_field_errors %}
-                        <div class="mb-3 p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs">
+                        <div class="mb-4 p-3 rounded-lg bg-red-950/70 border border-red-800 text-red-300 text-xs font-semibold">
                             {{ qform.non_field_errors }}
                         </div>
                         {% endif %}
 
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                            <div class="md:col-span-9">
-                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Prompt</label>
+                        <!-- Card Top Bar: Question #, Type selector, Points & Control Actions -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-800/80">
+                            <div class="flex items-center gap-3">
+                                <span class="w-8 h-8 rounded-xl bg-cyan-950 border border-cyan-800/80 text-cyan-400 font-extrabold font-mono text-xs flex items-center justify-center question-number-pill">
+                                    Q{{ forloop.counter }}
+                                </span>
+                                <div>
+                                    <label class="block text-[10px] uppercase font-bold text-slate-400 mb-0.5">Question Type</label>
+                                    {{ qform.question_type }}
+                                </div>
+                                <span class="card-status-badge text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-slate-400">
+                                    Draft
+                                </span>
+                            </div>
+
+                            <div class="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                                <!-- Reorder buttons -->
+                                <button type="button" onclick="moveQuestionUp(this)" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Move Up">
+                                    ⬆️
+                                </button>
+                                <button type="button" onclick="moveQuestionDown(this)" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Move Down">
+                                    ⬇️
+                                </button>
+                                <!-- Duplicate button -->
+                                <button type="button" onclick="duplicateQuestion(this)" class="px-2 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition flex items-center gap-1" title="Duplicate Question">
+                                    <span>📋</span> <span class="hidden sm:inline">Duplicate</span>
+                                </button>
+                                <!-- Collapse/Expand toggle -->
+                                <button type="button" onclick="toggleCollapse(this)" class="btn-collapse-toggle p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Collapse Question">
+                                    ▲
+                                </button>
+
+                                <div class="flex items-center gap-1">
+                                    <label class="text-[11px] text-slate-400 font-semibold">Pts:</label>
+                                    <div class="w-16">
+                                        {{ qform.points }}
+                                    </div>
+                                </div>
+                                <div class="w-14">
+                                    {{ qform.order }}
+                                </div>
+                                {% if qform.instance.pk %}
+                                <div class="flex items-center gap-1 text-xs text-rose-400">
+                                    {{ qform.DELETE }}
+                                    <label for="{{ qform.DELETE.id_for_label }}" class="text-[11px] text-rose-400 hover:text-rose-300 cursor-pointer">Delete</label>
+                                </div>
+                                {% else %}
+                                <button type="button" onclick="removeQuestionCard(this)" class="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 transition" title="Remove draft question">
+                                    🗑️
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Compact Summary Line (shown when collapsed) -->
+                        <div class="card-compact-summary hidden text-xs text-slate-400 py-1 font-mono flex items-center gap-2">
+                            <span>📝</span>
+                            <span class="summary-text truncate text-slate-300">Question prompt preview...</span>
+                        </div>
+
+                        <!-- Card Collapsible Body -->
+                        <div class="card-collapsible-body space-y-4 pt-1">
+                            <!-- Prompt Input -->
+                            <div>
+                                <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                                    Question Prompt / Instructions <span class="text-red-400">*</span>
+                                </label>
                                 {{ qform.prompt }}
-                                {% for error in qform.prompt.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                                {% for error in qform.prompt.errors %}
+                                <p class="text-[11px] text-red-400 mt-1 font-semibold">{{ error }}</p>
+                                {% endfor %}
                             </div>
-                            <div class="md:col-span-1">
-                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Order</label>
-                                {{ qform.order }}
-                                {% for error in qform.order.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Points</label>
-                                {{ qform.points }}
-                                {% for error in qform.points.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
-                            </div>
-                        </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <div>
-                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Option 1</label>
-                                {{ qform.choice_1 }}
-                                {% for error in qform.choice_1.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                            <!-- DYNAMIC SECTION 1: Multiple Choice (Single Select) -->
+                            <div class="type-section section-multiple_choice space-y-3">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs font-semibold text-slate-300">Answer Options (Select the correct radio button):</span>
+                                    <span class="text-[10px] text-cyan-400">● Choose 1 correct answer</span>
+                                </div>
+                                <div class="space-y-2.5">
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="radio" name="{{ qform.prefix }}-correct_choice" value="1"
+                                               class="w-4 h-4 text-cyan-500 border-slate-700 bg-slate-950 accent-cyan-500"
+                                               {% if qform.correct_choice.value == 1 or qform.correct_choice.value == '1' %}checked{% endif %}>
+                                        <div class="flex-1">{{ qform.choice_1 }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="radio" name="{{ qform.prefix }}-correct_choice" value="2"
+                                               class="w-4 h-4 text-cyan-500 border-slate-700 bg-slate-950 accent-cyan-500"
+                                               {% if qform.correct_choice.value == 2 or qform.correct_choice.value == '2' %}checked{% endif %}>
+                                        <div class="flex-1">{{ qform.choice_2 }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="radio" name="{{ qform.prefix }}-correct_choice" value="3"
+                                               class="w-4 h-4 text-cyan-500 border-slate-700 bg-slate-950 accent-cyan-500"
+                                               {% if qform.correct_choice.value == 3 or qform.correct_choice.value == '3' %}checked{% endif %}>
+                                        <div class="flex-1">{{ qform.choice_3 }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="radio" name="{{ qform.prefix }}-correct_choice" value="4"
+                                               class="w-4 h-4 text-cyan-500 border-slate-700 bg-slate-950 accent-cyan-500"
+                                               {% if qform.correct_choice.value == 4 or qform.correct_choice.value == '4' %}checked{% endif %}>
+                                        <div class="flex-1">{{ qform.choice_4 }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="radio" name="{{ qform.prefix }}-correct_choice" value="5"
+                                               class="w-4 h-4 text-cyan-500 border-slate-700 bg-slate-950 accent-cyan-500"
+                                               {% if qform.correct_choice.value == 5 or qform.correct_choice.value == '5' %}checked{% endif %}>
+                                        <div class="flex-1">{{ qform.choice_5 }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="radio" name="{{ qform.prefix }}-correct_choice" value="6"
+                                               class="w-4 h-4 text-cyan-500 border-slate-700 bg-slate-950 accent-cyan-500"
+                                               {% if qform.correct_choice.value == 6 or qform.correct_choice.value == '6' %}checked{% endif %}>
+                                        <div class="flex-1">{{ qform.choice_6 }}</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Option 2</label>
-                                {{ qform.choice_2 }}
-                                {% for error in qform.choice_2.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
-                            </div>
-                            <div>
-                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Option 3</label>
-                                {{ qform.choice_3 }}
-                                {% for error in qform.choice_3.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
-                            </div>
-                            <div>
-                                <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Option 4</label>
-                                {{ qform.choice_4 }}
-                                {% for error in qform.choice_4.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
-                            </div>
-                        </div>
 
-                        <div class="mt-4">
-                            <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-2">Correct answer</label>
-                            <div class="flex flex-wrap gap-x-6 gap-y-2 p-3 rounded-lg bg-slate-900 border border-slate-800">
-                                {{ qform.correct_choice }}
+                            <!-- DYNAMIC SECTION 2: Multiple Select (Checkboxes) -->
+                            <div class="type-section section-multiple_select space-y-3 hidden">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs font-semibold text-slate-300">Check all options that apply:</span>
+                                    <span class="text-[10px] text-indigo-400">☑ Check all correct answers</span>
+                                </div>
+                                {{ qform.correct_choices_multi }}
+                                <div class="space-y-2.5">
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="checkbox" value="1" onchange="syncMultiSelect(this)"
+                                               class="multi-slot-check w-4 h-4 text-indigo-500 rounded border-slate-700 bg-slate-950 accent-indigo-500">
+                                        <div class="flex-1">{{ qform.choice_1 }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="checkbox" value="2" onchange="syncMultiSelect(this)"
+                                               class="multi-slot-check w-4 h-4 text-indigo-500 rounded border-slate-700 bg-slate-950 accent-indigo-500">
+                                        <div class="flex-1">{{ qform.choice_2 }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="checkbox" value="3" onchange="syncMultiSelect(this)"
+                                               class="multi-slot-check w-4 h-4 text-indigo-500 rounded border-slate-700 bg-slate-950 accent-indigo-500">
+                                        <div class="flex-1">{{ qform.choice_3 }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="checkbox" value="4" onchange="syncMultiSelect(this)"
+                                               class="multi-slot-check w-4 h-4 text-indigo-500 rounded border-slate-700 bg-slate-950 accent-indigo-500">
+                                        <div class="flex-1">{{ qform.choice_4 }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="checkbox" value="5" onchange="syncMultiSelect(this)"
+                                               class="multi-slot-check w-4 h-4 text-indigo-500 rounded border-slate-700 bg-slate-950 accent-indigo-500">
+                                        <div class="flex-1">{{ qform.choice_5 }}</div>
+                                    </div>
+                                    <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-800/80">
+                                        <input type="checkbox" value="6" onchange="syncMultiSelect(this)"
+                                               class="multi-slot-check w-4 h-4 text-indigo-500 rounded border-slate-700 bg-slate-950 accent-indigo-500">
+                                        <div class="flex-1">{{ qform.choice_6 }}</div>
+                                    </div>
+                                </div>
                             </div>
-                            {% for error in qform.correct_choice.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
-                        </div>
 
-                        <div class="mt-4">
-                            <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">Explanation (optional)</label>
-                            {{ qform.explanation }}
-                            {% for error in qform.explanation.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
-                        </div>
+                            <!-- DYNAMIC SECTION 3: True / False -->
+                            <div class="type-section section-true_false space-y-3 hidden">
+                                <span class="text-xs font-semibold text-slate-300 block mb-1">Select the correct statement truth value:</span>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <label class="flex items-center gap-3 p-4 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-emerald-700 transition">
+                                        <input type="radio" name="{{ qform.prefix }}-correct_choice" value="1"
+                                               class="w-4 h-4 text-emerald-500 border-slate-700 bg-slate-950 accent-emerald-500"
+                                               {% if qform.correct_choice.value == 1 or qform.correct_choice.value == '1' %}checked{% endif %}>
+                                        <span class="text-sm font-bold text-emerald-400">✓ True</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 p-4 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer hover:border-rose-700 transition">
+                                        <input type="radio" name="{{ qform.prefix }}-correct_choice" value="2"
+                                               class="w-4 h-4 text-rose-500 border-slate-700 bg-slate-950 accent-rose-500"
+                                               {% if qform.correct_choice.value == 2 or qform.correct_choice.value == '2' %}checked{% endif %}>
+                                        <span class="text-sm font-bold text-rose-400">✕ False</span>
+                                    </label>
+                                </div>
+                            </div>
 
-                        {% if qform.instance.pk %}
-                        <div class="mt-4 flex items-center gap-2 text-[11px] text-slate-500">
-                            {{ qform.DELETE }} <span>Remove this question</span>
+                            <!-- DYNAMIC SECTION 4: Fill in the Blank -->
+                            <div class="type-section section-fill_in_blank space-y-2 hidden">
+                                <label class="block text-slate-300 font-semibold text-xs">
+                                    Correct Text Answer &amp; Accepted Variants
+                                </label>
+                                {{ qform.correct_text_answer }}
+                                <p class="text-[11px] text-slate-500">
+                                    Tip: Use pipe <code class="text-cyan-400">|</code> to accept multiple synonyms or spelling variants (e.g. <code class="text-slate-300">python|Python|PYTHON</code>).
+                                </p>
+                            </div>
+
+                            <!-- DYNAMIC SECTION 5: Short Answer / Essay -->
+                            <div class="type-section section-short_answer space-y-2 hidden">
+                                <label class="block text-slate-300 font-semibold text-xs">
+                                    Grading Rubric / Criteria &amp; Expected Response Outline
+                                </label>
+                                {{ qform.rubric_criteria }}
+                                <p class="text-[11px] text-slate-500">
+                                    Student answers will be submitted for manual evaluation. Guide the instructor/evaluator on scoring criteria.
+                                </p>
+                            </div>
+
+                            <!-- DYNAMIC SECTION 6: Coding Problem -->
+                            <div class="type-section section-coding space-y-2 hidden">
+                                <label class="block text-slate-300 font-semibold text-xs">
+                                    Coding Test Criteria &amp; Expected Keywords
+                                </label>
+                                {{ qform.rubric_criteria }}
+                                <p class="text-[11px] text-slate-500">
+                                    List required functions, output signatures, or keywords (e.g. <code class="text-amber-400">def solution(x):, return, O(N)</code>).
+                                </p>
+                            </div>
+
+                            <!-- Explanation / Feedback -->
+                            <div class="pt-2 border-t border-slate-800/80">
+                                <label class="block text-slate-400 text-xs font-medium mb-1">
+                                    Explanation / Pedagogical Feedback (Shown after completion)
+                                </label>
+                                {{ qform.explanation }}
+                            </div>
                         </div>
-                        {% endif %}
-                    </fieldset>
+                    </div>
                     {% endfor %}
+                </div>
+
+                <!-- Google Forms Style Bottom Add Question Button -->
+                <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
+                    <button type="button" onclick="addNewQuestion('multiple_choice')" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/20 transition flex items-center justify-center gap-2">
+                        <span>➕</span>
+                        <span>Add New Question</span>
+                    </button>
+                    <span class="text-slate-600 text-xs hidden sm:inline">&bull;</span>
+                    <button type="button" onclick="addNewQuestion('true_false')" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition">
+                        + True/False
+                    </button>
+                    <button type="button" onclick="addNewQuestion('fill_in_blank')" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition">
+                        + Fill in Blank
+                    </button>
+                    <button type="button" onclick="addNewQuestion('coding')" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition">
+                        + Coding
+                    </button>
                 </div>
             </div>
 
-            <div class="flex gap-3 pt-4 border-t border-slate-800">
-                <button type="submit" class="px-6 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition">
-                    Save Quiz
-                </button>
-                <a href="{% url 'lesson-detail' lesson_id=lesson.id %}" class="px-6 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition">Cancel</a>
+            <!-- Submit Action Bar -->
+            <div class="flex items-center justify-between gap-4 pt-6 border-t border-slate-800">
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/20 transition flex items-center gap-2">
+                        <span>💾</span>
+                        <span>Save Assessment Questions</span>
+                    </button>
+                    {% if lesson %}
+                    <a href="{% url 'lesson-detail' lesson_id=lesson.id %}" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">Cancel</a>
+                    {% elif course %}
+                    <a href="{% url 'course-edit' slug=course.slug %}" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">Cancel</a>
+                    {% else %}
+                    <a href="{% url 'standalone-exam-detail' exam_id=quiz.id %}" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">Cancel</a>
+                    {% endif %}
+                </div>
             </div>
         </form>
     </div>
 </div>
+
+<!-- Bulk Question Import Modal -->
+<div id="bulkImportModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <span>📥</span>
+                <span>Bulk Import Questions (Text / AI Format)</span>
+            </h3>
+            <button type="button" onclick="closeBulkImportModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+        </div>
+        <p class="text-xs text-slate-400">
+            Paste multiple-choice, true/false, or fill-in-the-blank questions copied from text documents, ChatGPT, or Gemini. The parser will automatically generate questions and answer keys.
+        </p>
+
+        <!-- Format Templates Quick Inserters -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Templates:</span>
+            <button type="button" onclick="setBulkImportExample('mcq')" class="px-2 py-0.5 rounded text-[11px] bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700">
+                🔘 MCQ Format
+            </button>
+            <button type="button" onclick="setBulkImportExample('tf')" class="px-2 py-0.5 rounded text-[11px] bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700">
+                ⚖️ True/False
+            </button>
+            <button type="button" onclick="setBulkImportExample('blank')" class="px-2 py-0.5 rounded text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700">
+                📝 Fill in Blank
+            </button>
+            <button type="button" onclick="setBulkImportExample('mixed')" class="px-2 py-0.5 rounded text-[11px] bg-slate-800 hover:bg-slate-700 text-purple-300 border border-slate-700">
+                ⚡ Mixed Set
+            </button>
+        </div>
+
+        <textarea id="bulkImportTextarea" rows="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-cyan-500" placeholder="Paste questions here..."></textarea>
+        <div class="flex items-center justify-end gap-3 pt-2">
+            <button type="button" onclick="closeBulkImportModal()" class="px-4 py-2 rounded-xl text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition">Cancel</button>
+            <button type="button" onclick="parseAndImportBulkQuestions()" class="px-5 py-2 rounded-xl text-xs bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold shadow-lg shadow-cyan-600/30 transition">
+                ✨ Parse &amp; Add Questions
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Student Simulation Modal (Interactive Test Run) -->
+<div id="studentSimulationModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+        <!-- Modal Top Bar -->
+        <div class="p-4 sm:p-6 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-cyan-950 border border-cyan-800 text-cyan-400 flex items-center justify-center font-bold text-lg">
+                    🧪
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-indigo-950 text-indigo-300 border border-indigo-800">
+                            Student Simulator
+                        </span>
+                        <span class="text-xs text-slate-400 font-mono" id="simQuestionCount">0 questions</span>
+                    </div>
+                    <h3 class="text-base sm:text-lg font-bold text-white mt-0.5" id="simQuizTitle">
+                        {{ quiz.title|default:"Interactive Assessment Preview" }}
+                    </h3>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono text-cyan-400">
+                    <span>⏱️</span>
+                    <span id="simTimerDisplay">15:00</span>
+                </div>
+                <button type="button" onclick="closeStudentSimulationModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-lg font-bold transition">&times;</button>
+            </div>
+        </div>
+
+        <!-- Instructor Banner -->
+        <div class="px-6 py-2.5 bg-gradient-to-r from-indigo-950/60 to-purple-950/60 border-b border-indigo-900/40 text-[11px] text-indigo-300 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span>ℹ️</span>
+                <span>This simulation tests questions entered in the builder before saving. Try selecting answers and grading yourself!</span>
+            </div>
+            <span class="font-mono text-indigo-400 font-bold">Passing: {{ quiz.passing_percentage }}%</span>
+        </div>
+
+        <!-- Score & Result Card (Hidden until submitted) -->
+        <div id="simResultCard" class="hidden p-5 m-4 sm:m-6 rounded-2xl border text-center transition-all duration-300">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-2 text-2xl" id="simResultIcon">
+                🎉
+            </div>
+            <h4 class="text-lg font-black text-white" id="simResultTitle">Assessment Passed!</h4>
+            <p class="text-xs text-slate-300 mt-1" id="simResultSubtitle">You achieved 80% out of 100%.</p>
+            <div class="mt-4 flex items-center justify-center gap-4 text-xs font-mono">
+                <span class="px-3 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300" id="simResultScore">Score: 40 / 50 pts</span>
+                <span class="px-3 py-1 rounded-lg font-bold" id="simResultStatusBadge">PASSED</span>
+            </div>
+        </div>
+
+        <!-- Scrollable Questions Container in Simulation -->
+        <div class="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1" id="simQuestionsBody">
+            <!-- Populated via renderSimulationView() -->
+        </div>
+
+        <!-- Modal Footer Controls -->
+        <div class="p-4 sm:p-6 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between shrink-0">
+            <button type="button" onclick="resetSimulationTest()" class="px-4 py-2 rounded-xl text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition flex items-center gap-1.5">
+                <span>🔄</span> Reset Test
+            </button>
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="closeStudentSimulationModal()" class="px-4 py-2 rounded-xl text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition">
+                    Close Preview
+                </button>
+                <button type="button" id="btnSubmitSimulation" onclick="gradeSimulationTest()" class="px-6 py-2.5 rounded-xl text-xs bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
+                    <span>✨</span> Submit &amp; Grade Simulation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initAllQuestionCards();
+    updateLiveStats();
+
+    // Re-calculate points whenever input changes
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.name && e.target.name.endsWith('-points')) {
+            updateLiveStats();
+        }
+        if (e.target && e.target.name && e.target.name.endsWith('-prompt')) {
+            updateCardStatus(e.target.closest('.question-card'));
+            renderQuestionNavigator();
+        }
+    });
+
+    document.addEventListener('change', function(e) {
+        if (e.target && (e.target.type === 'radio' || e.target.type === 'checkbox')) {
+            updateCardStatus(e.target.closest('.question-card'));
+            renderQuestionNavigator();
+        }
+    });
+});
+
+function initAllQuestionCards() {
+    const cards = document.querySelectorAll('.question-card');
+    cards.forEach(card => {
+        const typeSelect = card.querySelector('.question-type-select');
+        if (typeSelect) {
+            applyQuestionTypeView(card, typeSelect.value);
+            typeSelect.addEventListener('change', function() {
+                applyQuestionTypeView(card, this.value);
+                updateCardStatus(card);
+                renderQuestionNavigator();
+            });
+        }
+
+        // Initialize multi-select checkboxes from hidden field
+        const multiHidden = card.querySelector('input[name$="-correct_choices_multi"]');
+        if (multiHidden && multiHidden.value) {
+            const vals = multiHidden.value.split(',').map(s => s.trim());
+            card.querySelectorAll('.multi-slot-check').forEach(chk => {
+                if (vals.includes(chk.value)) {
+                    chk.checked = true;
+                }
+            });
+        }
+
+        updateCardStatus(card);
+    });
+
+    renderQuestionNavigator();
+}
+
+function updateCardStatus(card) {
+    if (!card) return;
+    const badge = card.querySelector('.card-status-badge');
+    if (!badge) return;
+
+    const promptInput = card.querySelector('textarea[name$="-prompt"]');
+    const promptText = promptInput ? promptInput.value.trim() : '';
+
+    if (!promptText) {
+        badge.className = 'card-status-badge text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-800 text-slate-400';
+        badge.textContent = 'Draft';
+        return;
+    }
+
+    const typeSelect = card.querySelector('.question-type-select');
+    const qType = typeSelect ? typeSelect.value : 'multiple_choice';
+
+    let isComplete = false;
+    if (qType === 'multiple_choice' || qType === 'true_false') {
+        const checked = card.querySelector('input[type="radio"]:checked');
+        isComplete = !!checked;
+    } else if (qType === 'multiple_select') {
+        const checked = card.querySelectorAll('.multi-slot-check:checked');
+        isComplete = checked.length > 0;
+    } else if (qType === 'fill_in_blank') {
+        const ans = card.querySelector('input[name$="-correct_text_answer"]')?.value.trim();
+        isComplete = !!ans;
+    } else {
+        isComplete = true;
+    }
+
+    if (isComplete) {
+        badge.className = 'card-status-badge text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-950 text-emerald-300 border border-emerald-800';
+        badge.textContent = 'Ready ✓';
+    } else {
+        badge.className = 'card-status-badge text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-950 text-amber-300 border border-amber-800';
+        badge.textContent = 'Needs Answer';
+    }
+}
+
+function renderQuestionNavigator() {
+    const navContainer = document.getElementById('questionNavPills');
+    if (!navContainer) return;
+
+    const cards = document.querySelectorAll('.question-card');
+    navContainer.innerHTML = '';
+
+    if (cards.length === 0) {
+        navContainer.innerHTML = '<span class="text-xs text-slate-500 font-mono">No questions yet</span>';
+        return;
+    }
+
+    cards.forEach((card, idx) => {
+        const delCheck = card.querySelector('input[name$="-DELETE"]');
+        if (delCheck && delCheck.checked) return;
+
+        const badge = card.querySelector('.card-status-badge');
+        const isReady = badge && badge.textContent.includes('Ready');
+        const isNeedsAnswer = badge && badge.textContent.includes('Needs Answer');
+
+        let dotColor = 'bg-slate-500';
+        let pillBorder = 'border-slate-800 hover:border-slate-700 bg-slate-900/80 text-slate-300';
+        if (isReady) {
+            dotColor = 'bg-emerald-400';
+            pillBorder = 'border-emerald-800/80 hover:border-emerald-700 bg-emerald-950/40 text-emerald-300';
+        } else if (isNeedsAnswer) {
+            dotColor = 'bg-amber-400';
+            pillBorder = 'border-amber-800/80 hover:border-amber-700 bg-amber-950/40 text-amber-300';
+        }
+
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = `px-2.5 py-1 rounded-lg border text-xs font-mono font-bold flex items-center gap-1.5 transition shrink-0 ${pillBorder}`;
+        pill.innerHTML = `<span class="w-2 h-2 rounded-full ${dotColor}"></span><span>Q${idx + 1}</span>`;
+        pill.onclick = () => {
+            // Expand card if collapsed
+            const body = card.querySelector('.card-collapsible-body');
+            const summary = card.querySelector('.card-compact-summary');
+            if (body && body.classList.contains('hidden')) {
+                body.classList.remove('hidden');
+                if (summary) summary.classList.add('hidden');
+            }
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.classList.add('ring-2', 'ring-cyan-500');
+            setTimeout(() => card.classList.remove('ring-2', 'ring-cyan-500'), 1500);
+        };
+        navContainer.appendChild(pill);
+    });
+}
+
+function filterQuestions() {
+    const query = document.getElementById('questionSearchInput')?.value.toLowerCase().trim() || '';
+    const selectedType = document.getElementById('questionTypeFilter')?.value || 'all';
+
+    const cards = document.querySelectorAll('.question-card');
+    cards.forEach(card => {
+        const promptText = (card.querySelector('textarea[name$="-prompt"]')?.value || '').toLowerCase();
+        const typeSelect = card.querySelector('.question-type-select');
+        const qType = typeSelect ? typeSelect.value : 'multiple_choice';
+
+        const matchesQuery = !query || promptText.includes(query);
+        const matchesType = (selectedType === 'all') || (qType === selectedType);
+
+        if (matchesQuery && matchesType) {
+            card.classList.remove('hidden');
+        } else {
+            card.classList.add('hidden');
+        }
+    });
+}
+
+function applyQuestionTypeView(card, qType) {
+    card.querySelectorAll('.type-section').forEach(sec => sec.classList.add('hidden'));
+
+    if (qType === 'multiple_choice') {
+        card.querySelector('.section-multiple_choice')?.classList.remove('hidden');
+    } else if (qType === 'multiple_select') {
+        card.querySelector('.section-multiple_select')?.classList.remove('hidden');
+    } else if (qType === 'true_false') {
+        card.querySelector('.section-true_false')?.classList.remove('hidden');
+    } else if (qType === 'fill_in_blank') {
+        card.querySelector('.section-fill_in_blank')?.classList.remove('hidden');
+    } else if (qType === 'short_answer' || qType === 'file_submission' || qType === 'project_evaluation') {
+        card.querySelector('.section-short_answer')?.classList.remove('hidden');
+    } else if (qType === 'coding' || qType === 'practical_lab') {
+        card.querySelector('.section-coding')?.classList.remove('hidden');
+    } else {
+        card.querySelector('.section-multiple_choice')?.classList.remove('hidden');
+    }
+}
+
+function syncMultiSelect(checkbox) {
+    const card = checkbox.closest('.question-card');
+    if (!card) return;
+    const multiHidden = card.querySelector('input[name$="-correct_choices_multi"]');
+    if (!multiHidden) return;
+
+    const checkedVals = [];
+    card.querySelectorAll('.multi-slot-check:checked').forEach(chk => {
+        checkedVals.push(chk.value);
+    });
+    multiHidden.value = checkedVals.join(',');
+    updateCardStatus(card);
+    renderQuestionNavigator();
+}
+
+function removeQuestionCard(button) {
+    const card = button.closest('.question-card');
+    if (card) {
+        card.remove();
+        renumberQuestionCards();
+        updateLiveStats();
+        renderQuestionNavigator();
+    }
+}
+
+function renumberQuestionCards() {
+    const cards = document.querySelectorAll('.question-card');
+    cards.forEach((card, idx) => {
+        const numPill = card.querySelector('.question-number-pill');
+        if (numPill) numPill.innerText = 'Q' + (idx + 1);
+        const orderInput = card.querySelector('input[name$="-order"]');
+        if (orderInput) orderInput.value = (idx + 1);
+    });
+}
+
+function updateLiveStats() {
+    const cards = document.querySelectorAll('.question-card');
+    let totalPts = 0;
+    cards.forEach(card => {
+        const delCheck = card.querySelector('input[name$="-DELETE"]');
+        if (delCheck && delCheck.checked) return;
+
+        const ptsInput = card.querySelector('input[name$="-points"]');
+        if (ptsInput && ptsInput.value) {
+            totalPts += parseInt(ptsInput.value) || 0;
+        }
+    });
+
+    const ptsDisplay = document.getElementById('totalPointsDisplay');
+    if (ptsDisplay) ptsDisplay.innerText = totalPts + ' pts';
+
+    const countDisplay = document.getElementById('liveStatsCounter');
+    if (countDisplay) countDisplay.innerText = cards.length + ' question(s)';
+}
+
+function moveQuestionUp(button) {
+    const card = button.closest('.question-card');
+    if (!card) return;
+    const prev = card.previousElementSibling;
+    if (prev && prev.classList.contains('question-card')) {
+        card.parentNode.insertBefore(card, prev);
+        renumberQuestionCards();
+        renderQuestionNavigator();
+    }
+}
+
+function moveQuestionDown(button) {
+    const card = button.closest('.question-card');
+    if (!card) return;
+    const next = card.nextElementSibling;
+    if (next && next.classList.contains('question-card')) {
+        card.parentNode.insertBefore(next, card);
+        renumberQuestionCards();
+        renderQuestionNavigator();
+    }
+}
+
+function toggleCollapse(button) {
+    const card = button.closest('.question-card');
+    if (!card) return;
+    const body = card.querySelector('.card-collapsible-body');
+    const summary = card.querySelector('.card-compact-summary');
+    const isCollapsed = body.classList.contains('hidden');
+
+    if (isCollapsed) {
+        body.classList.remove('hidden');
+        if (summary) summary.classList.add('hidden');
+        button.innerHTML = '▲';
+        button.title = 'Collapse Question';
+    } else {
+        body.classList.add('hidden');
+        if (summary) {
+            summary.classList.remove('hidden');
+            const promptVal = card.querySelector('textarea[name$="-prompt"]')?.value.trim() || 'No prompt entered yet';
+            summary.querySelector('.summary-text').textContent = promptVal.substring(0, 80) + (promptVal.length > 80 ? '...' : '');
+        }
+        button.innerHTML = '▼';
+        button.title = 'Expand Question';
+    }
+}
+
+function collapseAllQuestions() {
+    document.querySelectorAll('.question-card').forEach(card => {
+        const body = card.querySelector('.card-collapsible-body');
+        const summary = card.querySelector('.card-compact-summary');
+        const btn = card.querySelector('.btn-collapse-toggle');
+        if (body && !body.classList.contains('hidden')) {
+            body.classList.add('hidden');
+            if (summary) {
+                summary.classList.remove('hidden');
+                const promptVal = card.querySelector('textarea[name$="-prompt"]')?.value.trim() || 'No prompt entered yet';
+                summary.querySelector('.summary-text').textContent = promptVal.substring(0, 80) + (promptVal.length > 80 ? '...' : '');
+            }
+            if (btn) btn.innerHTML = '▼';
+        }
+    });
+}
+
+function expandAllQuestions() {
+    document.querySelectorAll('.question-card').forEach(card => {
+        const body = card.querySelector('.card-collapsible-body');
+        const summary = card.querySelector('.card-compact-summary');
+        const btn = card.querySelector('.btn-collapse-toggle');
+        if (body && body.classList.contains('hidden')) {
+            body.classList.remove('hidden');
+            if (summary) summary.classList.add('hidden');
+            if (btn) btn.innerHTML = '▲';
+        }
+    });
+}
+
+function duplicateQuestion(button) {
+    const card = button.closest('.question-card');
+    if (!card) return;
+    const totalFormsInput = document.getElementById('id_questions-TOTAL_FORMS');
+    if (!totalFormsInput) return;
+
+    const formIdx = parseInt(totalFormsInput.value);
+    const container = document.getElementById('questionsContainer');
+
+    const newCard = card.cloneNode(true);
+    const oldPrefix = card.querySelector('[name$="-prompt"]')?.name.replace(/-prompt$/, '') || 'questions-0';
+
+    newCard.setAttribute('data-form-index', formIdx);
+    newCard.innerHTML = newCard.innerHTML.replaceAll(new RegExp(oldPrefix + '-', 'g'), `questions-${formIdx}-`)
+                                         .replaceAll(new RegExp(oldPrefix, 'g'), `questions-${formIdx}`);
+
+    // Blank out primary key
+    newCard.querySelectorAll('input[name$="-id"]').forEach(el => el.value = '');
+
+    const orderInput = newCard.querySelector('input[name$="-order"]');
+    if (orderInput) orderInput.value = formIdx + 1;
+
+    // Reset delete flags
+    newCard.querySelectorAll('input[name$="-DELETE"]').forEach(c => c.checked = false);
+    newCard.querySelectorAll('.text-red-400, .bg-red-950\\/70').forEach(e => e.remove());
+
+    // Copy selected radio / checkboxes from source card
+    const sourceRadio = card.querySelector('input[type="radio"]:checked');
+    if (sourceRadio) {
+        const targetRadio = newCard.querySelector(`input[type="radio"][value="${sourceRadio.value}"]`);
+        if (targetRadio) targetRadio.checked = true;
+    }
+    card.querySelectorAll('input[type="checkbox"]:checked').forEach(sourceChk => {
+        const targetChk = newCard.querySelector(`input[type="checkbox"][value="${sourceChk.value}"]`);
+        if (targetChk) targetChk.checked = true;
+    });
+
+    container.appendChild(newCard);
+    totalFormsInput.value = formIdx + 1;
+
+    initAllQuestionCards();
+    renumberQuestionCards();
+    updateLiveStats();
+
+    newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function addNewQuestion(targetType = 'multiple_choice') {
+    const totalFormsInput = document.getElementById('id_questions-TOTAL_FORMS');
+    if (!totalFormsInput) return;
+
+    const formIdx = parseInt(totalFormsInput.value);
+    const container = document.getElementById('questionsContainer');
+    const existingCards = container.querySelectorAll('.question-card');
+
+    if (existingCards.length === 0) {
+        window.location.reload();
+        return;
+    }
+
+    const templateCard = existingCards[0];
+    const newCard = templateCard.cloneNode(true);
+
+    const oldPrefix = templateCard.querySelector('[name$="-prompt"]')?.name.replace(/-prompt$/, '') || 'questions-0';
+
+    newCard.setAttribute('data-form-index', formIdx);
+    newCard.innerHTML = newCard.innerHTML.replaceAll(new RegExp(oldPrefix + '-', 'g'), `questions-${formIdx}-`)
+                                         .replaceAll(new RegExp(oldPrefix, 'g'), `questions-${formIdx}`);
+
+    // Reset values in new card
+    newCard.querySelectorAll('input:not([type="radio"]):not([type="checkbox"]), textarea').forEach(el => {
+        if (el.name.endsWith('-order')) {
+            el.value = formIdx + 1;
+        } else if (el.name.endsWith('-points')) {
+            el.value = 10;
+        } else if (el.name.endsWith('-id')) {
+            el.value = '';
+        } else {
+            el.value = '';
+        }
+    });
+
+    newCard.querySelectorAll('input[type="radio"]').forEach(r => {
+        r.checked = (r.value === '1');
+    });
+    newCard.querySelectorAll('input[type="checkbox"]').forEach(c => {
+        c.checked = false;
+    });
+
+    newCard.querySelectorAll('.text-red-400, .bg-red-950\\/70').forEach(e => e.remove());
+
+    const select = newCard.querySelector('.question-type-select');
+    if (select) select.value = targetType;
+
+    // Ensure body is expanded
+    newCard.querySelector('.card-collapsible-body')?.classList.remove('hidden');
+    newCard.querySelector('.card-compact-summary')?.classList.add('hidden');
+
+    container.appendChild(newCard);
+    totalFormsInput.value = formIdx + 1;
+
+    initAllQuestionCards();
+    renumberQuestionCards();
+    updateLiveStats();
+
+    newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return newCard;
+}
+
+// 1-Click Starter Question Packs
+function insertStarterPack(packKey) {
+    const packs = {
+        cybersecurity: [
+            {
+                type: 'multiple_choice',
+                prompt: 'Which network port is the standardized default port for encrypted Secure Shell (SSH) access?',
+                choices: ['Port 21 (FTP)', 'Port 22 (SSH)', 'Port 25 (SMTP)', 'Port 80 (HTTP)'],
+                correct_choice: 2,
+                points: 10,
+                explanation: 'SSH operates on TCP port 22 by default, providing cryptographic network communication.'
+            },
+            {
+                type: 'true_false',
+                prompt: 'Using parameterized SQL queries (prepared statements) prevents SQL Injection vulnerabilities by separating executable SQL code from user-supplied input data.',
+                correct_choice: 1, // True
+                points: 10,
+                explanation: 'Parameterized queries ensure the database driver treats input strictly as literal values rather than executable code.'
+            },
+            {
+                type: 'fill_in_blank',
+                prompt: 'What cyber attack occurs when an unauthorized attacker intercepts and potentially relays communications between two parties who believe they are communicating directly?',
+                correct_text_answer: 'man in the middle|mitm|man-in-the-middle',
+                points: 10,
+                explanation: 'Man-In-The-Middle (MITM) attacks secretly intercept or alter private network communications.'
+            }
+        ],
+        python: [
+            {
+                type: 'multiple_choice',
+                prompt: 'What will be the output of the list comprehension `[n ** 2 for n in range(4)]` in Python?',
+                choices: ['[0, 1, 4, 9]', '[1, 4, 9, 16]', '[0, 2, 4, 6]', '[0, 1, 2, 3]'],
+                correct_choice: 1,
+                points: 10,
+                explanation: 'range(4) yields 0, 1, 2, 3. Squaring each integer produces [0, 1, 4, 9].'
+            },
+            {
+                type: 'true_false',
+                prompt: 'In Python, dictionaries and lists are mutable objects, whereas tuples and strings are immutable.',
+                correct_choice: 1, // True
+                points: 10,
+                explanation: 'Lists and dictionaries can be mutated in-place; tuples and strings cannot be changed after creation.'
+            },
+            {
+                type: 'fill_in_blank',
+                prompt: 'Which built-in Python function returns the total number of items in a sequence or collection?',
+                correct_text_answer: 'len|len()',
+                points: 10,
+                explanation: 'The len() function returns the length of lists, dictionaries, strings, and tuples.'
+            }
+        ],
+        webdev: [
+            {
+                type: 'multiple_choice',
+                prompt: 'Which HTTP status code should a RESTful API return when a new resource has been successfully created?',
+                choices: ['200 OK', '201 Created', '204 No Content', '302 Found'],
+                correct_choice: 2,
+                points: 10,
+                explanation: 'HTTP 201 Created signifies that the request succeeded and resulted in the creation of a resource.'
+            },
+            {
+                type: 'true_false',
+                prompt: 'According to the HTTP specification, GET requests must be safe and idempotent, meaning they should never modify server-side database state.',
+                correct_choice: 1, // True
+                points: 10,
+                explanation: 'HTTP GET is designed solely for data retrieval without causing side effects on server resources.'
+            },
+            {
+                type: 'fill_in_blank',
+                prompt: 'What browser security mechanism restricts web pages from making requests to a different domain than the one that served the web page?',
+                correct_text_answer: 'cors|same origin policy|cross origin resource sharing',
+                points: 10,
+                explanation: 'The Same-Origin Policy (SOP) and Cross-Origin Resource Sharing (CORS) govern cross-origin network requests.'
+            }
+        ]
+    };
+
+    const questions = packs[packKey];
+    if (!questions) return;
+
+    questions.forEach(qData => {
+        const card = addNewQuestion(qData.type);
+        if (!card) return;
+
+        // Set prompt
+        const promptInput = card.querySelector('textarea[name$="-prompt"]');
+        if (promptInput) promptInput.value = qData.prompt;
+
+        // Set points
+        const ptsInput = card.querySelector('input[name$="-points"]');
+        if (ptsInput) ptsInput.value = qData.points || 10;
+
+        // Set explanation
+        const expInput = card.querySelector('textarea[name$="-explanation"]');
+        if (expInput) expInput.value = qData.explanation || '';
+
+        if (qData.type === 'multiple_choice') {
+            (qData.choices || []).forEach((cText, i) => {
+                const choiceInput = card.querySelector(`input[name$="-choice_${i + 1}"]`);
+                if (choiceInput) choiceInput.value = cText;
+            });
+            const radio = card.querySelector(`input[type="radio"][value="${qData.correct_choice || 1}"]`);
+            if (radio) radio.checked = true;
+        } else if (qData.type === 'true_false') {
+            const radio = card.querySelector(`input[type="radio"][value="${qData.correct_choice || 1}"]`);
+            if (radio) radio.checked = true;
+        } else if (qData.type === 'fill_in_blank') {
+            const ansInput = card.querySelector('input[name$="-correct_text_answer"]');
+            if (ansInput) ansInput.value = qData.correct_text_answer || '';
+        }
+
+        updateCardStatus(card);
+    });
+
+    updateLiveStats();
+    renderQuestionNavigator();
+}
+
+// Bulk Import Example Templates
+function setBulkImportExample(formatType) {
+    const area = document.getElementById('bulkImportTextarea');
+    if (!area) return;
+
+    if (formatType === 'mcq') {
+        area.value = `Q: What is the default SSH port?\nA) 21\nB) 22\nC) 80\nD) 443\nAnswer: B\nExplanation: SSH runs on TCP port 22 by default.`;
+    } else if (formatType === 'tf') {
+        area.value = `Q: Python lists are immutable data structures.\nAnswer: False\nExplanation: Lists are mutable in Python; tuples are immutable.`;
+    } else if (formatType === 'blank') {
+        area.value = `Q: The encrypted web protocol HTTPS uses TCP port ____.\nAnswer: 443\nExplanation: Port 443 is assigned for TLS/HTTPS traffic.`;
+    } else if (formatType === 'mixed') {
+        area.value = `Q: Which HTTP status code indicates resource created?\nA) 200 OK\nB) 201 Created\nC) 404 Not Found\nAnswer: B\nExplanation: 201 indicates a resource was created.\n\nQ: SQL injection can be mitigated using prepared statements.\nAnswer: True\n\nQ: The standard loop in Python starts with the keyword ____.\nAnswer: for`;
+    }
+}
+
+// Bulk Import Handlers
+function openBulkImportModal() {
+    document.getElementById('bulkImportModal')?.classList.remove('hidden');
+}
+
+function closeBulkImportModal() {
+    document.getElementById('bulkImportModal')?.classList.add('hidden');
+}
+
+function parseAndImportBulkQuestions() {
+    const raw = document.getElementById('bulkImportTextarea')?.value || '';
+    if (!raw.trim()) {
+        alert('Please paste questions in the textarea.');
+        return;
+    }
+
+    const blocks = raw.split(/\n\s*\n/).filter(b => b.trim().length > 0);
+    let importedCount = 0;
+
+    blocks.forEach(block => {
+        const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length < 2) return;
+
+        let prompt = '';
+        const choices = [];
+        let rawAnswer = '';
+        let explanation = '';
+
+        lines.forEach(line => {
+            const optMatch = line.match(/^([A-Fa-f])[\)\.]\s*(.*)$/);
+            const ansMatch = line.match(/^(?:Answer|Ans):\s*(.*)$/i);
+            const expMatch = line.match(/^(?:Explanation|Feedback):\s*(.*)$/i);
+            const qMatch = line.match(/^(?:Q\d*[:\.]?|\d+[\.:])\s*(.*)$/i);
+
+            if (expMatch) {
+                explanation = expMatch[1];
+            } else if (ansMatch) {
+                rawAnswer = ansMatch[1].trim();
+            } else if (optMatch) {
+                choices.push(optMatch[2]);
+            } else if (qMatch && !prompt) {
+                prompt = qMatch[1];
+            } else if (!prompt) {
+                prompt = line;
+            }
+        });
+
+        if (!prompt) return;
+
+        // Determine question type
+        let qType = 'multiple_choice';
+        const upperAns = rawAnswer.toUpperCase();
+        if (upperAns === 'TRUE' || upperAns === 'FALSE') {
+            qType = 'true_false';
+        } else if (choices.length === 0 && rawAnswer.length > 0) {
+            qType = 'fill_in_blank';
+        } else if (rawAnswer.includes(',') || rawAnswer.includes('AND')) {
+            qType = 'multiple_select';
+        }
+
+        const card = addNewQuestion(qType);
+        if (!card) return;
+
+        // Fill prompt
+        const promptInput = card.querySelector('textarea[name$="-prompt"]');
+        if (promptInput) promptInput.value = prompt;
+
+        // Fill explanation
+        const expInput = card.querySelector('textarea[name$="-explanation"]');
+        if (expInput) expInput.value = explanation;
+
+        if (qType === 'multiple_choice') {
+            choices.forEach((cText, idx) => {
+                if (idx < 6) {
+                    const choiceInput = card.querySelector(`input[name$="-choice_${idx + 1}"]`);
+                    if (choiceInput) choiceInput.value = cText;
+                }
+            });
+            const letterIndexMap = { 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6 };
+            const correctVal = letterIndexMap[upperAns.charAt(0)] || 1;
+            const radio = card.querySelector(`input[type="radio"][value="${correctVal}"]`);
+            if (radio) radio.checked = true;
+        } else if (qType === 'true_false') {
+            const isTrue = (upperAns === 'TRUE');
+            const radio = card.querySelector(`input[type="radio"][value="${isTrue ? '1' : '2'}"]`);
+            if (radio) radio.checked = true;
+        } else if (qType === 'fill_in_blank') {
+            const ansInput = card.querySelector('input[name$="-correct_text_answer"]');
+            if (ansInput) ansInput.value = rawAnswer;
+        }
+
+        updateCardStatus(card);
+        importedCount++;
+    });
+
+    closeBulkImportModal();
+    document.getElementById('bulkImportTextarea').value = '';
+    updateLiveStats();
+    renderQuestionNavigator();
+    alert(`Successfully parsed and added ${importedCount} question(s)!`);
+}
+
+// Student Simulation Test Engine
+let activeSimQuestions = [];
+
+function openStudentSimulationModal() {
+    const modal = document.getElementById('studentSimulationModal');
+    if (!modal) return;
+
+    activeSimQuestions = [];
+    const cards = document.querySelectorAll('.question-card');
+    cards.forEach((card, idx) => {
+        const delCheck = card.querySelector('input[name$="-DELETE"]');
+        if (delCheck && delCheck.checked) return;
+
+        const promptVal = card.querySelector('textarea[name$="-prompt"]')?.value.trim() || `Question ${idx + 1}`;
+        const typeSelect = card.querySelector('.question-type-select');
+        const qType = typeSelect ? typeSelect.value : 'multiple_choice';
+        const points = parseInt(card.querySelector('input[name$="-points"]')?.value) || 10;
+        const explanation = card.querySelector('textarea[name$="-explanation"]')?.value.trim() || '';
+
+        const choices = [];
+        for (let i = 1; i <= 6; i++) {
+            const cInput = card.querySelector(`input[name$="-choice_${i}"]`);
+            if (cInput && cInput.value.trim()) {
+                choices.push({ id: i, text: cInput.value.trim() });
+            }
+        }
+
+        const checkedRadio = card.querySelector('input[type="radio"]:checked');
+        const correctChoice = checkedRadio ? parseInt(checkedRadio.value) : 1;
+        const multiHidden = card.querySelector('input[name$="-correct_choices_multi"]')?.value || '';
+        const correctText = card.querySelector('input[name$="-correct_text_answer"]')?.value.trim() || '';
+
+        activeSimQuestions.push({
+            index: idx + 1,
+            type: qType,
+            prompt: promptVal,
+            points: points,
+            explanation: explanation,
+            choices: choices,
+            correctChoice: correctChoice,
+            multiHidden: multiHidden,
+            correctText: correctText
+        });
+    });
+
+    const countElem = document.getElementById('simQuestionCount');
+    if (countElem) countElem.innerText = `${activeSimQuestions.length} question(s)`;
+
+    renderSimulationView();
+    resetSimulationResult();
+
+    modal.classList.remove('hidden');
+}
+
+function closeStudentSimulationModal() {
+    document.getElementById('studentSimulationModal')?.classList.add('hidden');
+}
+
+function resetSimulationResult() {
+    const resCard = document.getElementById('simResultCard');
+    if (resCard) resCard.classList.add('hidden');
+    const submitBtn = document.getElementById('btnSubmitSimulation');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+function renderSimulationView() {
+    const container = document.getElementById('simQuestionsBody');
+    if (!container) return;
+
+    if (activeSimQuestions.length === 0) {
+        container.innerHTML = `
+            <div class="p-8 text-center bg-slate-950 rounded-2xl border border-slate-800">
+                <span class="text-3xl">📝</span>
+                <p class="text-sm font-semibold text-slate-300 mt-2">No active questions in builder yet</p>
+                <p class="text-xs text-slate-500 mt-1">Add or import questions above first, then launch the simulation.</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    activeSimQuestions.forEach((q, i) => {
+        html += `
+            <div class="sim-question-item p-5 rounded-2xl bg-slate-950 border border-slate-800/90 space-y-3" data-sim-index="${i}">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-800/70">
+                    <span class="text-xs font-mono font-bold text-cyan-400">Question ${q.index} of ${activeSimQuestions.length}</span>
+                    <span class="text-[11px] font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">${q.points} pts</span>
+                </div>
+                <div class="text-sm font-medium text-white leading-relaxed whitespace-pre-wrap">${q.prompt}</div>
+                <div class="sim-answer-zone pt-1 space-y-2">
+        `;
+
+        if (q.type === 'multiple_choice') {
+            q.choices.forEach(c => {
+                html += `
+                    <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 cursor-pointer transition">
+                        <input type="radio" name="sim_q_${i}" value="${c.id}" class="w-4 h-4 text-cyan-500 bg-slate-950 border-slate-700 accent-cyan-500">
+                        <span class="text-xs text-slate-200">${c.text}</span>
+                    </label>
+                `;
+            });
+        } else if (q.type === 'multiple_select') {
+            q.choices.forEach(c => {
+                html += `
+                    <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 cursor-pointer transition">
+                        <input type="checkbox" name="sim_q_${i}_multi" value="${c.id}" class="w-4 h-4 text-indigo-500 rounded bg-slate-950 border-slate-700 accent-indigo-500">
+                        <span class="text-xs text-slate-200">${c.text}</span>
+                    </label>
+                `;
+            });
+        } else if (q.type === 'true_false') {
+            html += `
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-700 cursor-pointer transition">
+                        <input type="radio" name="sim_q_${i}" value="1" class="w-4 h-4 text-emerald-500 bg-slate-950 border-slate-700 accent-emerald-500">
+                        <span class="text-xs font-bold text-emerald-400">✓ True</span>
+                    </label>
+                    <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800 hover:border-rose-700 cursor-pointer transition">
+                        <input type="radio" name="sim_q_${i}" value="2" class="w-4 h-4 text-rose-500 bg-slate-950 border-slate-700 accent-rose-500">
+                        <span class="text-xs font-bold text-rose-400">✕ False</span>
+                    </label>
+                </div>
+            `;
+        } else if (q.type === 'fill_in_blank') {
+            html += `
+                <input type="text" name="sim_q_${i}_text" placeholder="Type your answer here..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500">
+            `;
+        } else {
+            html += `
+                <textarea rows="3" placeholder="Provide response or write code..." class="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"></textarea>
+            `;
+        }
+
+        html += `
+                </div>
+                <div class="sim-feedback-zone hidden mt-3 p-3 rounded-xl text-xs font-mono"></div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function gradeSimulationTest() {
+    if (activeSimQuestions.length === 0) return;
+
+    let earnedPoints = 0;
+    let totalPoints = 0;
+
+    activeSimQuestions.forEach((q, i) => {
+        totalPoints += q.points;
+        const itemElem = document.querySelector(`.sim-question-item[data-sim-index="${i}"]`);
+        if (!itemElem) return;
+
+        const feedbackElem = itemElem.querySelector('.sim-feedback-zone');
+        let isCorrect = false;
+
+        if (q.type === 'multiple_choice' || q.type === 'true_false') {
+            const checked = itemElem.querySelector(`input[name="sim_q_${i}"]:checked`);
+            if (checked && parseInt(checked.value) === q.correctChoice) {
+                isCorrect = true;
+            }
+        } else if (q.type === 'multiple_select') {
+            const checkedBoxes = Array.from(itemElem.querySelectorAll(`input[name="sim_q_${i}_multi"]:checked`)).map(c => c.value);
+            const expected = q.multiHidden.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            if (checkedBoxes.length > 0 && checkedBoxes.sort().join(',') === expected.sort().join(',')) {
+                isCorrect = true;
+            }
+        } else if (q.type === 'fill_in_blank') {
+            const textVal = itemElem.querySelector(`input[name="sim_q_${i}_text"]`)?.value.trim().toLowerCase() || '';
+            const variants = q.correctText.toLowerCase().split('|').map(s => s.trim());
+            if (variants.includes(textVal)) {
+                isCorrect = true;
+            }
+        } else {
+            // Essay / coding: award completion points in simulator
+            isCorrect = true;
+        }
+
+        if (isCorrect) {
+            earnedPoints += q.points;
+            if (feedbackElem) {
+                feedbackElem.className = 'sim-feedback-zone p-3 rounded-xl text-xs bg-emerald-950/60 border border-emerald-800 text-emerald-300 space-y-1';
+                feedbackElem.innerHTML = `
+                    <div class="font-bold flex items-center gap-1.5"><span>✓ Correct</span> <span>(+${q.points} pts)</span></div>
+                    ${q.explanation ? `<div class="text-[11px] text-slate-300 font-sans">💡 <strong>Explanation:</strong> ${q.explanation}</div>` : ''}
+                `;
+                feedbackElem.classList.remove('hidden');
+            }
+        } else {
+            if (feedbackElem) {
+                feedbackElem.className = 'sim-feedback-zone p-3 rounded-xl text-xs bg-rose-950/60 border border-rose-800 text-rose-300 space-y-1';
+                let correctHint = '';
+                if (q.type === 'true_false') {
+                    correctHint = q.correctChoice === 1 ? 'True' : 'False';
+                } else if (q.type === 'multiple_choice') {
+                    const match = q.choices.find(c => c.id === q.correctChoice);
+                    correctHint = match ? match.text : `Option ${q.correctChoice}`;
+                } else if (q.type === 'fill_in_blank') {
+                    correctHint = q.correctText;
+                }
+                feedbackElem.innerHTML = `
+                    <div class="font-bold flex items-center gap-1.5"><span>✕ Incorrect</span> <span>(0/${q.points} pts)</span></div>
+                    ${correctHint ? `<div class="text-[11px] text-amber-300">Key: <strong>${correctHint}</strong></div>` : ''}
+                    ${q.explanation ? `<div class="text-[11px] text-slate-300 font-sans">💡 <strong>Explanation:</strong> ${q.explanation}</div>` : ''}
+                `;
+                feedbackElem.classList.remove('hidden');
+            }
+        }
+    });
+
+    const percent = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
+    const passingPercentage = parseInt('{{ quiz.passing_percentage|default:"70" }}') || 70;
+    const isPassed = percent >= passingPercentage;
+
+    const resCard = document.getElementById('simResultCard');
+    if (resCard) {
+        resCard.classList.remove('hidden');
+        if (isPassed) {
+            resCard.className = 'p-5 m-4 sm:m-6 rounded-2xl border text-center transition-all bg-emerald-950/50 border-emerald-800';
+            document.getElementById('simResultIcon').innerText = '🏆';
+            document.getElementById('simResultTitle').innerText = 'Assessment Passed!';
+            document.getElementById('simResultSubtitle').innerText = `Congratulations! You scored ${percent}% (Passing mark is ${passingPercentage}%).`;
+            const badge = document.getElementById('simResultStatusBadge');
+            badge.className = 'px-3 py-1 rounded-lg font-bold bg-emerald-900 text-emerald-300 border border-emerald-700';
+            badge.innerText = `PASSED (${percent}%)`;
+        } else {
+            resCard.className = 'p-5 m-4 sm:m-6 rounded-2xl border text-center transition-all bg-rose-950/50 border-rose-800';
+            document.getElementById('simResultIcon').innerText = '⚠️';
+            document.getElementById('simResultTitle').innerText = 'Passing Grade Not Met';
+            document.getElementById('simResultSubtitle').innerText = `You scored ${percent}%, below the required ${passingPercentage}%.`;
+            const badge = document.getElementById('simResultStatusBadge');
+            badge.className = 'px-3 py-1 rounded-lg font-bold bg-rose-900 text-rose-300 border border-rose-700';
+            badge.innerText = `NOT PASSED (${percent}%)`;
+        }
+        document.getElementById('simResultScore').innerText = `Total Score: ${earnedPoints} / ${totalPoints} pts`;
+        resCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+function resetSimulationTest() {
+    renderSimulationView();
+    resetSimulationResult();
+}
+</script>
 {% endblock %}

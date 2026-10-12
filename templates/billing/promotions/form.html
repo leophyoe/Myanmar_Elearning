@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object.pk %}Edit Promotion {{ object.code }}{% else %}New Promotion{% endif %} — THUTA E-Learning{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <nav class="flex items-center text-xs text-slate-500 dark:text-slate-400 mb-2 space-x-2">
+            <a href="{% url 'billing:promotion-list' %}" class="inline-flex items-center gap-1 hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition font-semibold text-[#0284C7] dark:text-[#38BDF8]">
+                <span>&larr;</span>
+                <span class="lang-en">Back to Promotions</span>
+                <span class="lang-my">ပရိုမိုးရှင်း စာရင်းသို့</span>
+            </a>
+            <span>/</span>
+            <span class="text-slate-700 dark:text-slate-300 font-semibold">
+                {% if object.pk %}
+                    <span class="lang-en">Edit {{ object.code }}</span>
+                    <span class="lang-my">{{ object.code }} ပြင်ဆင်ရန်</span>
+                {% else %}
+                    <span class="lang-en">New Promotion</span>
+                    <span class="lang-my">အသစ်ဖန်တီးရန်</span>
+                {% endif %}
+            </span>
+        </nav>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+            {% if object.pk %}
+                <span class="lang-en">Edit Promotion: <span class="font-mono text-[#0284C7] dark:text-[#38BDF8]">{{ object.code }}</span></span>
+                <span class="lang-my">ပရိုမိုးရှင်း ပြင်ဆင်ရန်: <span class="font-mono text-[#0284C7] dark:text-[#38BDF8]">{{ object.code }}</span></span>
+            {% else %}
+                <span class="lang-en">Create Course Promotion</span>
+                <span class="lang-my">သင်တန်း လျှော့စျေးကူပွန် အသစ်ဖန်တီးရန်</span>
+            {% endif %}
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+            <span class="lang-en">Configure coupon codes, discount rates, eligibility, and validity window.</span>
+            <span class="lang-my">ကူပွန်ကုဒ်၊ လျှော့စျေးပမာဏ၊ အကျုံးဝင်သည့် သင်တန်းများနှင့် သက်တမ်းကာလကို သတ်မှတ်ပါ။</span>
+        </p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white dark:bg-[#111C2E] rounded-2xl border border-slate-200 dark:border-[#26364B] shadow-sm p-6 sm:p-8">
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="p-4 rounded-xl bg-red-50 dark:bg-[#321F26] border border-red-200 dark:border-[#522933] text-red-700 dark:text-[#FCA5A5] text-xs">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <!-- Section 1: Campaign Identity -->
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 dark:border-[#26364B]">
+                    <span class="lang-en">1. Campaign Identity</span>
+                    <span class="lang-my">၁။ ကမ်ပိန်း အချက်အလက်</span>
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                            <span class="lang-en">Promotion Name *</span>
+                            <span class="lang-my">ပရိုမိုးရှင်း အမည် *</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}<div class="text-[11px] text-red-500 mt-1">{{ form.name.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                            <span class="lang-en">Coupon Code *</span>
+                            <span class="lang-my">ကူပွန် ကုဒ် *</span>
+                        </label>
+                        {{ form.code }}
+                        <p class="text-[10px] text-slate-400 mt-1">Students type this code at checkout (e.g. SUMMER25, WEBSEC10).</p>
+                        {% if form.code.errors %}<div class="text-[11px] text-red-500 mt-1">{{ form.code.errors }}</div>{% endif %}
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                            <span class="lang-en">Description / Internal Terms</span>
+                            <span class="lang-my">အသေးစိတ် ရှင်းလင်းချက်</span>
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}<div class="text-[11px] text-red-500 mt-1">{{ form.description.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Discount & Pricing -->
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 dark:border-[#26364B]">
+                    <span class="lang-en">2. Discount Value &amp; Type</span>
+                    <span class="lang-my">၂။ လျှော့စျေး ပမာဏနှင့် ပုံစံ</span>
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                            <span class="lang-en">Discount Type *</span>
+                            <span class="lang-my">လျှော့စျေး အမျိုးအစား *</span>
+                        </label>
+                        {{ form.discount_type }}
+                        {% if form.discount_type.errors %}<div class="text-[11px] text-red-500 mt-1">{{ form.discount_type.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                            <span class="lang-en">Discount Value *</span>
+                            <span class="lang-my">လျှော့စျေး ပမာဏ *</span>
+                        </label>
+                        {{ form.discount_value }}
+                        <p class="text-[10px] text-slate-400 mt-1">% off or flat MMK discount amount.</p>
+                        {% if form.discount_value.errors %}<div class="text-[11px] text-red-500 mt-1">{{ form.discount_value.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                            <span class="lang-en">Max Cap (MMK)</span>
+                            <span class="lang-my">အများဆုံး လျှော့ပေးနိုင်ငွေ</span>
+                        </label>
+                        {{ form.maximum_discount }}
+                        <p class="text-[10px] text-slate-400 mt-1">Optional maximum cap for % discounts.</p>
+                        {% if form.maximum_discount.errors %}<div class="text-[11px] text-red-500 mt-1">{{ form.maximum_discount.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Applicable Courses -->
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 dark:border-[#26364B]">
+                    <span class="lang-en">3. Course Scope</span>
+                    <span class="lang-my">၃။ အကျုံးဝင်သည့် သင်တန်းများ</span>
+                </h3>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        <span class="lang-en">Select Courses (Leave blank for All Courses)</span>
+                        <span class="lang-my">သင်တန်း ရွေးချယ်ပါ (အားလုံးအတွက်ဖြစ်ပါက အလွတ်ထားပါ)</span>
+                    </label>
+                    {{ form.courses }}
+                    <p class="text-[10px] text-slate-400 mt-1">Hold Ctrl (Windows) or Cmd (Mac) to select multiple courses.</p>
+                    {% if form.courses.errors %}<div class="text-[11px] text-red-500 mt-1">{{ form.courses.errors }}</div>{% endif %}
+                </div>
+            </div>
+
+            <!-- Section 4: Schedule & Limits -->
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 dark:border-[#26364B]">
+                    <span class="lang-en">4. Schedule &amp; Redemption Limits</span>
+                    <span class="lang-my">၄။ သက်တမ်းနှင့် ကန့်သတ်ချက်များ</span>
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                            <span class="lang-en">Starts At</span>
+                            <span class="lang-my">စတင်မည့်အချိန်</span>
+                        </label>
+                        {{ form.start_at }}
+                        {% if form.start_at.errors %}<div class="text-[11px] text-red-500 mt-1">{{ form.start_at.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                            <span class="lang-en">Expires At</span>
+                            <span class="lang-my">သက်တမ်းကုန်ဆုံးမည့်အချိန်</span>
+                        </label>
+                        {{ form.end_at }}
+                        {% if form.end_at.errors %}<div class="text-[11px] text-red-500 mt-1">{{ form.end_at.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                            <span class="lang-en">Total Usage Limit</span>
+                            <span class="lang-my">စုစုပေါင်း အသုံးပြုနိုင်မှု</span>
+                        </label>
+                        {{ form.usage_limit }}
+                        <p class="text-[10px] text-slate-400 mt-1">Leave empty for unlimited.</p>
+                        {% if form.usage_limit.errors %}<div class="text-[11px] text-red-500 mt-1">{{ form.usage_limit.errors }}</div>{% endif %}
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                            <span class="lang-en">Per User Limit</span>
+                            <span class="lang-my">ကျောင်းသားတစ်ဦးလျှင်</span>
+                        </label>
+                        {{ form.per_user_limit }}
+                        <p class="text-[10px] text-slate-400 mt-1">Default is 1 redemption per student.</p>
+                        {% if form.per_user_limit.errors %}<div class="text-[11px] text-red-500 mt-1">{{ form.per_user_limit.errors }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-slate-100 dark:border-[#26364B] flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        {{ form.is_active }}
+                        <label for="{{ form.is_active.id_for_label }}" class="text-xs font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
+                            <span class="lang-en">Active Promotion (Available immediately if schedule allows)</span>
+                            <span class="lang-my">ဖွင့်ထားသည် (အချိန်ကာလ သတ်မှတ်ချက်အရ ချက်ချင်းသုံးနိုင်သည်)</span>
+                        </label>
+                    </div>
+                    {% if form.minimum_purchase %}
+                    <div>
+                        <label class="text-xs text-slate-500 dark:text-slate-400 mr-2">Min Purchase:</label>
+                        {{ form.minimum_purchase }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Form Action Buttons -->
+            <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-200 dark:border-[#26364B]">
+                <a href="{% url 'billing:promotion-list' %}" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#172B40] text-xs sm:text-sm font-semibold transition">
+                    <span class="lang-en">Cancel</span>
+                    <span class="lang-my">မလုပ်တော့ပါ</span>
+                </a>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs sm:text-sm font-bold shadow-md transition">
+                    {% if object.pk %}
+                        <span class="lang-en">Save Changes</span>
+                        <span class="lang-my">သိမ်းဆည်းမည်</span>
+                    {% else %}
+                        <span class="lang-en">Create Promotion</span>
+                        <span class="lang-my">ပရိုမိုးရှင်း ဖန်တီးမည်</span>
+                    {% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

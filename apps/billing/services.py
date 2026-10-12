@@ -281,7 +281,9 @@ def create_course_payment(
         raise ValidationError("Course is free or covered by active membership. Enrol directly.")
 
     # Calculate split (Platform fee / Instructor or Partner amount)
-    platform_fee, teacher_amount = Payment.split(final_amount)
+    split_info = Payment.calculate_level_split(final_amount, course=course)
+    platform_fee = split_info['platform_fee']
+    teacher_amount = split_info['teacher_amount']
 
     payment = Payment(
         student=student,
@@ -294,6 +296,10 @@ def create_course_payment(
         billing_period=course.billing_period,
         platform_fee=platform_fee,
         teacher_amount=teacher_amount,
+        platform_commission_pct=split_info['platform_commission_pct'],
+        instructor_share_pct=split_info['instructor_share_pct'],
+        instructor_level_at_payment=split_info['instructor_level_at_payment'],
+        net_financial_basis=final_amount,
         method=method,
         reference=reference,
         receipt=receipt,

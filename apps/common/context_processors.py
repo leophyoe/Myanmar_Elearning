@@ -38,4 +38,12 @@ def platform_context(request):
             'user_role_display': user.get_role_display() if hasattr(user, 'get_role_display') else '',
             'DASHBOARD_URL': _dashboard_url(user),
         })
+        try:
+            from apps.chat.models import Message
+            context['unread_chat_count'] = Message.objects.filter(
+                conversation__participants__user=user,
+                is_read=False
+            ).exclude(sender=user).count()
+        except Exception:
+            context['unread_chat_count'] = 0
     return context

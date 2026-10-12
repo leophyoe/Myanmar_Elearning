@@ -4,14 +4,22 @@
 
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Breadcrumb -->
-    <nav class="flex items-center space-x-2 text-xs text-slate-500 mb-6">
-        <a href="{% url 'course-list' %}" class="hover:text-blue-600 dark:hover:text-blue-400">Courses</a>
-        <span>/</span>
-        <a href="{% url 'course-detail' slug=course.slug %}" class="hover:text-blue-600 dark:hover:text-blue-400">{{ course.title }}</a>
-        <span>/</span>
-        <span class="text-slate-700 dark:text-slate-300 font-semibold">{{ assessment.title }}</span>
-    </nav>
+    <!-- Top Navigation & Back Action -->
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <a href="{% url 'course-detail' slug=course.slug %}"
+           class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 hover:border-sky-300 dark:hover:border-sky-600 transition shadow-2xs">
+            <span>&larr;</span>
+            <span class="lang-en">Back to Course</span>
+            <span class="lang-my">သင်တန်းသို့ ပြန်သွားရန်</span>
+        </a>
+        <nav class="flex items-center space-x-2 text-xs text-slate-500">
+            <a href="{% url 'course-list' %}" class="hover:text-sky-600 dark:hover:text-sky-400">Courses</a>
+            <span>/</span>
+            <a href="{% url 'course-detail' slug=course.slug %}" class="hover:text-sky-600 dark:hover:text-sky-400 truncate max-w-[150px] sm:max-w-xs">{{ course.title }}</a>
+            <span>/</span>
+            <span class="text-slate-700 dark:text-slate-300 font-semibold truncate max-w-[180px]">{{ assessment.title }}</span>
+        </nav>
+    </div>
 
     <!-- Assessment Header Card -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 sm:p-8 shadow-sm mb-8">
@@ -66,6 +74,90 @@
             </div>
         </div>
     </div>
+
+    <!-- Passed Exam & Earned Certificate Banner -->
+    {% if earned_certificate or best_attempt and best_attempt.passed %}
+    <div class="mb-8 p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-amber-500/15 via-emerald-500/10 to-amber-500/15 border-2 border-amber-400 dark:border-amber-600/80 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-5">
+            <div class="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-400 text-4xl flex items-center justify-center shrink-0 shadow-inner">
+                🏆
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 font-mono">
+                        EXAMINATION PASSED
+                    </span>
+                    {% if earned_certificate %}
+                    <span class="text-xs text-emerald-600 dark:text-emerald-400 font-bold font-mono">
+                        Grade: {{ earned_certificate.grade }}
+                    </span>
+                    {% endif %}
+                </div>
+                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white mt-1">
+                    <span class="lang-en">Congratulations! You passed the Final Exam and earned your certificate</span>
+                    <span class="lang-my">ဂုဏ်ယူပါသည်! Final Examination အောင်မြင်ပြီး တရားဝင် အောင်လက်မှတ် ရရှိပါပြီ</span>
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
+                    {% if earned_certificate %}
+                    <span class="lang-en">Your cryptographically verified credential (Certificate Code: <span class="font-mono font-bold text-amber-600 dark:text-amber-400">{{ earned_certificate.certificate_code }}</span>) is now ready to view and download.</span>
+                    <span class="lang-my">သင်၏ စစ်မှန်ကြောင်း အတည်ပြုပြီး အောင်လက်မှတ် (Certificate Code: <span class="font-mono font-bold text-amber-600 dark:text-amber-400">{{ earned_certificate.certificate_code }}</span>) ကို ရယူ/ဒေါင်းလုဒ် ပြုလုပ်နိုင်ပါပြီ။</span>
+                    {% else %}
+                    <span class="lang-en">You have passed the exam. You can view and manage your certificates in the Certificate Center.</span>
+                    <span class="lang-my">စာမေးပွဲ အောင်မြင်ပြီးဖြစ်၍ သင်တန်းပြီးမြောက်မှု အောင်လက်မှတ်ကို အောင်လက်မှတ် စာမျက်နှာတွင် စစ်ဆေးရယူနိုင်ပါသည်။</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full md:w-auto">
+            {% if earned_certificate %}
+            <a href="{% url 'certificate-verify' cert_id=earned_certificate.pk %}"
+               class="w-full sm:w-auto text-center px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5">
+                <span class="lang-en">📜 View / Download Certificate</span>
+                <span class="lang-my">📜 အောင်လက်မှတ် ရယူ/ဒေါင်းလုဒ် ပြုလုပ်မည်</span>
+                <span class="font-mono">&rarr;</span>
+            </a>
+            {% endif %}
+            <a href="{% url 'certificate-list' %}"
+               class="w-full sm:w-auto text-center px-4 py-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold transition">
+                <span class="lang-en">Certificate Center</span>
+                <span class="lang-my">လက်မှတ်များ စင်တာ</span>
+            </a>
+            <a href="{% url 'course-detail' slug=course.slug %}"
+               class="w-full sm:w-auto text-center px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold transition">
+                <span class="lang-en">&larr; Back to Course</span>
+                <span class="lang-my">&larr; သင်တန်းသို့ ပြန်သွားမည်</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Locked Prerequisite Banner -->
+    {% if not can_attempt and not earned_certificate and not best_attempt.passed %}
+    <div class="mb-8 p-6 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/70 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-start gap-3.5">
+            <span class="text-3xl mt-0.5">🔒</span>
+            <div>
+                <h3 class="text-sm font-bold text-amber-900 dark:text-amber-200">
+                    <span class="lang-en">Final Assessment Locked</span>
+                    <span class="lang-my">Final Assessment စာမေးပွဲ ဖြေဆိုခွင့် မရသေးပါ</span>
+                </h3>
+                <p class="text-xs text-amber-800/90 dark:text-amber-300/80 mt-1">
+                    {{ eligibility_reason|default:"All curriculum lessons must be completed first." }}
+                </p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    <span class="lang-en">You can sit for this Final Assessment and earn your verified certificate once all lectures in the course are completed.</span>
+                    <span class="lang-my">သင်တန်းရှိ သင်ခန်းစာအားလုံး လေ့လာပြီးမြောက်ပါက ဤစာမေးပွဲကို စတင်ဖြေဆိုပြီး အောင်လက်မှတ် ရယူနိုင်မည် ဖြစ်ပါသည်။</span>
+                </p>
+            </div>
+        </div>
+        <div class="shrink-0">
+            <a href="{% url 'course-detail' slug=course.slug %}" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-md">
+                <span class="lang-en">Resume Course Lessons &rarr;</span>
+                <span class="lang-my">သင်ခန်းစာများ ဆက်လက်လေ့လာမည် &rarr;</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Active Assessment or Notice -->
     {% if can_attempt %}

@@ -1,3 +1,4 @@
+import os
 from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -18,7 +19,7 @@ from apps.common.permissions import RoleRequiredMixin
 from apps.courses.models import Course, Enrollment
 from .forms import (
     PaymentDecisionForm, PaymentSubmitForm, SubscriptionSubmitForm,
-    PaymentMethodForm, PromotionForm,
+    PaymentMethodForm, PromotionForm, MMQRConfigurationForm,
 )
 from .models import (
     Payment, PaymentMethod, Promotion, PromotionUsage, SubscriptionPlan, UserSubscription, Invoice,
@@ -109,6 +110,7 @@ class SubscribeView(LoginRequiredMixin, View):
             student=request.user, plan=plan, status=Payment.Status.PENDING
         ).first()
 
+        PaymentMethod.ensure_default_methods()
         form = SubscriptionSubmitForm()
         payment_methods = PaymentMethod.objects.filter(is_active=True).order_by('display_order', 'name')
         return render(request, self.template_name, {
@@ -131,6 +133,7 @@ class SubscribeView(LoginRequiredMixin, View):
             messages.info(request, 'Your subscription payment is already awaiting admin review.')
             return redirect('pricing')
 
+        PaymentMethod.ensure_default_methods()
         form = SubscriptionSubmitForm(request.POST, request.FILES)
         if not form.is_valid():
             messages.error(request, 'Please correct the errors in the form.')
@@ -219,14 +222,20 @@ class CheckoutView(LoginRequiredMixin, View):
             final_price = base_price
 
         PaymentMethod.ensure_default_methods()
+        mmqr = PaymentMethod.get_mmqr()
+        is_mmqr_ready = mmqr.is_ready_for_checkout()
+        missing_requirements = mmqr.get_missing_requirements()
         payment_methods = PaymentMethod.objects.filter(is_active=True).order_by('display_order', 'name')
+
+        if form is None:
+            form = PaymentSubmitForm(initial={'method': 'mmqr'})
 
         return render(request, self.template_name, {
             'course': course,
             'pricing': pricing,
             'base_price': base_price,
             'effective_price': final_price,
-            'form': form or PaymentSubmitForm(),
+            'form': form,
             'currency': course.currency,
             'coupon_code': coupon_code,
             'coupon_error': coupon_error,
@@ -234,6 +243,9 @@ class CheckoutView(LoginRequiredMixin, View):
             'discount_amount': discount_amount,
             'is_free_with_coupon': (final_price <= Decimal('0.00')),
             'payment_methods': payment_methods,
+            'mmqr': mmqr,
+            'is_mmqr_ready': is_mmqr_ready,
+            'missing_requirements': missing_requirements,
             'pending': Payment.objects.filter(
                 student=request.user, course=course,
                 status=Payment.Status.PENDING,
@@ -276,6 +288,10 @@ class CheckoutView(LoginRequiredMixin, View):
         pricing = course.calculate_price_for_user(request.user)
         if pricing['is_free']:
             messages.info(request, 'Course is free or covered by active membership. Enrol directly.')
+            return redirect('course-detail', slug=course.slug)
+
+        if Enrollment.objects.filter(student=request.user, course=course, is_active=True).exists():
+            messages.info(request, 'You already have access to this course.')
             return redirect('course-detail', slug=course.slug)
 
         existing = Payment.objects.filter(
@@ -368,6 +384,39 @@ class CheckoutView(LoginRequiredMixin, View):
             return redirect('course-detail', slug=course.slug)
 
         # CASE 2: Payable amount > 0 MMK
+        mmqr = PaymentMethod.get_mmqr()
+        is_mmqr_ready = mmqr.is_ready_for_checkout()
+        submitted_method = (request.POST.get('method') or 'mmqr').strip()
+
+        # If paying via MMQR but MMQR is not ready (disabled or missing uploaded QR image)
+        if submitted_method == 'mmqr' and not is_mmqr_ready:
+            messages.error(request, 'MMQR payment is coming soon. Please try again later.')
+            return self._render(
+                request, course,
+                coupon_code=promo.code if promo else raw_coupon,
+                coupon_error=coupon_err,
+                promo=promo,
+                discount_amount=discount,
+                final_price=final_price,
+                status=400
+            )
+
+        # If paying via another channel, ensure that channel is active
+        if submitted_method != 'mmqr':
+            PaymentMethod.ensure_defaults()
+            target_method = PaymentMethod.objects.filter(code=submitted_method, is_active=True).first()
+            if not target_method and submitted_method not in dict(Payment.Method.choices):
+                messages.error(request, f"Payment method '{submitted_method}' is currently not available.")
+                return self._render(
+                    request, course,
+                    coupon_code=promo.code if promo else raw_coupon,
+                    coupon_error=coupon_err,
+                    promo=promo,
+                    discount_amount=discount,
+                    final_price=final_price,
+                    status=400
+                )
+
         form = PaymentSubmitForm(request.POST, request.FILES)
         if not form.is_valid():
             messages.error(request, 'Payment not submitted: ' + ' '.join(
@@ -396,12 +445,20 @@ class CheckoutView(LoginRequiredMixin, View):
             payment.promotion = promo
             payment.currency = course.currency
             payment.billing_period = course.billing_period
-            payment.platform_fee, payment.teacher_amount = Payment.split(final_price)
+            split_info = Payment.calculate_level_split(final_price, course=course)
+            payment.platform_fee = split_info['platform_fee']
+            payment.teacher_amount = split_info['teacher_amount']
+            payment.platform_commission_pct = split_info['platform_commission_pct']
+            payment.instructor_share_pct = split_info['instructor_share_pct']
+            payment.instructor_level_at_payment = split_info['instructor_level_at_payment']
+            payment.net_financial_basis = final_price
             payment.status = Payment.Status.PENDING
 
             pm = PaymentMethod.objects.filter(code=payment.method, is_active=True).first()
             if pm:
                 payment.payment_method = pm
+            elif payment.method == 'mmqr':
+                payment.payment_method = mmqr
 
             payment.save()
 
@@ -856,6 +913,143 @@ class PaymentMethodDeleteView(AdminRequiredMixin, View):
 
     def get(self, request, pk):
         return self.post(request, pk)
+
+
+class MMQRPaymentSettingsView(AdminRequiredMixin, View):
+    """
+    Admin-only configuration page under Finance -> Payment Settings.
+    Administrators can:
+    - View MMQR readiness checklist (status, uploaded QR image, instructions, merchant details)
+    - Upload, replace, and remove official MMQR QR code image
+    - Enable or disable MMQR payment channel for customer checkout
+    - Set merchant name, terminal/account reference, and bilingual instructions
+    - Safely preview Phase B automated webhook & API credentials status
+    - Monitor MMQR transaction metrics (total orders, settled volume, pending review)
+    """
+    template_name = 'billing/payment_settings.html'
+
+    def _get_context(self, request, form=None):
+        mmqr = PaymentMethod.get_mmqr()
+        if form is None:
+            form = MMQRConfigurationForm(instance=mmqr)
+
+        is_ready = mmqr.is_ready_for_checkout()
+        missing_requirements = mmqr.get_missing_requirements()
+
+        # Phase B API / Webhook credentials safety check (never leaks secrets)
+        api_key_env = os.environ.get('MMQR_API_KEY', '').strip()
+        merchant_id_env = os.environ.get('MMQR_MERCHANT_ID', '').strip()
+        webhook_secret_env = os.environ.get('MMQR_WEBHOOK_SECRET', '').strip()
+
+        api_key_status = {
+            'configured': bool(api_key_env),
+            'masked_preview': f"{api_key_env[:4]}...{api_key_env[-4:]}" if len(api_key_env) >= 8 else ("Configured" if api_key_env else "Not Configured"),
+        }
+        merchant_id_status = {
+            'configured': bool(merchant_id_env or mmqr.account_number),
+            'value': merchant_id_env or mmqr.account_number or 'Not Configured',
+        }
+        webhook_status = {
+            'configured': bool(webhook_secret_env),
+            'url': request.build_absolute_uri(reverse('billing:api-payment-webhook', kwargs={'provider_code': 'mmqr'})),
+        }
+
+        # Financial metrics for MMQR
+        mmqr_payments = Payment.objects.filter(
+            Q(payment_method=mmqr) | Q(method=Payment.Method.MMQR)
+        )
+        total_orders = mmqr_payments.count()
+        settled_orders = mmqr_payments.filter(status__in=[Payment.Status.SUCCESS, Payment.Status.APPROVED])
+        settled_volume = settled_orders.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        pending_review = mmqr_payments.filter(status=Payment.Status.PENDING).count()
+
+        # All payment methods for multi-channel administration
+        PaymentMethod.ensure_default_methods()
+        all_methods = PaymentMethod.objects.all().order_by('display_order', 'name')
+        active_channels_count = all_methods.filter(is_active=True).count()
+        cards_count = all_methods.filter(method_type=PaymentMethod.MethodType.CARD).count()
+        wallets_count = all_methods.filter(method_type=PaymentMethod.MethodType.WALLET).count()
+        banks_count = all_methods.filter(method_type=PaymentMethod.MethodType.BANK_TRANSFER).count()
+
+        return {
+            'mmqr': mmqr,
+            'form': form,
+            'is_ready': is_ready,
+            'missing_requirements': missing_requirements,
+            'api_key_status': api_key_status,
+            'merchant_id_status': merchant_id_status,
+            'webhook_status': webhook_status,
+            'all_methods': all_methods,
+            'active_channels_count': active_channels_count,
+            'cards_count': cards_count,
+            'wallets_count': wallets_count,
+            'banks_count': banks_count,
+            'stats': {
+                'total_orders': total_orders,
+                'settled_volume': settled_volume,
+                'pending_review': pending_review,
+            },
+            'active': 'payment_settings',
+        }
+
+    def get(self, request, *args, **kwargs):
+        context = self._get_context(request)
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get('action')
+
+        if action == 'toggle_method':
+            method_id = request.POST.get('method_id')
+            method = get_object_or_404(PaymentMethod, pk=method_id)
+            method.is_active = not method.is_active
+            method.save(update_fields=['is_active', 'updated_at'])
+            state = "activated" if method.is_active else "disabled"
+            messages.success(request, f"Payment method '{method.name}' is now {state}.")
+            return redirect('billing:payment-settings')
+
+        if action == 'seed_defaults':
+            PaymentMethod.ensure_default_methods()
+            messages.success(request, "Default payment channels (MMQR, Visa/Mastercard, MPU, KBZPay, WavePay, Bank Transfer) verified and restored.")
+            return redirect('billing:payment-settings')
+
+        mmqr = PaymentMethod.get_mmqr()
+        form = MMQRConfigurationForm(request.POST, request.FILES, instance=mmqr)
+        if form.is_valid():
+            saved_mmqr = form.save()
+
+            # Record system log for administrative audit trail
+            try:
+                from apps.analytics.models import SystemLog, SystemLogLevel
+                SystemLog.objects.create(
+                    level=SystemLogLevel.INFO,
+                    component='billing.mmqr',
+                    message=f"MMQR payment settings updated by {request.user.username}",
+                    details={
+                        'is_active': saved_mmqr.is_active,
+                        'has_qr_image': bool(saved_mmqr.qr_image),
+                        'merchant_name': saved_mmqr.account_name,
+                        'ready_for_checkout': saved_mmqr.is_ready_for_checkout(),
+                    }
+                )
+            except Exception:
+                pass
+
+            if saved_mmqr.is_ready_for_checkout():
+                messages.success(
+                    request,
+                    "MMQR configuration saved and activated! Course checkout will now accept MMQR payments."
+                )
+            else:
+                messages.warning(
+                    request,
+                    "MMQR configuration updated, but MMQR is not yet active on customer checkout. Please review the missing requirements checklist."
+                )
+            return redirect('billing:payment-settings')
+
+        messages.error(request, "Failed to save MMQR configuration. Please check the form errors below.")
+        context = self._get_context(request, form=form)
+        return render(request, self.template_name, context, status=400)
 
 
 # ----------------------------------------------------------------------

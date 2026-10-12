@@ -1,56 +1,539 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ object|default:"New Assignment" }} - {{ PLATFORM_NAME }}{% endblock %}
+{% block title %}{% if object %}Edit Assignment: {{ object.title }}{% else %}Create Assignment{% endif %} - {{ PLATFORM_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    <a href="{% url 'manage-home' %}" class="text-xs text-cyan-400 hover:underline">&larr; Back to Content Studio</a>
-
-    <div class="p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mt-4">
-        <div class="flex items-center justify-between pb-5 mb-6 border-b border-slate-800">
-            <h1 class="text-xl font-bold text-white">
-                {% if object %}Edit Assignment{% else %}Create Assignment{% endif %}
-            </h1>
-            {% if object %}
-            <span class="text-[11px] font-mono text-slate-500">{{ object.module.code }}</span>
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb -->
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            {% if target_module and target_module.course %}
+            <a href="{% url 'course-edit' slug=target_module.course.slug %}" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition">
+                &larr; <span class="lang-en">Back to Course “{{ target_module.course.title }}”</span>
+                <span class="lang-my">သင်တန်း “{{ target_module.course.title }}” သို့ ပြန်သွားမည်</span>
+            </a>
+            {% else %}
+            <a href="{% url 'manage-home' %}" class="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition">
+                &larr; <span class="lang-en">Back to Content Studio</span>
+                <span class="lang-my">Content စတူဒီယိုသို့ ပြန်သွားမည်</span>
+            </a>
             {% endif %}
         </div>
+        {% if object %}
+        <span class="text-xs font-mono text-slate-500">Assignment ID: {{ object.id|stringformat:".8s" }}</span>
+        {% endif %}
+    </div>
 
-        <form method="POST" class="space-y-6 text-sm">
-            {% csrf_token %}
-
-            {% if form.non_field_errors %}
-            <div class="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs">
-                {{ form.non_field_errors }}
-            </div>
-            {% endif %}
-
+    <!-- Header Banner -->
+    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-                <h2 class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider mb-3">Assignment</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    {% for field in form %}
-                    <div class="{% if field.name == 'title' or field.name == 'module' %}md:col-span-3{% endif %}">
-                        <label class="block text-slate-400 uppercase tracking-wider text-[11px] mb-1.5">
-                            {{ field.label }}{% if field.field.required %} <span class="text-red-400">*</span>{% endif %}
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-950 text-purple-300 border border-purple-800">
+                        Homework / Project Assignment
+                    </span>
+                    {% if target_module %}
+                    <span class="text-xs text-slate-400 font-mono">
+                        {{ target_module.code }} &bull; {{ target_module.title }}
+                    </span>
+                    {% endif %}
+                </div>
+                <h1 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+                    <span>📋</span>
+                    <span>{% if object %}Edit Assignment{% else %}Create Course Assignment{% endif %}</span>
+                </h1>
+                <p class="text-xs text-slate-400 mt-1">
+                    <span class="lang-en">Set up practical assignments, lab deliverables, or homework tasks for student submissions and manual grading.</span>
+                    <span class="lang-my">ကျောင်းသားများ လက်တွေ့ဖြေဆိုရမည့် အိမ်စာ၊ ပရောဂျက် သို့မဟုတ် Lab အစီရင်ခံစာ တာဝန်များကို သတ်မှတ်ပါ။</span>
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                    <span class="block text-[10px] uppercase tracking-wider text-slate-500">Max Score</span>
+                    <span class="text-base font-extrabold font-mono text-amber-400" id="liveMaxScoreDisplay">100 pts</span>
+                </div>
+                {% if object %}
+                <div class="px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                    <span class="block text-[10px] uppercase tracking-wider text-slate-500">Submissions</span>
+                    <span class="text-base font-extrabold font-mono text-cyan-400">{{ object.submissions.count }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" id="assignmentForm" class="space-y-6">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="p-4 rounded-xl bg-red-950/70 border border-red-800 text-red-200 text-xs">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left Column: Form Controls (7 cols) -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- 1. Assignment Core Info -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+                    <h2 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
+                        <span>🏷️</span>
+                        <span>Assignment Overview</span>
+                    </h2>
+
+                    <div>
+                        <label class="block text-slate-300 font-semibold text-xs mb-1.5">
+                            Target Module / Chapter <span class="text-red-400">*</span>
                         </label>
-                        {{ field }}
-                        {% if field.help_text %}<p class="text-[10px] text-slate-600 mt-1">{{ field.help_text }}</p>{% endif %}
-                        {% for error in field.errors %}<p class="text-[11px] text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                        {{ form.module }}
+                        {% for error in form.module.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
                     </div>
-                    {% endfor %}
+
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-slate-300 font-semibold text-xs">
+                                Assignment Title <span class="text-red-400">*</span>
+                            </label>
+                            <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+                                <span>Quick Ideas:</span>
+                                <button type="button" onclick="suggestTitle('Practical Lab: ')" class="text-cyan-400 hover:underline">Lab</button> &bull;
+                                <button type="button" onclick="suggestTitle('Homework: ')" class="text-cyan-400 hover:underline">Homework</button> &bull;
+                                <button type="button" onclick="suggestTitle('Project Milestone: ')" class="text-cyan-400 hover:underline">Project</button>
+                            </div>
+                        </div>
+                        {{ form.title }}
+                        {% for error in form.title.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+
+                <!-- 2. Instructions & Deliverables -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h2 class="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                            <span>📝</span>
+                            <span>Task Instructions &amp; Deliverables</span>
+                        </h2>
+                        <span class="text-[11px] text-slate-500">Markdown supported</span>
+                    </div>
+
+                    <!-- Quick Starter Template Buttons -->
+                    <div>
+                        <span class="block text-[11px] text-slate-400 mb-1.5 font-medium">Starter Templates:</span>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="insertTemplate('coding')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1">
+                                <span>💻</span> Coding Project
+                            </button>
+                            <button type="button" onclick="insertTemplate('essay')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1">
+                                <span>✍️</span> Essay / Research
+                            </button>
+                            <button type="button" onclick="insertTemplate('lab')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1">
+                                <span>🧪</span> Lab Report
+                            </button>
+                            <button type="button" onclick="insertTemplate('cyber')" class="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1">
+                                <span>🛡️</span> Pentest &amp; Security Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Deliverable File Formats Injector -->
+                    <div class="pt-1">
+                        <span class="block text-[11px] text-slate-400 mb-1.5 font-medium">Add Deliverable Checklist Items:</span>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button type="button" onclick="appendDeliverable('📦 Source Code Archive (.zip / .tar.gz)')" class="px-2 py-0.5 rounded text-[11px] bg-slate-950 hover:bg-slate-800 text-cyan-300 border border-slate-800 transition">
+                                + Code ZIP
+                            </button>
+                            <button type="button" onclick="appendDeliverable('📄 Executive Lab Report (.pdf)')" class="px-2 py-0.5 rounded text-[11px] bg-slate-950 hover:bg-slate-800 text-cyan-300 border border-slate-800 transition">
+                                + PDF Report
+                            </button>
+                            <button type="button" onclick="appendDeliverable('🐍 Python Script (.py) with Execution Instructions')" class="px-2 py-0.5 rounded text-[11px] bg-slate-950 hover:bg-slate-800 text-cyan-300 border border-slate-800 transition">
+                                + Python Script
+                            </button>
+                            <button type="button" onclick="appendDeliverable('🌐 Live Demo URL / Public GitHub Repository Link')" class="px-2 py-0.5 rounded text-[11px] bg-slate-950 hover:bg-slate-800 text-cyan-300 border border-slate-800 transition">
+                                + Demo URL
+                            </button>
+                            <button type="button" onclick="appendDeliverable('📸 Terminal Execution Proof Screenshots')" class="px-2 py-0.5 rounded text-[11px] bg-slate-950 hover:bg-slate-800 text-cyan-300 border border-slate-800 transition">
+                                + Screenshots
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Markdown Formatting Bar -->
+                    <div class="pt-2">
+                        <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-t-xl border border-b-0 border-slate-800 text-xs">
+                            <button type="button" onclick="formatMarkdown('bold')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-300 font-bold" title="Bold">B</button>
+                            <button type="button" onclick="formatMarkdown('italic')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-300 italic" title="Italic">I</button>
+                            <button type="button" onclick="formatMarkdown('h3')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-300 font-bold" title="Header">H3</button>
+                            <button type="button" onclick="formatMarkdown('code')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-300 font-mono" title="Code Block">&lt;/&gt;</button>
+                            <button type="button" onclick="formatMarkdown('task')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-300" title="Task List">☑️</button>
+                            <button type="button" onclick="formatMarkdown('table')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-300" title="Table">📊</button>
+                        </div>
+                        {{ form.description }}
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            Specify what the student must build or write, required file types (ZIP, PDF, DOCX, PY), and grading criteria.
+                        </p>
+                        {% for error in form.description.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+
+                <!-- 3. Interactive Rubric Builder Card -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h2 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                            <span>🎯</span>
+                            <span>Interactive Evaluation Rubric Builder</span>
+                        </h2>
+                        <span class="text-[11px] font-mono text-emerald-300 font-bold" id="rubricSumDisplay">Total: 100 pts</span>
+                    </div>
+
+                    <div id="rubricContainer" class="space-y-2.5">
+                        <!-- Rubric Item 1 -->
+                        <div class="rubric-row flex items-center gap-2">
+                            <input type="text" value="Code Quality, Architecture &amp; Cleanliness" class="rubric-name flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200">
+                            <input type="number" value="30" min="1" max="500" class="rubric-points w-20 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-amber-400 font-mono font-bold text-center">
+                            <button type="button" onclick="removeRubricRow(this)" class="p-1.5 text-slate-500 hover:text-red-400 transition">&times;</button>
+                        </div>
+                        <!-- Rubric Item 2 -->
+                        <div class="rubric-row flex items-center gap-2">
+                            <input type="text" value="Functional Implementation &amp; Feature Completeness" class="rubric-name flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200">
+                            <input type="number" value="50" min="1" max="500" class="rubric-points w-20 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-amber-400 font-mono font-bold text-center">
+                            <button type="button" onclick="removeRubricRow(this)" class="p-1.5 text-slate-500 hover:text-red-400 transition">&times;</button>
+                        </div>
+                        <!-- Rubric Item 3 -->
+                        <div class="rubric-row flex items-center gap-2">
+                            <input type="text" value="Documentation, Testing &amp; Video Demonstration" class="rubric-name flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200">
+                            <input type="number" value="20" min="1" max="500" class="rubric-points w-20 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-amber-400 font-mono font-bold text-center">
+                            <button type="button" onclick="removeRubricRow(this)" class="p-1.5 text-slate-500 hover:text-red-400 transition">&times;</button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2">
+                        <button type="button" onclick="addRubricRow()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition flex items-center gap-1">
+                            <span>➕</span> Add Rubric Item
+                        </button>
+                        <button type="button" onclick="applyRubricToDescription()" class="px-3.5 py-1.5 rounded-xl bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800 text-xs font-bold transition flex items-center gap-1.5">
+                            <span>📋</span> Insert Rubric Table into Guidelines
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. Scoring & Deadlines -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+                    <h2 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
+                        <span>⚖️</span>
+                        <span>Grading &amp; Submission Deadline</span>
+                    </h2>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Max Score -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-slate-300 font-semibold text-xs">
+                                    Maximum Score <span class="text-red-400">*</span>
+                                </label>
+                                <div class="flex gap-1.5 text-[10px]">
+                                    <button type="button" onclick="setMaxScore(50)" class="text-amber-400 hover:underline">50</button>
+                                    <span class="text-slate-600">&bull;</span>
+                                    <button type="button" onclick="setMaxScore(100)" class="text-amber-400 hover:underline">100</button>
+                                    <span class="text-slate-600">&bull;</span>
+                                    <button type="button" onclick="setMaxScore(200)" class="text-amber-400 hover:underline">200</button>
+                                </div>
+                            </div>
+                            {{ form.max_score }}
+                            {% for error in form.max_score.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                        </div>
+
+                        <!-- Due Date -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-slate-300 font-semibold text-xs">
+                                    Due Date (Optional)
+                                </label>
+                                <button type="button" onclick="clearDueDate()" class="text-[10px] text-slate-400 hover:text-red-400">
+                                    Clear
+                                </button>
+                            </div>
+                            {{ form.due_date }}
+                            {% for error in form.due_date.errors %}<p class="text-xs text-red-400 mt-1">{{ error }}</p>{% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Quick Due Date Buttons -->
+                    <div class="pt-2">
+                        <span class="block text-[11px] text-slate-400 mb-1.5">Quick Deadlines:</span>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="setDueDateOffset(7)" class="px-2.5 py-1 rounded-lg text-xs bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
+                                + 7 Days (1 Week)
+                            </button>
+                            <button type="button" onclick="setDueDateOffset(14)" class="px-2.5 py-1 rounded-lg text-xs bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
+                                + 14 Days (2 Weeks)
+                            </button>
+                            <button type="button" onclick="setDueDateOffset(30)" class="px-2.5 py-1 rounded-lg text-xs bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">
+                                + 1 Month (30 Days)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Bar -->
+                <div class="flex items-center justify-between gap-4 pt-2">
+                    <div class="flex items-center gap-3">
+                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-600/20 transition flex items-center gap-2">
+                            <span>💾</span>
+                            <span>Save Assignment</span>
+                        </button>
+                        <a href="{% if target_module and target_module.course %}{% url 'course-edit' slug=target_module.course.slug %}{% else %}{% url 'manage-home' %}{% endif %}" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition">
+                            Cancel
+                        </a>
+                    </div>
+
+                    {% if object %}
+                    <a href="{% url 'assignment-delete' assignment_id=object.id %}" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-red-400 hover:bg-red-950/50 transition">
+                        🗑️ Delete Assignment
+                    </a>
+                    {% endif %}
                 </div>
             </div>
 
-            <div class="flex gap-3 pt-4 border-t border-slate-800">
-                <button type="submit" class="px-6 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold transition">
-                    Save Assignment
-                </button>
-                <a href="{% url 'manage-home' %}" class="px-6 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm transition">Cancel</a>
-                {% if object %}
-                <a href="{% url 'assignment-delete' assignment_id=object.id %}" class="ml-auto px-4 py-2.5 rounded-lg text-red-400 hover:text-red-300 text-sm transition">Delete</a>
-                {% endif %}
+            <!-- Right Column: Student View Preview (5 cols) -->
+            <div class="lg:col-span-5">
+                <div class="sticky top-6 space-y-6">
+                    <!-- Preview Card -->
+                    <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                <span>👁️</span>
+                                <span>Live Student Preview</span>
+                            </span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                                Student View
+                            </span>
+                        </div>
+
+                        <!-- Card preview -->
+                        <div class="p-5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <h3 class="text-base font-bold text-white leading-snug" id="previewTitle">
+                                    Practical Lab 1: Python Socket Programming
+                                </h3>
+                                <span class="shrink-0 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-extrabold font-mono" id="previewScore">
+                                    100 pts
+                                </span>
+                            </div>
+
+                            <div class="flex items-center gap-4 text-xs text-slate-400">
+                                <div>📅 <span class="text-slate-300" id="previewDue">No due date</span></div>
+                                <div>📁 <span class="text-slate-300">File upload (max 25MB)</span></div>
+                            </div>
+
+                            <div class="p-3.5 rounded-lg bg-slate-900/80 border border-slate-800 text-xs text-slate-300 leading-relaxed font-sans max-h-56 overflow-y-auto whitespace-pre-wrap" id="previewDesc">
+                                Provide instructions, tasks, and expected deliverables...
+                            </div>
+
+                            <!-- Simulated Student Submission Box -->
+                            <div class="p-3 rounded-lg bg-slate-900 border border-dashed border-slate-800 text-center space-y-1 text-slate-400 text-xs">
+                                <span>📤 Drag completed file (.zip, .pdf) or click to browse</span>
+                                <div class="text-[10px] text-slate-500">Submissions are evaluated by the course instructor</div>
+                            </div>
+
+                            <div class="pt-2 border-t border-slate-900 flex items-center justify-between text-[11px] text-slate-500">
+                                <span>Status: Not Submitted</span>
+                                <span class="text-cyan-400 font-semibold">Submit Assignment &rarr;</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Teacher Submission Note -->
+                    <div class="p-5 rounded-2xl bg-cyan-950/20 border border-cyan-800/40 text-xs text-slate-300 space-y-2">
+                        <div class="font-bold text-cyan-300 flex items-center gap-1.5">
+                            <span>💡</span>
+                            <span>Evaluation Workflow:</span>
+                        </div>
+                        <p class="leading-relaxed text-[11px] text-slate-400">
+                            ကျောင်းသားများ အိမ်စာတင်သွင်းလာပါက <strong>Submissions Queue</strong> တွင် ချက်ချင်းပေါ်လာမည်ဖြစ်ပြီး၊ ဆရာက ရမှတ်နှင့် အသေးစိတ် မှတ်ချက် (Feedback) ပေးနိုင်ပါသည်။ အမှတ် ၆၀% အထက် ရရှိပါက ၎င်း Chapter ၏ Assignment ပြီးမြောက်ကြောင်း အလိုအလျောက် သတ်မှတ်ပေးပါမည်။
+                        </p>
+                    </div>
+                </div>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.getElementById('id_title');
+    const descInput = document.getElementById('id_description');
+    const maxScoreInput = document.getElementById('id_max_score');
+    const dueInput = document.getElementById('id_due_date');
+
+    const previewTitle = document.getElementById('previewTitle');
+    const previewDesc = document.getElementById('previewDesc');
+    const previewScore = document.getElementById('previewScore');
+    const previewDue = document.getElementById('previewDue');
+    const liveMaxScoreDisplay = document.getElementById('liveMaxScoreDisplay');
+    const rubricContainer = document.getElementById('rubricContainer');
+    const rubricSumDisplay = document.getElementById('rubricSumDisplay');
+
+    function updatePreview() {
+        if (titleInput && previewTitle) {
+            previewTitle.textContent = titleInput.value.trim() || 'Untitled Assignment';
+        }
+        if (descInput && previewDesc) {
+            previewDesc.textContent = descInput.value.trim() || 'Provide instructions, tasks, and expected deliverables...';
+        }
+        if (maxScoreInput) {
+            const score = maxScoreInput.value.trim() || '100';
+            if (previewScore) previewScore.textContent = score + ' pts';
+            if (liveMaxScoreDisplay) liveMaxScoreDisplay.textContent = score + ' pts';
+        }
+        if (dueInput && previewDue) {
+            if (dueInput.value) {
+                const d = new Date(dueInput.value);
+                previewDue.textContent = d.toLocaleString();
+            } else {
+                previewDue.textContent = 'No due date';
+            }
+        }
+    }
+
+    if (titleInput) titleInput.addEventListener('input', updatePreview);
+    if (descInput) descInput.addEventListener('input', updatePreview);
+    if (maxScoreInput) maxScoreInput.addEventListener('input', updatePreview);
+    if (dueInput) dueInput.addEventListener('change', updatePreview);
+
+    window.suggestTitle = function(prefix) {
+        if (!titleInput) return;
+        if (!titleInput.value.startsWith(prefix)) {
+            titleInput.value = prefix + titleInput.value.replace(/^(Practical Lab:\s*|Homework:\s*|Project Milestone:\s*)/i, '');
+        }
+        titleInput.focus();
+        updatePreview();
+    };
+
+    window.setMaxScore = function(val) {
+        if (maxScoreInput) {
+            maxScoreInput.value = val;
+            updatePreview();
+        }
+    };
+
+    window.clearDueDate = function() {
+        if (dueInput) {
+            dueInput.value = '';
+            updatePreview();
+        }
+    };
+
+    window.setDueDateOffset = function(days) {
+        if (!dueInput) return;
+        const d = new Date();
+        d.setDate(d.getDate() + days);
+        d.setHours(23, 59, 0, 0);
+        const iso = d.toISOString().slice(0, 16);
+        dueInput.value = iso;
+        updatePreview();
+    };
+
+    // Rubric Builder Logic
+    function updateRubricTotal() {
+        let total = 0;
+        document.querySelectorAll('.rubric-points').forEach(input => {
+            total += parseInt(input.value) || 0;
+        });
+        if (rubricSumDisplay) {
+            rubricSumDisplay.textContent = `Total: ${total} pts`;
+        }
+        if (maxScoreInput) {
+            maxScoreInput.value = total;
+            updatePreview();
+        }
+    }
+
+    window.addRubricRow = function(name = 'New Evaluation Criterion', points = 20) {
+        const row = document.createElement('div');
+        row.className = 'rubric-row flex items-center gap-2';
+        row.innerHTML = `
+            <input type="text" value="${name}" class="rubric-name flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200">
+            <input type="number" value="${points}" min="1" max="500" class="rubric-points w-20 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-amber-400 font-mono font-bold text-center">
+            <button type="button" onclick="removeRubricRow(this)" class="p-1.5 text-slate-500 hover:text-red-400 transition">&times;</button>
+        `;
+        rubricContainer.appendChild(row);
+        row.querySelector('.rubric-points').addEventListener('input', updateRubricTotal);
+        updateRubricTotal();
+    };
+
+    window.removeRubricRow = function(btn) {
+        const row = btn.closest('.rubric-row');
+        if (row) {
+            row.remove();
+            updateRubricTotal();
+        }
+    };
+
+    document.querySelectorAll('.rubric-points').forEach(input => {
+        input.addEventListener('input', updateRubricTotal);
+    });
+
+    window.applyRubricToDescription = function() {
+        if (!descInput) return;
+        let rubricMarkdown = "\n\n### 📊 Grading Rubric & Evaluation Breakdown\n| Criterion | Allocated Marks |\n| :--- | :---: |\n";
+        document.querySelectorAll('.rubric-row').forEach(row => {
+            const name = row.querySelector('.rubric-name')?.value || 'Criterion';
+            const pts = row.querySelector('.rubric-points')?.value || '10';
+            rubricMarkdown += `| ${name} | **${pts} pts** |\n`;
+        });
+        rubricMarkdown += `| **Total Maximum Score** | **${maxScoreInput ? maxScoreInput.value : 100} pts** |\n`;
+        descInput.value += rubricMarkdown;
+        updatePreview();
+    };
+
+    window.appendDeliverable = function(text) {
+        if (!descInput) return;
+        if (!descInput.value.includes('### 📦 Deliverables Checklist')) {
+            descInput.value += "\n\n### 📦 Deliverables Checklist\n";
+        }
+        descInput.value += `- [ ] ${text}\n`;
+        updatePreview();
+    };
+
+    window.formatMarkdown = function(type) {
+        if (!descInput) return;
+        const start = descInput.selectionStart;
+        const end = descInput.selectionEnd;
+        const sel = descInput.value.substring(start, end) || 'text';
+        let insert = '';
+
+        if (type === 'bold') insert = `**${sel}**`;
+        else if (type === 'italic') insert = `*${sel}*`;
+        else if (type === 'h3') insert = `\n### ${sel}\n`;
+        else if (type === 'code') insert = `\n\`\`\`python\n${sel}\n\`\`\`\n`;
+        else if (type === 'task') insert = `\n- [ ] ${sel}\n`;
+        else if (type === 'table') insert = `\n| Metric | Requirement |\n| :--- | :--- |\n| Scope | Full coverage |\n`;
+
+        descInput.setRangeText(insert, start, end, 'end');
+        descInput.focus();
+        updatePreview();
+    };
+
+    window.insertTemplate = function(type) {
+        if (!descInput) return;
+        let text = '';
+        if (type === 'coding') {
+            text = `### 1. Objective\nBuild a functioning program demonstrating the concepts taught in this module.\n\n### 2. Requirements & Specification\n- Implement the core algorithm as outlined.\n- Follow clean coding practices, naming conventions and comments.\n- Handle common edge cases, inputs, and exceptions gracefully.\n\n### 3. Deliverables Checklist\n- [ ] Complete source code files (.py / .zip)\n- [ ] README markdown file explaining setup, execution commands and dependencies\n- [ ] Test execution logs or output screenshots\n\n### 4. Evaluation Rubric\n| Criterion | Weight |\n| :--- | :---: |\n| Functional Implementation & Correctness | 50 pts |\n| Code Architecture & Quality | 30 pts |\n| Documentation & Test Demonstration | 20 pts |`;
+        } else if (type === 'essay') {
+            text = `### 1. Research Topic\nAnalyze and summarize the core principles discussed in this chapter.\n\n### 2. Key Questions to Address\n- What are the real-world advantages and disadvantages?\n- Compare this approach with traditional methods.\n- Provide a practical recommendation based on your findings.\n\n### 3. Submission Format\n- [ ] PDF document (2 to 4 pages)\n- [ ] Annotated citations, bibliography and sources cited at the end`;
+        } else if (type === 'lab') {
+            text = `### 1. Lab Environment Setup\nPrepare your virtual environment or laboratory container according to instructions.\n\n### 2. Lab Exercises\n- Step 1: Reconnaissance & Discovery\n- Step 2: Implementation & Verification\n- Step 3: Hardening & Remediation\n\n### 3. Deliverables Checklist\n- [ ] Full laboratory report (PDF)\n- [ ] Annotated screenshots demonstrating completion of each milestone`;
+        } else if (type === 'cyber') {
+            text = `### 1. Penetration Testing Objective\nPerform vulnerability assessment and ethical exploitation within the assigned cyber lab environment.\n\n### 2. Scope & Target Assets\n- Target IP Range: 10.10.10.0/24\n- Assessment Scope: Network Services, Web Vulnerabilities, Privilege Escalation\n\n### 3. Deliverables Checklist\n- [ ] Executive Vulnerability Report (PDF)\n- [ ] Proof-of-Concept Exploit Scripts & Command Flags\n- [ ] Remediation & Patch Recommendations`;
+        }
+        descInput.value = text;
+        updatePreview();
+    };
+
+    updatePreview();
+    updateRubricTotal();
+});
+</script>
 {% endblock %}

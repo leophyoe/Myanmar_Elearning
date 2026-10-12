@@ -48,8 +48,22 @@
         Audit logs
     </a>
     <a href="{% url 'payment-list' %}"
-       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm bg-[#FFFBEB] dark:bg-[#302719] border-[#FDE68A] dark:border-[#423522] text-[#92400E] dark:text-[#FCD34D] hover:bg-amber-100 dark:hover:bg-[#423522]">
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+       {% if active == 'payment_queue' %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+       {% else %}bg-[#FFFBEB] dark:bg-[#302719] border-[#FDE68A] dark:border-[#423522] text-[#92400E] dark:text-[#FCD34D] hover:bg-amber-100 dark:hover:bg-[#423522]{% endif %}">
         Payment queue
+    </a>
+    <a href="{% url 'billing:payment-settings' %}"
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+       {% if active == 'payment_settings' %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+       {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
+        Payment Settings (MMQR)
+    </a>
+    <a href="{% url 'console-live-settings' %}"
+       class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm
+       {% if active == 'live_settings' %}bg-[#0284C7] dark:bg-[#38BDF8] border-[#0284C7] dark:border-[#38BDF8] text-white dark:text-[#0B1220]
+       {% else %}bg-white dark:bg-[#111C2E] border-slate-200 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600{% endif %}">
+        Live Classrooms
     </a>
     <a href="{% url 'cyber-home' %}"
        class="px-4 py-2 rounded-xl font-semibold transition border shadow-sm bg-[#E0F2FE] dark:bg-[#172B40] border-[#BAE6FD] dark:border-[#26364B] text-[#075985] dark:text-[#7DD3FC] hover:bg-sky-100 dark:hover:bg-[#26364B]">

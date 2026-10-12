@@ -27,9 +27,17 @@ class PaymentSubmitForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        active_methods = PaymentMethod.objects.filter(is_active=True).order_by('display_order', 'name')
-        if active_methods.exists():
+        try:
+            PaymentMethod.ensure_default_methods()
+        except Exception:
+            pass
+        active_methods = list(PaymentMethod.objects.filter(is_active=True).order_by('display_order', 'name'))
+        if active_methods:
             self.fields['method'].choices = [(m.code, m.name) for m in active_methods]
+            self.fields['method'].initial = active_methods[0].code
+        else:
+            self.fields['method'].choices = list(Payment.Method.choices)
+            self.fields['method'].initial = Payment.Method.MMQR
 
     def clean(self):
         cleaned = super().clean()
@@ -81,9 +89,13 @@ class SubscriptionSubmitForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        active_methods = PaymentMethod.objects.filter(is_active=True).order_by('display_order', 'name')
-        if active_methods.exists():
+        active_methods = list(PaymentMethod.objects.filter(is_active=True).order_by('display_order', 'name'))
+        if active_methods:
             self.fields['method'].choices = [(m.code, m.name) for m in active_methods]
+            self.fields['method'].initial = active_methods[0].code
+        else:
+            self.fields['method'].choices = [('mmqr', 'MMQR')]
+            self.fields['method'].initial = 'mmqr'
 
     def clean(self):
         cleaned = super().clean()
@@ -135,7 +147,7 @@ class PaymentDecisionForm(forms.Form):
 
 
 class PaymentMethodForm(forms.ModelForm):
-    """Admin management form for accepted Myanmar payment channels."""
+    """Admin management form for accepted payment channels (MMQR, Visa, Master, MPU, Wallets, Banks)."""
     class Meta:
         model = PaymentMethod
         fields = (
@@ -143,17 +155,85 @@ class PaymentMethodForm(forms.ModelForm):
             'qr_image', 'instructions', 'instructions_my', 'display_order', 'is_active'
         )
         widgets = {
-            'name': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'e.g. MMQR, KBZPay'}),
-            'code': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'e.g. mmqr, kbz_pay'}),
+            'name': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'e.g. Visa / Mastercard, MPU Card, MMQR, KBZPay'}),
+            'code': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'e.g. visa_master, mpu, mmqr, kbz_pay, aya_pay'}),
             'method_type': forms.Select(attrs={'class': INPUT}),
-            'account_name': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'Account holder / merchant name'}),
-            'account_number': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'Phone number or account number'}),
+            'account_name': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'Merchant name, card account name, or wallet holder'}),
+            'account_number': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'Card Merchant ID, MPU Terminal Ref, Account No., or Phone'}),
             'qr_image': forms.ClearableFileInput(attrs={'class': INPUT}),
-            'instructions': forms.Textarea(attrs={'class': TEXTAREA, 'rows': 3, 'placeholder': 'English payment instructions'}),
-            'instructions_my': forms.Textarea(attrs={'class': TEXTAREA, 'rows': 3, 'placeholder': 'မြန်မာဘာသာဖြင့် ငွေပေးချေမှု လမ်းညွှန်'}),
-            'display_order': forms.NumberInput(attrs={'class': INPUT}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'h-4 w-4 rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-cyan-400'}),
+            'instructions': forms.Textarea(attrs={'class': TEXTAREA, 'rows': 3, 'placeholder': 'Customer payment instructions in English'}),
+            'instructions_my': forms.Textarea(attrs={'class': TEXTAREA, 'rows': 3, 'placeholder': 'ကျောင်းသားများအတွက် မြန်မာဘာသာဖြင့် ငွေပေးချေမှု လမ်းညွှန်'}),
+            'display_order': forms.NumberInput(attrs={'class': INPUT, 'placeholder': '0'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-[#0284C7] focus:ring-[#0284C7]'}),
         }
+
+    def clean_code(self):
+        code = (self.cleaned_data.get('code') or '').strip().lower()
+        if not code:
+            raise forms.ValidationError('Code identifier is required.')
+        return code
+
+
+class MMQRConfigurationForm(forms.ModelForm):
+    """
+    Dedicated Admin form to configure national MMQR payment channel.
+    Supports uploading, replacing, or removing real QR asset and setting instructions.
+    """
+    remove_qr_image = forms.BooleanField(
+        required=False,
+        label="Remove current QR Code Image",
+        help_text="Check this box and save to remove the current QR asset.",
+        widget=forms.CheckboxInput(attrs={
+            'class': 'h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-[#0284C7] focus:ring-[#0284C7]'
+        })
+    )
+
+    class Meta:
+        model = PaymentMethod
+        fields = (
+            'name', 'is_active', 'account_name', 'account_number',
+            'qr_image', 'instructions', 'instructions_my'
+        )
+        widgets = {
+            'name': forms.TextInput(attrs={'class': INPUT, 'placeholder': 'e.g. MMQR'}),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-[#0284C7] focus:ring-[#0284C7]'
+            }),
+            'account_name': forms.TextInput(attrs={
+                'class': INPUT, 'placeholder': 'e.g. THUTA E-Learning Platform'
+            }),
+            'account_number': forms.TextInput(attrs={
+                'class': INPUT, 'placeholder': 'e.g. Merchant ID, Terminal Ref, or Bank Merchant Account'
+            }),
+            'qr_image': forms.ClearableFileInput(attrs={'class': INPUT}),
+            'instructions': forms.Textarea(attrs={
+                'class': TEXTAREA, 'rows': 3,
+                'placeholder': 'Customer payment instructions in English'
+            }),
+            'instructions_my': forms.Textarea(attrs={
+                'class': TEXTAREA, 'rows': 3,
+                'placeholder': 'မြန်မာဘာသာဖြင့် ငွေပေးချေမှု လမ်းညွှန်'
+            }),
+        }
+
+    def clean_qr_image(self):
+        upload = self.cleaned_data.get('qr_image')
+        if upload and hasattr(upload, 'size'):
+            if upload.size > 5 * 1024 * 1024:
+                raise forms.ValidationError('QR code image file size cannot exceed 5 MB.')
+        return upload
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.code = 'mmqr'
+        instance.method_type = PaymentMethod.MethodType.QR
+        if self.cleaned_data.get('remove_qr_image'):
+            if instance.qr_image:
+                instance.qr_image.delete(save=False)
+            instance.qr_image = None
+        if commit:
+            instance.save()
+        return instance
 
 
 class PromotionForm(forms.ModelForm):

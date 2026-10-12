@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Analytics: {{ promotion.code }} — THUTA E-Learning{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 pb-6 border-b border-slate-200 dark:border-[#26364B]">
+        <div>
+            <nav class="flex items-center text-xs text-slate-500 dark:text-slate-400 mb-2 space-x-2">
+                <a href="{% url 'billing:promotion-list' %}" class="inline-flex items-center gap-1 hover:text-[#0284C7] dark:hover:text-[#38BDF8] transition font-semibold text-[#0284C7] dark:text-[#38BDF8]">
+                    <span>&larr;</span>
+                    <span class="lang-en">Back to Promotions</span>
+                    <span class="lang-my">ပရိုမိုးရှင်း စာရင်းသို့</span>
+                </a>
+                <span>/</span>
+                <span class="text-slate-700 dark:text-slate-300 font-semibold font-mono">{{ promotion.code }}</span>
+            </nav>
+            <div class="flex flex-wrap items-center gap-3">
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
+                    <span class="lang-en">Analytics:</span>
+                    <span class="lang-my">စစ်တမ်း အစီရင်ခံစာ:</span>
+                    <span class="font-mono text-[#0284C7] dark:text-[#38BDF8]">{{ promotion.code }}</span>
+                </h1>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider
+                    {% if not promotion.is_active %} bg-slate-100 dark:bg-[#172B40] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#26364B]
+                    {% elif promotion.is_expired %} bg-red-50 dark:bg-[#321F26] text-red-700 dark:text-[#FCA5A5] border border-red-200 dark:border-[#522933]
+                    {% else %} bg-emerald-50 dark:bg-[#142B25] text-emerald-700 dark:text-[#86EFAC] border border-emerald-200 dark:border-[#1e4839] {% endif %}">
+                    {% if not promotion.is_active %}Disabled{% elif promotion.is_expired %}Expired{% else %}Active{% endif %}
+                </span>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
+                {{ promotion.name }} — {% if promotion.discount_type == 'percentage' %}{{ promotion.discount_value }}% OFF{% elif promotion.discount_type == 'fixed' %}{{ promotion.discount_value|intcomma }} MMK OFF{% else %}100% Free{% endif %}
+            </p>
+        </div>
+        <div class="flex gap-2.5">
+            <a href="{% url 'billing:promotion-update' promotion.pk %}" class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-[#26364B] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#172B40] text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+                <span>✏️</span>
+                <span class="lang-en">Edit Promotion</span>
+                <span class="lang-my">ပြင်ဆင်ရန်</span>
+            </a>
+            <a href="{% url 'billing:promotion-list' %}" class="px-4 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold shadow-sm transition">
+                <span class="lang-en">&larr; Back to List</span>
+                <span class="lang-my">&larr; စာရင်းသို့ ပြန်သွားရန်</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 KPI Metrics -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <span class="lang-en">Total Redemptions</span>
+                <span class="lang-my">အသုံးပြုမှု အကြိမ်ရေ</span>
+            </div>
+            <div class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono">{{ stats.total_usages }}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <span class="lang-en">Limit: {{ promotion.usage_limit|default:"Unlimited" }}</span>
+                <span class="lang-my">ကန့်သတ်ချက်: {{ promotion.usage_limit|default:"မကန့်သတ်" }}</span>
+            </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <span class="lang-en">Gross Value</span>
+                <span class="lang-my">မူလ တန်ဖိုးစုစုပေါင်း</span>
+            </div>
+            <div class="text-2xl font-extrabold text-slate-900 dark:text-white font-mono">{{ stats.total_gross|intcomma }} <span class="text-xs text-slate-500 font-normal">MMK</span></div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <span class="lang-en">Before discounts</span>
+                <span class="lang-my">လျှော့စျေး မနုတ်မီ</span>
+            </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <span class="lang-en">Discount Subsidized</span>
+                <span class="lang-my">လျှော့စျေး ပေးထားငွေ</span>
+            </div>
+            <div class="text-2xl font-extrabold text-amber-600 dark:text-[#FCD34D] font-mono">{{ stats.total_discount|intcomma }} <span class="text-xs text-slate-500 font-normal">MMK</span></div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <span class="lang-en">Total student savings</span>
+                <span class="lang-my">ကျောင်းသား သက်သာငွေ</span>
+            </div>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                <span class="lang-en">Net Revenue</span>
+                <span class="lang-my">အသားတင် ရရှိငွေ</span>
+            </div>
+            <div class="text-2xl font-extrabold text-emerald-600 dark:text-[#86EFAC] font-mono">{{ stats.total_net|intcomma }} <span class="text-xs text-slate-500 font-normal">MMK</span></div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <span class="lang-en">Collected from promo</span>
+                <span class="lang-my">ကောက်ခံရရှိငွေ</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promotion Configuration Overview -->
+    <div class="p-6 rounded-2xl bg-white dark:bg-[#111C2E] border border-slate-200 dark:border-[#26364B] shadow-sm mb-8">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 dark:border-[#26364B]">
+            <span class="lang-en">Promotion Campaign Details</span>
+            <span class="lang-my">ကမ်ပိန်း အချက်အလက်များ</span>
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+            <div>
+                <span class="text-slate-500 dark:text-slate-400 block mb-1">
+                    <span class="lang-en">Created By</span>
+                    <span class="lang-my">ဖန်တီးသူ</span>
+                </span>
+                <span class="font-bold text-slate-900 dark:text-white">{{ promotion.creator.username }}</span>
+            </div>
+            <div>
+                <span class="text-slate-500 dark:text-slate-400 block mb-1">
+                    <span class="lang-en">Applicable Scope</span>
+                    <span class="lang-my">အကျုံးဝင်မှု</span>
+                </span>
+                <span class="font-semibold text-slate-900 dark:text-white">
+                    {% if promotion.courses.exists %}
+                        {{ promotion.courses.count }} course(s)
+                    {% else %}
+                        All Platform Courses (Global)
+                    {% endif %}
+                </span>
+            </div>
+            <div>
+                <span class="text-slate-500 dark:text-slate-400 block mb-1">
+                    <span class="lang-en">Schedule Window</span>
+                    <span class="lang-my">သက်တမ်းကာလ</span>
+                </span>
+                <span class="font-mono text-slate-900 dark:text-white">
+                    {{ promotion.start_at|date:"M d, Y"|default:"Start" }} &rarr; {{ promotion.end_at|date:"M d, Y"|default:"Indefinite" }}
+                </span>
+            </div>
+            <div>
+                <span class="text-slate-500 dark:text-slate-400 block mb-1">
+                    <span class="lang-en">Per-User Limit</span>
+                    <span class="lang-my">ကျောင်းသားတစ်ဦးလျှင်</span>
+                </span>
+                <span class="font-bold text-slate-900 dark:text-white">{{ promotion.per_user_limit }} redemption(s)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redemptions Ledger Table -->
+    <div class="bg-white dark:bg-[#111C2E] rounded-2xl border border-slate-200 dark:border-[#26364B] shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 dark:border-[#26364B] flex items-center justify-between">
+            <h2 class="text-base font-bold text-slate-900 dark:text-white">
+                <span class="lang-en">Redemption Activity Log</span>
+                <span class="lang-my">ကူပွန် အသုံးပြုမှု မှတ်တမ်း</span>
+            </h2>
+            <span class="text-xs text-slate-500 dark:text-slate-400 font-mono">{{ usages.count }} recorded orders</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead class="text-[11px] uppercase bg-slate-50 dark:bg-[#0B1220] text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-[#26364B]">
+                    <tr>
+                        <th class="py-3 px-4 font-semibold">
+                            <span class="lang-en">Student</span>
+                            <span class="lang-my">ကျောင်းသား</span>
+                        </th>
+                        <th class="py-3 px-4 font-semibold">
+                            <span class="lang-en">Course</span>
+                            <span class="lang-my">သင်တန်း</span>
+                        </th>
+                        <th class="py-3 px-4 font-semibold">
+                            <span class="lang-en">Original Price</span>
+                            <span class="lang-my">မူရင်းစျေး</span>
+                        </th>
+                        <th class="py-3 px-4 font-semibold">
+                            <span class="lang-en">Discount</span>
+                            <span class="lang-my">လျှော့စျေး</span>
+                        </th>
+                        <th class="py-3 px-4 font-semibold">
+                            <span class="lang-en">Final Paid</span>
+                            <span class="lang-my">ပေးချေငွေ</span>
+                        </th>
+                        <th class="py-3 px-4 font-semibold">
+                            <span class="lang-en">Payment Reference</span>
+                            <span class="lang-my">ငွေလွှဲကုဒ်</span>
+                        </th>
+                        <th class="py-3 px-4 text-right font-semibold">
+                            <span class="lang-en">Redeemed At</span>
+                            <span class="lang-my">အသုံးပြုသည့်ရက်</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-[#26364B]/60">
+                    {% for u in usages %}
+                    <tr class="hover:bg-slate-50/60 dark:hover:bg-[#172B40]/40 transition">
+                        <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
+                            {{ u.user.username }}
+                            {% if u.user.email %}<span class="text-[10px] text-slate-400 block font-normal">{{ u.user.email }}</span>{% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 font-semibold text-slate-800 dark:text-slate-200">
+                            {{ u.course.title|truncatechars:35 }}
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-slate-500 line-through">
+                            {{ u.original_price|intcomma }} MMK
+                        </td>
+                        <td class="py-3.5 px-4 font-mono font-bold text-amber-600 dark:text-[#FCD34D]">
+                            -{{ u.discount_amount|intcomma }} MMK
+                        </td>
+                        <td class="py-3.5 px-4 font-mono font-bold text-emerald-600 dark:text-[#86EFAC]">
+                            {{ u.final_price|intcomma }} MMK
+                        </td>
+                        <td class="py-3.5 px-4 font-mono text-slate-600 dark:text-slate-400">
+                            {% if u.payment %}
+                                <a href="{% url 'billing:payment-detail' u.payment.id %}" class="text-[#0284C7] dark:text-[#38BDF8] hover:underline">
+                                    {{ u.payment.reference|default:u.payment.id|truncatechars:12 }}
+                                </a>
+                            {% else %}
+                                <span class="text-slate-400">Direct</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-mono text-slate-500 text-[11px]">
+                            {{ u.created_at|date:"M d, Y H:i" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-12 text-center text-slate-500">
+                            <div class="text-3xl mb-2">📊</div>
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                <span class="lang-en">No redemptions yet</span>
+                                <span class="lang-my">အသုံးပြုမှု မှတ်တမ်း မရှိသေးပါ</span>
+                            </p>
+                            <p class="text-xs text-slate-400 mt-1">
+                                <span class="lang-en">Share this code with your students to start tracking usage.</span>
+                                <span class="lang-my">ဤကူပွန်ကုဒ်ကို ကျောင်းသားများထံ မျှဝေ၍ အသုံးပြုမှု စောင့်ကြည့်ပါ။</span>
+                            </p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

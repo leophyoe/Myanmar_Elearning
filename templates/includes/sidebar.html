@@ -1,18 +1,19 @@
+{% load static %}
 <aside id="melSidebar" class="mel-sidebar hidden md:flex flex-col justify-between p-4" aria-label="Main Navigation">
     <div class="space-y-6">
         <!-- Brand & Platform Identity -->
-        <div class="flex items-center gap-3 px-2 py-1">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center font-black text-white text-base shadow-sm shrink-0">
-                T
+        <a href="{% url 'landing-page' %}" class="flex items-center gap-3 px-2 py-1 group">
+            <div class="w-8 h-8 rounded-xl bg-slate-800/90 p-1 flex items-center justify-center shadow-xs shrink-0 border border-slate-700/80 group-hover:border-cyan-500/50 transition">
+                <img src="{% static 'images/thuta_icon.png' %}" alt="THUTA" class="w-full h-full object-contain">
             </div>
             <div class="min-w-0">
-                <span class="font-bold text-sm tracking-wide text-white block truncate">THUTA</span>
-                <span class="text-[10px] text-slate-400 block tracking-wider uppercase">
+                <span class="font-black text-sm tracking-wider text-white block truncate">THUT<span class="text-cyan-400">Λ</span></span>
+                <span class="text-[9px] text-cyan-400 font-bold block tracking-widest uppercase">
                     <span class="lang-en">Education Platform</span>
                     <span class="lang-my">ပညာရေး ပလက်ဖောင်း</span>
                 </span>
             </div>
-        </div>
+        </a>
 
         <!-- Role-Specific Navigation Sections -->
         <nav class="space-y-1">
@@ -31,6 +32,16 @@
                     <span class="text-sm">⚙️</span>
                     <span class="lang-en">Admin Console</span>
                     <span class="lang-my">စီမံခန့်ခွဲသူ နေရာ</span>
+                </a>
+                <a href="{% url 'chat:inbox' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm">💬</span>
+                        <span class="lang-en">Messenger</span>
+                        <span class="lang-my">မက်ဆင်ဂျာ</span>
+                    </div>
+                    {% if unread_chat_count and unread_chat_count > 0 %}
+                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-sky-900 text-sky-300 border border-sky-700">{{ unread_chat_count }}</span>
+                    {% endif %}
                 </a>
 
                 <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -57,6 +68,16 @@
                     <span class="lang-en">Courses</span>
                     <span class="lang-my">သင်ရိုးများ</span>
                 </a>
+                <a href="{% url 'standalone-exam-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📝</span>
+                    <span class="lang-en">Exam Center</span>
+                    <span class="lang-my">စာမေးပွဲဗဟို</span>
+                </a>
+                <a href="{% url 'exam-grading-queue' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📋</span>
+                    <span class="lang-en">Exam Grading</span>
+                    <span class="lang-my">စာမေးပွဲ စစ်ဆေးရန်</span>
+                </a>
                 <a href="{% url 'manage-home' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
                     <span class="text-sm">🛠️</span>
                     <span class="lang-en">Content Studio</span>
@@ -72,6 +93,13 @@
                     <span class="lang-en">Certificates</span>
                     <span class="lang-my">အောင်လက်မှတ်များ</span>
                 </a>
+                {% if user.is_staff or user.is_teacher or user.is_instructor or user.is_partner %}
+                <a href="{% url 'certificate-template-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-amber-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🎨</span>
+                    <span class="lang-en">Certificate Studio</span>
+                    <span class="lang-my">Certificate စတူဒီယို</span>
+                </a>
+                {% endif %}
 
                 <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                     <span class="lang-en">Cyber Range</span>
@@ -122,6 +150,11 @@
                     <span class="lang-en">Payment Approvals</span>
                     <span class="lang-my">ငွေပေးချေမှု အတည်ပြုခြင်း</span>
                 </a>
+                <a href="{% url 'billing:payment-settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-emerald-400 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📱</span>
+                    <span class="lang-en">MMQR Settings</span>
+                    <span class="lang-my">MMQR ဆက်တင်များ</span>
+                </a>
 
                 <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                     <span class="lang-en">System</span>
@@ -148,6 +181,16 @@
                     <span class="text-sm">📊</span>
                     <span class="lang-en">Partner Dashboard</span>
                     <span class="lang-my">မိတ်ဖက် ဒက်ရှ်ဘုတ်</span>
+                </a>
+                <a href="{% url 'chat:inbox' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm">💬</span>
+                        <span class="lang-en">Messenger</span>
+                        <span class="lang-my">မက်ဆင်ဂျာ</span>
+                    </div>
+                    {% if unread_chat_count and unread_chat_count > 0 %}
+                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-sky-900 text-sky-300 border border-sky-700">{{ unread_chat_count }}</span>
+                    {% endif %}
                 </a>
 
                 <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -178,6 +221,16 @@
                     <span class="text-sm">🎓</span>
                     <span class="lang-en">Cohorts &amp; Enrollments</span>
                     <span class="lang-my">အတန်းခွဲများနှင့် ကျောင်းသားများ</span>
+                </a>
+                <a href="{% url 'partner-certificates' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📜</span>
+                    <span class="lang-en">Digital Credentials</span>
+                    <span class="lang-my">အောင်လက်မှတ် မှတ်တမ်းများ</span>
+                </a>
+                <a href="{% url 'certificate-template-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🎨</span>
+                    <span class="lang-en">Certificate Studio</span>
+                    <span class="lang-my">ဒီဇိုင်း စတူဒီယို</span>
                 </a>
 
                 <div class="pt-3 px-2 pb-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -234,6 +287,26 @@
                     </div>
                     {% if ungraded_count %}
                     <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300 border border-amber-800">{{ ungraded_count }}</span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'instructor-certificate-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📜</span>
+                    <span class="lang-en">Student Credentials</span>
+                    <span class="lang-my">ကျောင်းသား လက်မှတ်မှတ်တမ်း</span>
+                </a>
+                <a href="{% url 'certificate-template-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">🎨</span>
+                    <span class="lang-en">Certificate Studio</span>
+                    <span class="lang-my">ဒီဇိုင်း စတူဒီယို</span>
+                </a>
+                <a href="{% url 'chat:inbox' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm">💬</span>
+                        <span class="lang-en">Student Messages</span>
+                        <span class="lang-my">ကျောင်းသား မက်ဆေ့ခ်ျများ</span>
+                    </div>
+                    {% if unread_chat_count and unread_chat_count > 0 %}
+                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-sky-900 text-sky-300 border border-sky-700">{{ unread_chat_count }}</span>
                     {% endif %}
                 </a>
 
@@ -303,10 +376,25 @@
                     <span class="lang-en">My Courses</span>
                     <span class="lang-my">ကျွန်ုပ်၏ သင်ရိုးများ</span>
                 </a>
+                <a href="{% url 'chat:inbox' %}" class="flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm">💬</span>
+                        <span class="lang-en">Messenger</span>
+                        <span class="lang-my">မက်ဆင်ဂျာ</span>
+                    </div>
+                    {% if unread_chat_count and unread_chat_count > 0 %}
+                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-sky-900 text-sky-300 border border-sky-700">{{ unread_chat_count }}</span>
+                    {% endif %}
+                </a>
                 <a href="{% url 'course-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
                     <span class="text-sm">📚</span>
                     <span class="lang-en">Course Catalog</span>
                     <span class="lang-my">သင်ရိုးများ စာရင်း</span>
+                </a>
+                <a href="{% url 'standalone-exam-list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
+                    <span class="text-sm">📝</span>
+                    <span class="lang-en">Exam Center</span>
+                    <span class="lang-my">စာမေးပွဲဗဟို</span>
                 </a>
                 <a href="{% url 'pricing' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition">
                     <span class="text-sm">💎</span>
